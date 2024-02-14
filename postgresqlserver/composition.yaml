@@ -1,0 +1,68 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: postgresqlservers.catalog.cluster.local
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v1
+    kind: PostgreSQLServerComposite
+  resources:
+    - base:
+        apiVersion: helm.crossplane.io/v1beta1
+        kind: Release
+        spec:
+          providerConfigRef:
+            name: helm-provider
+
+          forProvider:
+            chart:
+              name: postgresql
+              repository: oci://registry-1.docker.io/bitnamicharts
+              version: 14.0.5
+            # namespace:
+
+          connectionDetails:
+            - apiVersion: v1
+              kind: Secret
+              # name:
+              # namespace:
+              fieldPath: data.postgres-password
+              toConnectionSecretKey: password
+
+            - apiVersion: v1
+              kind: Service
+              # name:
+              # namespace:
+              fieldPath: spec.clusterIP
+              toConnectionSecretKey: hostname
+
+          writeConnectionSecretToRef:
+            # name:
+            # namespace:
+
+      patches:
+        - fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.forProvider.namespace"
+
+        - fromFieldPath: "spec.resourceRefs[0].name"
+          toFieldPath: "spec.connectionDetails[0].name"
+
+        - fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.connectionDetails[0].namespace"
+
+        - fromFieldPath: "spec.resourceRefs[0].name"
+          toFieldPath: "spec.connectionDetails[1].name"
+        
+        - fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.connectionDetails[1].namespace"
+
+        - fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.writeConnectionSecretToRef.namespace"
+
+        - fromFieldPath: "spec.resourceRefs[0].name"
+          toFieldPath: "spec.writeConnectionSecretToRef.name"
+          transforms:
+            - type: string
+              string:
+                type: Format
+                fmt: "%s-binding"
