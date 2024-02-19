@@ -6,63 +6,133 @@ spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v1
     kind: PostgreSQLServerComposite
+  writeConnectionSecretsToNamespace: crossplane-system # this writes the connection secrets listed in the below resources connectionDetails sections to the specified namespace which is useful for compositions with multiple resources (to have one combined secret) https://docs.crossplane.io/knowledge-base/guides/connection-details/#connection-secrets-in-compositions
+
   resources:
-    - base:
+    - name: helm-release
+      base:
         apiVersion: helm.crossplane.io/v1beta1
-        kind: Release
+        kind: Release # full example, see: https://github.com/crossplane-contrib/provider-helm/blob/master/examples/sample/release.yaml
         spec:
           providerConfigRef:
-            name: helm-provider
-
+            name: provider-helm
           forProvider:
             chart:
               name: postgresql
               repository: oci://registry-1.docker.io/bitnamicharts
               version: 14.0.5
-            # namespace:
+            namespace: tbd # patch taken from composite spec.claimRef.namespace
+            values:
+              commonLabels:
+                app: hallo # todo: maybe useful, there are for sure other values to set, and we should offer the from config option
+              auth:
+                database: postgres # patch taken from composite spec.claimRef.namespace
+                # username: # maybe useful to set a custom username?
+                # password:
+              primary:
+                persistence:
+                  # enabled
+                  size: 8Gi # patch taken from composite spec.size
+                  # storageClass: # maybe useful to set a custom storage class?
+                persistentVolumeClaimRetentionPolicy:
+                  enabled: true
+                  whenDeleted: Retain # patch taken from composite spec.pvcRetentionWhenDeleted (if set)
 
-          connectionDetails:
+          connectionDetails: # list the "secrets" created by this managed resources (further down, they are used to create the connection details for the whole composite)
             - apiVersion: v1
               kind: Secret
-              # name:
-              # namespace:
+              name: # patch taken from composite spec.resourceRefs[0].name
+              namespace: # patch taken from composite spec.claimRef.namespace
               fieldPath: data.postgres-password
               toConnectionSecretKey: password
 
             - apiVersion: v1
               kind: Service
-              # name:
-              # namespace:
+              name: # patch taken from composite spec.resourceRefs[0].name
+              namespace: # patch taken from composite spec.claimRef.namespace
               fieldPath: spec.clusterIP
-              toConnectionSecretKey: hostname
+              toConnectionSecretKey: host
 
-          writeConnectionSecretToRef:
-            # name:
-            # namespace:
+            - apiVersion: v1
+              kind: Service
+              name: # patch taken from composite spec.resourceRefs[0].name
+              namespace: # patch taken from composite spec.claimRef.namespace
+              fieldPath: spec.ports[0].port
+              toConnectionSecretKey: port
+
+          writeConnectionSecretToRef: # this will write the above connection details from this resource to a secret with this name to the specified namespace
+            name: # patch taken from composite spec.resourceRefs[0].name + "-binding"
+            namespace: # patch taken from composite spec.claimRef.namespace
+
+      connectionDetails:
+        - name: type
+          value: postgresql
+        - name: username
+          value: postgres
+        - name: password
+          fromConnectionSecretKey: password
+        - name: host
+          fromConnectionSecretKey: host
+        - name: port
+          fromConnectionSecretKey: port
+        - name: database
+          type: FromFieldPath
+          fromFieldPath: "spec.forProvider.values.auth.database"
 
       patches:
-        - fromFieldPath: "spec.claimRef.namespace"
+        - type: FromCompositeFieldPath # from composite (PostgreSQLServerComposite) to managed resource (Release)
+          fromFieldPath: "spec.claimRef.namespace" # composite knows the claim via claimRef
           toFieldPath: "spec.forProvider.namespace"
 
-        - fromFieldPath: "spec.resourceRefs[0].name"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.resourceRefs[0].name" # the Composite knows the Release name via resourceRefs
           toFieldPath: "spec.connectionDetails[0].name"
 
-        - fromFieldPath: "spec.claimRef.namespace"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
           toFieldPath: "spec.connectionDetails[0].namespace"
 
-        - fromFieldPath: "spec.resourceRefs[0].name"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.resourceRefs[0].name"
           toFieldPath: "spec.connectionDetails[1].name"
         
-        - fromFieldPath: "spec.claimRef.namespace"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
           toFieldPath: "spec.connectionDetails[1].namespace"
 
-        - fromFieldPath: "spec.claimRef.namespace"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.resourceRefs[0].name"
+          toFieldPath: "spec.connectionDetails[2].name"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.connectionDetails[2].namespace"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
           toFieldPath: "spec.writeConnectionSecretToRef.namespace"
 
-        - fromFieldPath: "spec.resourceRefs[0].name"
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.resourceRefs[0].name"
           toFieldPath: "spec.writeConnectionSecretToRef.name"
-          transforms:
+          transforms: # not sure why two secrets are created :(
             - type: string
               string:
                 type: Format
                 fmt: "%s-binding"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.pvcRetentionWhenDeleted"
+          toFieldPath: "spec.forProvider.values.primary.persistentVolumeClaimRetentionPolicy.whenDeleted"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.size"
+          toFieldPath: "spec.forProvider.values.primary.persistence.size"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.writeConnectionSecretsToNamespace"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.dbName"
+          toFieldPath: "spec.forProvider.values.auth.database"

@@ -3,4 +3,7 @@ kind: PostgreSQLServer
 metadata: 
   name: postgresqlserver-sample
 spec:
-  size: 8Gi
+  size: 1Gi
+  pvcRetentionWhenDeleted: Delete # Retain or Delete
+  dbName: sample
+  
