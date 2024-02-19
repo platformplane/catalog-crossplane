@@ -66,22 +66,31 @@ spec:
 
       connectionDetails:
         - name: type
+          type: FromValue
           value: postgresql
         - name: username
+          type: FromValue
           value: postgres
         - name: password
+          type: FromConnectionSecretKey
           fromConnectionSecretKey: password
         - name: host
+          type: FromConnectionSecretKey
           fromConnectionSecretKey: host
         - name: port
+          type: FromConnectionSecretKey
           fromConnectionSecretKey: port
         - name: database
           type: FromFieldPath
           fromFieldPath: "spec.forProvider.values.auth.database"
+        - name: uri
+          type: FromFieldPath
+          fromFieldPath: "metadata.annotations['uri']" # not working, probably patched too late, see below
 
       patches:
+        # give resources the namespace of the claim and a derived name
         - type: FromCompositeFieldPath # from composite (PostgreSQLServerComposite) to managed resource (Release)
-          fromFieldPath: "spec.claimRef.namespace" # composite knows the claim via claimRef
+          fromFieldPath: "spec.claimRef.namespace" # composite knows the claim via claimRef, I don't understand why metadata.namespace is not working
           toFieldPath: "spec.forProvider.namespace"
 
         - type: FromCompositeFieldPath
@@ -108,19 +117,26 @@ spec:
           fromFieldPath: "spec.claimRef.namespace"
           toFieldPath: "spec.connectionDetails[2].namespace"
 
+        # set name and namespace of resource connection details
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.namespace"
           toFieldPath: "spec.writeConnectionSecretToRef.namespace"
 
         - type: FromCompositeFieldPath
-          fromFieldPath: "spec.resourceRefs[0].name"
+          fromFieldPath: "spec.resourceRefs[0].name" # "spec.claimRef.name"
           toFieldPath: "spec.writeConnectionSecretToRef.name"
           transforms: # not sure why two secrets are created :(
             - type: string
               string:
                 type: Format
-                fmt: "%s-binding"
+                fmt: "%s-binding" # probably not needed, the other one is the binding
 
+        # specify to which namespace the connection secrets should be written
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.writeConnectionSecretsToNamespace"
+
+        # get the values for the chart from the claim
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.pvcRetentionWhenDeleted"
           toFieldPath: "spec.forProvider.values.primary.persistentVolumeClaimRetentionPolicy.whenDeleted"
@@ -130,9 +146,41 @@ spec:
           toFieldPath: "spec.forProvider.values.primary.persistence.size"
 
         - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.writeConnectionSecretsToNamespace"
-
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.dbName"
+          fromFieldPath: "spec.databaseName"
           toFieldPath: "spec.forProvider.values.auth.database"
+
+        # set binding label
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.writeConnectionSecretToRef.name"
+          toFieldPath: "metadata.labels['binding']"
+        
+        # set binding in status
+        - type: ToCompositeFieldPath # when writing TO the composite, take care that the definition mentions the target field
+          fromFieldPath: "metadata.labels['binding']"
+          toFieldPath: "status.binding.name"
+
+        # - type: ToCompositeFieldPath # working
+        #   fromFieldPath: metadata.name
+        #   toFieldPath: metadata.labels['chartfullname']
+        #   transforms:
+        #     - type: string
+        #       string:
+        #         fmt: "%s-postgresqlserver" # maybe combine from Kind (lowercase?)
+
+        # - type: ToCompositeFieldPath # not working
+        #   fromFieldPath: metadata.namespace
+        #   toFieldPath: metadata.labels['targetNamespace']
+
+        - type: CombineToComposite # make this dynamic...
+          combine:
+            variables:
+              - fromFieldPath: metadata.name
+              - fromFieldPath: spec.forProvider.namespace
+            strategy: string
+            string:
+              fmt: "postgresql://postgres:pw@%s.%s:5432/postgres"
+          toFieldPath: status.uri
+          
+        - type: FromCompositeFieldPath
+          fromFieldPath: "status.uri"
+          toFieldPath: "metadata.annotations['uri']"

@@ -38,6 +38,16 @@ spec:
                 pvcRetentionWhenDeleted:
                   type: string
                   enum: ["Retain", "Delete"]
-                dbName:
+                databaseName:
+                  type: string
+            status:
+              type: object
+              properties: 
+                binding:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                uri:
                   type: string
                   

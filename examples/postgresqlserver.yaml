@@ -1,9 +1,8 @@
 apiVersion: catalog.cluster.local/v1
 kind: PostgreSQLServer
 metadata: 
-  name: postgresqlserver-sample
+  name: postgresqlserver-sample # why can't I rename this?
 spec:
   size: 1Gi
   pvcRetentionWhenDeleted: Delete # Retain or Delete
-  dbName: sample
-  
+  databaseName: sample
