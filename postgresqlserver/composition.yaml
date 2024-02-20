@@ -6,7 +6,10 @@ spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v1
     kind: PostgreSQLServerComposite
-  writeConnectionSecretsToNamespace: crossplane-system # this writes the connection secrets listed in the below resources connectionDetails sections to the specified namespace which is useful for compositions with multiple resources (to have one combined secret) https://docs.crossplane.io/knowledge-base/guides/connection-details/#connection-secrets-in-compositions
+
+  writeConnectionSecretsToNamespace: crossplane-system # this writes the connection secrets listed in the below resources connectionDetails sections to the specified namespace as a combined secret of all resources https://docs.crossplane.io/knowledge-base/guides/connection-details/#connection-secrets-in-compositions
+  # Be aware that you can't patch this field (it's in the composition, not in a resource or the composite)
+  # The namespace where the user can get his combined secret (the same as this one) is specified implicitly by the claim's namespace if you set the writeConnectionSecretToRef.name in the claim (one could think that this field here is therefore not needed, but it is, without it, there is also no combined secret written to the claim's namespace)
 
   resources:
     - name: helm-release
@@ -38,6 +41,7 @@ spec:
                   enabled: true
                   whenDeleted: Retain # patch taken from composite spec.pvcRetentionWhenDeleted (if set)
 
+          # the connection details of this resource
           connectionDetails: # list the "secrets" created by this managed resources (further down, they are used to create the connection details for the whole composite)
             - apiVersion: v1
               kind: Secret
@@ -46,7 +50,7 @@ spec:
               fieldPath: data.postgres-password
               toConnectionSecretKey: password
 
-            - apiVersion: v1
+            - apiVersion: v1 # we do not use this IP, so we could remove it
               kind: Service
               name: # patch taken from composite spec.resourceRefs[0].name
               namespace: # patch taken from composite spec.claimRef.namespace
@@ -60,10 +64,12 @@ spec:
               fieldPath: spec.ports[0].port
               toConnectionSecretKey: port
 
-          writeConnectionSecretToRef: # this will write the above connection details from this resource to a secret with this name to the specified namespace
-            name: # patch taken from composite spec.resourceRefs[0].name + "-binding"
-            namespace: # patch taken from composite spec.claimRef.namespace
+          writeConnectionSecretToRef: # this will write the above connection details from this resource to a secret with this name to the specified namespace (we actually need to write this so that we can reference this connection details in the combined connection details)
+            # name: tbd # patch taken from composite spec.resourceRefs[0].name + "-binding" # not entirely sure what is going on here, it writes two secrets (two ending in -binding), if uncommented, only one with -binding but one that is called tbd
+            namespace: tbd # patch taken from composite spec.claimRef.namespace
 
+      # the "combined connection details" (combination of all the resources connection details)
+      # Attention: add the items listed here as allowed ones in the definition
       connectionDetails:
         - name: type
           type: FromValue
@@ -75,8 +81,10 @@ spec:
           type: FromConnectionSecretKey
           fromConnectionSecretKey: password
         - name: host
-          type: FromConnectionSecretKey
-          fromConnectionSecretKey: host
+          type: FromFieldPath
+          fromFieldPath: "metadata.annotations['host']"
+          # type: FromConnectionSecretKey # in case we prefer the IP over the service name
+          # fromConnectionSecretKey: host
         - name: port
           type: FromConnectionSecretKey
           fromConnectionSecretKey: port
@@ -85,7 +93,7 @@ spec:
           fromFieldPath: "spec.forProvider.values.auth.database"
         - name: uri
           type: FromFieldPath
-          fromFieldPath: "metadata.annotations['uri']" # not working, probably patched too late, see below
+          fromFieldPath: "metadata.annotations['uri']"
 
       patches:
         # give resources the namespace of the claim and a derived name
@@ -117,7 +125,7 @@ spec:
           fromFieldPath: "spec.claimRef.namespace"
           toFieldPath: "spec.connectionDetails[2].namespace"
 
-        # set name and namespace of resource connection details
+        # set name and namespace to where we write the resource connection details
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.namespace"
           toFieldPath: "spec.writeConnectionSecretToRef.namespace"
@@ -129,7 +137,7 @@ spec:
             - type: string
               string:
                 type: Format
-                fmt: "%s-binding" # probably not needed, the other one is the binding
+                fmt: "%s-binding" # renaming is needed in order not to overwrite the secret created by the chart (from where we take the db password)
 
         # specify to which namespace the connection secrets should be written
         - type: FromCompositeFieldPath
@@ -149,13 +157,13 @@ spec:
           fromFieldPath: "spec.databaseName"
           toFieldPath: "spec.forProvider.values.auth.database"
 
-        # set binding label
+        # set binding in resource label
         - type: FromCompositeFieldPath
-          fromFieldPath: "spec.writeConnectionSecretToRef.name"
+          fromFieldPath: "spec.writeConnectionSecretToRef.name" # that ugly uid (only the claim has the nice one, not the composite)
           toFieldPath: "metadata.labels['binding']"
         
-        # set binding in status
-        - type: ToCompositeFieldPath # when writing TO the composite, take care that the definition mentions the target field
+        # set binding in claim status
+        - type: ToCompositeFieldPath # when writing TO the composite, make sure that the definition mentions the target field
           fromFieldPath: "metadata.labels['binding']"
           toFieldPath: "status.binding.name"
 
@@ -171,16 +179,38 @@ spec:
         #   fromFieldPath: metadata.namespace
         #   toFieldPath: metadata.labels['targetNamespace']
 
+        # copy stuff from resource to claim status and back to resource annotations from where it is copied to the connection details # this must be the wrong way but I don't know how to the string manipulations otherwise
+        # Attention: newly introduced claim fields must be specified in the definition
         - type: CombineToComposite # make this dynamic...
+          combine:
+            variables:
+              - fromFieldPath: metadata.name
+              - fromFieldPath: spec.forProvider.namespace
+              - fromFieldPath: spec.forProvider.values.auth.database
+            strategy: string
+            string:
+              fmt: "postgresql://postgres:pw@%s.%s:5432/%s"
+          toFieldPath: status.credentials.uri
+          
+        - type: FromCompositeFieldPath
+          fromFieldPath: "status.credentials.uri"
+          toFieldPath: "metadata.annotations['uri']"
+
+        - type: CombineToComposite
           combine:
             variables:
               - fromFieldPath: metadata.name
               - fromFieldPath: spec.forProvider.namespace
             strategy: string
             string:
-              fmt: "postgresql://postgres:pw@%s.%s:5432/postgres"
-          toFieldPath: status.uri
+              fmt: "%s.%s"
+          toFieldPath: status.credentials.host
           
         - type: FromCompositeFieldPath
-          fromFieldPath: "status.uri"
-          toFieldPath: "metadata.annotations['uri']"
+          fromFieldPath: "status.credentials.host"
+          toFieldPath: "metadata.annotations['host']"
+
+        # to continue here tomorrow
+        # - type: FromCompositeFieldPath
+        #   fromFieldPath: "spec.writeConnectionSecretToRef.name" # this is getting the wrong name, I can nowhere access the secret name from the claim.. maybe via crossplane internals?
+        #   toFieldPath: "metadata.annotations['binding']"

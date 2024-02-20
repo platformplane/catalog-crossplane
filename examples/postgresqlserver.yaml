@@ -6,3 +6,5 @@ spec:
   size: 1Gi
   pvcRetentionWhenDeleted: Delete # Retain or Delete
   databaseName: sample
+  writeConnectionSecretToRef: # this keyword is necessary, otherwise it won't write a combined secret to the namespace of the claim
+    name: my-pg-secret
