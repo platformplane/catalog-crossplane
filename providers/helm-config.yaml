@@ -16,3 +16,20 @@ spec:
   serviceAccountTemplate:
     metadata:
       name: provider-helm
+  # deploymentTemplate:
+  #   spec:
+  #     selector: {}
+  #     template:
+  #       spec:
+  #         containers:
+  #           - name: package-runtime
+  #             args:
+  #               - --enable-external-secret-stores # not available
+# ---
+# apiVersion: pkg.crossplane.io/v1alpha1
+# kind: ControllerConfig
+# metadata:
+#   name: provider-helm
+# spec:
+#   args:
+#     - --enable-external-secret-stores # not available, and probably the deprecated way how to do it

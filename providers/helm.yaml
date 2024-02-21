@@ -9,3 +9,5 @@ spec:
     apiVersion: pkg.crossplane.io/v1beta1
     kind: DeploymentRuntimeConfig
     name: provider-helm
+  # controllerConfigRef:
+  #   name: provider-helm

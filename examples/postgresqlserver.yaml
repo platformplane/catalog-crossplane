@@ -7,4 +7,8 @@ spec:
   pvcRetentionWhenDeleted: Delete # Retain or Delete
   databaseName: sample
   writeConnectionSecretToRef: # this keyword is necessary, otherwise it won't write a combined secret to the namespace of the claim
-    name: my-pg-secret
+    name: postgresqlserver-sample-bindings
+  publishConnectionDetailsTo:
+    name: my-secret
+    configRef: 
+      name: default

@@ -2,7 +2,7 @@
 to understand (some parts of) ConnectionDetails: read <https://blog.crossplane.io/faq-2-claim-connection-details/>
 
 ## TODO
-- get the nice secret name set by the user to set as binding again (or does that not make sense?)
+- get the nice secret name set by the user/catalog to set as binding again (or does that not make sense?)
 - how to get secrets (like password) out of the connection details to combine it with the rest of the connection string to build the URI?
 - static uri: =>  []byte(fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", username, password, host, port, database))
 - nice names
@@ -10,16 +10,19 @@ to understand (some parts of) ConnectionDetails: read <https://blog.crossplane.i
 - set helm values more dynamically (via configmap?)
 - common labels
 - custom username, password?
+- build package
 
 
 ```
 # setup
 helm repo add crossplane-stable https://charts.crossplane.io/stable
 helm repo update
-helm install crossplane crossplane-stable/crossplane --namespace crossplane-system --create-namespace
+helm install crossplane crossplane-stable/crossplane --namespace crossplane-system --create-namespace # --set args='{"--enable-external-secret-stores"}' 
 
 kubectl apply -f providers/helm-account.yaml
+# wait a bit
 kubectl apply -f providers/helm.yaml
+# wait a bit
 kubectl apply -f providers/helm-config.yaml
 
 kubectl apply -f postgresqlserver/definition.yaml

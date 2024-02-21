@@ -31,11 +31,12 @@ spec:
               type: object
               properties:
                 size:
-                  anyOf:
-                  - type: integer
-                  - type: string
+                  # anyOf: # allowing integer throws a warning during the composition apply saying Invalid value: "spec.size": field path "spec.size" has an unsupported type ""
+                  # - type: integer
+                  # - type: string
+                  type: string
                   pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                  x-kubernetes-int-or-string: true
+                  # x-kubernetes-int-or-string: true
                 pvcRetentionWhenDeleted:
                   type: string
                   enum: ["Retain", "Delete"]
