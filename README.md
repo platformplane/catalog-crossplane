@@ -1,18 +1,4 @@
 
-to understand (some parts of) ConnectionDetails: read <https://blog.crossplane.io/faq-2-claim-connection-details/>
-
-## TODO
-- get the nice secret name set by the user/catalog to set as binding again (or does that not make sense?)
-- how to get secrets (like password) out of the connection details to combine it with the rest of the connection string to build the URI?
-- static uri: =>  []byte(fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", username, password, host, port, database))
-- nice names
-- folder structure supporting collaboration with third party composition providers
-- set helm values more dynamically (via configmap?)
-- common labels
-- custom username, password?
-- build package
-
-
 ```
 # setup
 helm repo add crossplane-stable https://charts.crossplane.io/stable
@@ -22,7 +8,7 @@ helm install crossplane crossplane-stable/crossplane --namespace crossplane-syst
 kubectl apply -f providers/helm-account.yaml
 # wait a bit
 kubectl apply -f providers/helm.yaml
-# wait a bit
+# wait a bit more
 kubectl apply -f providers/helm-config.yaml
 
 kubectl apply -f postgresqlserver/definition.yaml
@@ -31,6 +17,15 @@ kubectl apply -f postgresqlserver/composition.yaml
 kubectl create ns test
 
 kubectl apply -f examples/postgresqlserver.yaml -n test
+
+kubectl get postgresqlservers catalog.cluster.local -n test   
+
+kubectl get postgresqlserver postgresqlserver-sample -n test -o jsonpath='{.spec.resourceRef.name}' # gives you the according composite
+
+kubectl get postgresqlservercomposite postgresqlserver-sample-8fz7t -o jsonpath='{.metadata.uid}' # or .status.binding.name or .spec.writeConnectionSecretToRef.name gives you the name of the corresponding secret 
+
+kubectl get secret 50f606c7-743d-4392-a807-8a6a417b7bcf -n crossplane-system
+
 
 # cycle
 kubectl delete -f examples/postgresqlserver.yaml -n test
@@ -46,3 +41,12 @@ kubectl run -n test -it --rm --image=postgres:latest postgres-client -- psql -h 
 
 kubectl run -n default -it --rm --image=postgres:latest postgres-client -- psql -h postgresqlserver-sample-5n5z7-6nkz9.test -U postgres -d postgres --password
 ```
+
+
+## TODO
+- folder structure supporting collaboration with third party composition providers
+- custom username, password? secret darf nicht im claim sein, da man es in Argo sieht
+- build package
+
+
+

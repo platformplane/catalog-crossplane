@@ -1,3 +1,4 @@
+# Composition Definition: https://doc.crds.dev/github.com/crossplane/crossplane/apiextensions.crossplane.io/Composition/v1@v1.15.0
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
@@ -12,7 +13,7 @@ spec:
   # The namespace where the user can get his combined secret (the same as this one) is specified implicitly by the claim's namespace if you set the writeConnectionSecretToRef.name in the claim (one could think that this field here is therefore not needed, but it is, without it, there is also no combined secret written to the claim's namespace)
 
   resources:
-    - name: helm-release
+    - name: helm-release # definition: https://doc.crds.dev/github.com/crossplane-contrib/provider-helm/helm.crossplane.io/Release/v1beta1@v0.15.0
       base:
         apiVersion: helm.crossplane.io/v1beta1
         kind: Release # full example, see: https://github.com/crossplane-contrib/provider-helm/blob/master/examples/sample/release.yaml
@@ -26,11 +27,11 @@ spec:
             chart:
               name: postgresql
               repository: oci://registry-1.docker.io/bitnamicharts
-              version: 14.0.5
+              version: 14.0.5 # todo: see whether 14.* or so is possible
             namespace: tbd # patch taken from composite spec.claimRef.namespace
             values:
-              commonLabels:
-                app: hallo # todo: maybe useful, there are for sure other values to set, and we should offer the from config option
+              # commonLabels:
+              #   app: hallo # todo: maybe useful
               auth:
                 database: postgres # patch taken from composite spec.claimRef.namespace
                 # username: # maybe useful to set a custom username?
@@ -78,10 +79,10 @@ spec:
             # name: tbd # patch taken from composite spec.resourceRefs[0].name + "-binding" # not entirely sure what is going on here, it writes two secrets (two ending in -binding), if uncommented, only one with -binding but one that is called tbd
             namespace: tbd # patch taken from composite spec.claimRef.namespace
 
-          publishConnectionDetailsTo:
-            name: pg-secret
-            configRef:
-              name: default # the default secrets.crossplane.io StoreConfig is created during the installation of Crossplane
+          # publishConnectionDetailsTo:
+          #   name: pg-secret
+          #   configRef:
+          #     name: default # the default secrets.crossplane.io StoreConfig is created during the installation of Crossplane
 
       # the "combined connection details" (combination of all the resources connection details)
       # Attention: add the items listed here as allowed ones in the definition
@@ -109,9 +110,9 @@ spec:
           fromFieldPath: "metadata.annotations['host']"
           # type: FromConnectionSecretKey # in case we prefer the IP over the service name
           # fromConnectionSecretKey: host
-        - name: uri
-          type: FromFieldPath
-          fromFieldPath: "metadata.annotations['uri']"
+        # - name: uri
+        #   type: FromFieldPath
+        #   fromFieldPath: "metadata.annotations['uri']"
 
       patches:
         # give resources the namespace of the claim and a derived name
@@ -194,21 +195,6 @@ spec:
 
         # copy stuff from resource to claim status and back to resource annotations from where it is copied to the connection details # this must be the wrong way but I don't know how to do the string manipulations otherwise
         # Attention: newly introduced claim fields must be specified in the definition
-        - type: CombineToComposite # make this dynamic...
-          combine:
-            variables:
-              - fromFieldPath: metadata.name
-              - fromFieldPath: spec.forProvider.namespace
-              - fromFieldPath: spec.forProvider.values.auth.database
-            strategy: string
-            string:
-              fmt: "postgresql://postgres:pw@%s.%s:5432/%s" # TODO: add port and password
-          toFieldPath: status.credentials.uri
-          
-        - type: FromCompositeFieldPath
-          fromFieldPath: "status.credentials.uri"
-          toFieldPath: "metadata.annotations['uri']"
-
         - type: CombineToComposite
           combine:
             variables:
@@ -222,6 +208,21 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "status.credentials.host"
           toFieldPath: "metadata.annotations['host']"
+
+        # - type: CombineToComposite # make this dynamic...
+        #   combine:
+        #     variables:
+        #       - fromFieldPath: metadata.name
+        #       - fromFieldPath: spec.forProvider.namespace
+        #       - fromFieldPath: spec.forProvider.values.auth.database
+        #     strategy: string
+        #     string:
+        #       fmt: "postgresql://postgres:pw@%s.%s:5432/%s" # TODO: add port and password
+        #   toFieldPath: status.credentials.uri
+          
+        # - type: FromCompositeFieldPath
+        #   fromFieldPath: "status.credentials.uri"
+        #   toFieldPath: "metadata.annotations['uri']"
 
         # - type: FromCompositeFieldPath
         #   fromFieldPath: "spec.writeConnectionSecretToRef.name" # this is getting the wrong name, I can nowhere access the secret name from the claim.. 

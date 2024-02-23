@@ -11,7 +11,7 @@ spec:
     - host
     - port
     - database
-    - uri
+    # - uri
   names:
     kind: PostgreSQLServerComposite
     plural: postgresqlservercomposites
@@ -54,8 +54,8 @@ spec:
                   type: object
                   description: "Misuse composite status as temporary storage."
                   properties:
-                    uri:
-                      type: string
+                    # uri:
+                    #   type: string
                     host:
                       type: string
 
