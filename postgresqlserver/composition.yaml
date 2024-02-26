@@ -3,12 +3,18 @@ apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
   name: postgresqlservers.catalog.cluster.local
+  annotations:
+    catalog.cluster.local/displayName: "PostgreSQL Server"
+    catalog.cluster.local/description: "Unmanaged PostgreSQLServer instance running within the cluster."
+    catalog.cluster.local/icon: "https://www.postgresql.org/media/img/about/press/elephant.png" # TODO: alternatively as encoded data
+    catalog.cluster.local/contact: ""
+    catalog.cluster.local/tags: "database,unmanaged,helm" # or simpler, just "category"?
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v1
     kind: PostgreSQLServerComposite
 
-  writeConnectionSecretsToNamespace: crossplane-system # this writes the connection secrets listed in the below resources connectionDetails sections to the specified namespace as a combined secret of all resources https://docs.crossplane.io/knowledge-base/guides/connection-details/#connection-secrets-in-compositions
+  writeConnectionSecretsToNamespace: platform # this writes the connection secrets listed in the below resources connectionDetails sections to the specified namespace as a combined secret of all resources https://docs.crossplane.io/knowledge-base/guides/connection-details/#connection-secrets-in-compositions
   # Be aware that you can't patch this field (it's in the composition, not in a resource or the composite)
   # The namespace where the user can get his combined secret (the same as this one) is specified implicitly by the claim's namespace if you set the writeConnectionSecretToRef.name in the claim (one could think that this field here is therefore not needed, but it is, without it, there is also no combined secret written to the claim's namespace)
 
@@ -32,6 +38,7 @@ spec:
             values:
               # commonLabels:
               #   app: hallo # todo: maybe useful
+              fullnameOverride: tbd # patch taken from composite metadata.name (needed because the chart creates a secret with an unpredictable name otherwise)
               auth:
                 database: postgres # patch taken from composite spec.claimRef.namespace
                 # username: # maybe useful to set a custom username?
@@ -43,7 +50,7 @@ spec:
                   # storageClass: # maybe useful to set a custom storage class?
                 persistentVolumeClaimRetentionPolicy:
                   enabled: true
-                  whenDeleted: Retain # patch taken from composite spec.pvcRetentionWhenDeleted (if set)
+                  whenDeleted: Delete # patch taken from composite spec.pvcRetentionWhenDeleted (if set)
 
           # the connection details of this resource
           connectionDetails: # list the "secrets" created by this managed resources (further down, they are used to create the connection details for the whole composite)
@@ -68,15 +75,8 @@ spec:
               fieldPath: spec.ports[0].port
               toConnectionSecretKey: port
 
-            # - apiVersion: v1 # cannot find this resource, would anyways be super hacky
-            #   kind: PostgreSQLServer
-            #   name: postgresqlserver-sample
-            #   namespace: test
-            #   fieldPath: spec.writeConnectionSecretToRef.name
-            #   toConnectionSecretKey: name
-
           writeConnectionSecretToRef: # this will write the above connection details from this resource to a secret with this name to the specified namespace (we actually need to write this so that we can reference this connection details in the combined connection details)
-            # name: tbd # patch taken from composite spec.resourceRefs[0].name + "-binding" # not entirely sure what is going on here, it writes two secrets (two ending in -binding), if uncommented, only one with -binding but one that is called tbd
+            # name: tbd # patch taken from composite spec.resourceRefs[0].name + "-connection" # not entirely sure what is going on here, it writes two secrets (two ending in -connection), if uncommented only one with -connection but one that is called tbd
             namespace: tbd # patch taken from composite spec.claimRef.namespace
 
           # publishConnectionDetailsTo:
@@ -156,12 +156,12 @@ spec:
             - type: string
               string:
                 type: Format
-                fmt: "%s-binding" # renaming is needed in order not to overwrite the secret created by the chart (from where we take the db password)
+                fmt: "%s-connection" # renaming is needed in order not to overwrite the secret created by the chart (from where we take the db password)
 
         # get the values for the chart from the claim
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.pvcRetentionWhenDeleted"
-          toFieldPath: "spec.forProvider.values.primary.persistentVolumeClaimRetentionPolicy.whenDeleted"
+        # - type: FromCompositeFieldPath
+        #   fromFieldPath: "spec.pvcRetentionWhenDeleted"
+        #   toFieldPath: "spec.forProvider.values.primary.persistentVolumeClaimRetentionPolicy.whenDeleted"
 
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.size"
@@ -170,6 +170,10 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.databaseName"
           toFieldPath: "spec.forProvider.values.auth.database"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.resourceRefs[0].name"
+          toFieldPath: "spec.forProvider.values.fullnameOverride"
 
         # set binding in resource label
         - type: FromCompositeFieldPath
