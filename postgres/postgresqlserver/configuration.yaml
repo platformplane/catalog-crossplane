@@ -1,7 +1,7 @@
 apiVersion: meta.pkg.crossplane.io/v1
 kind: Configuration
 metadata:
-  name: catalog-postgres
+  name: platform-catalog
 spec:
   crossplane:
     version: ">=v1.15.0"
