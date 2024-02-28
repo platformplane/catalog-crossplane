@@ -38,19 +38,17 @@ kubectl apply -f postgresqlserver/definition.yaml
 kubectl apply -f postgresqlserver/composition.yaml
 kubectl apply -f examples/postgresqlserver.yaml -n test
 
-test-example-jvfht-7rbl2-postgresql
+kubectl delete -f examples -n test
+kubectl apply -f examples -n test
 
 # connect to pg
 kubectl run -n test -it --rm --image=postgres:latest postgres-client -- psql -h 10.96.193.248 -U postgres -d postgres --password
 
-kubectl run -n default -it --rm --image=postgres:latest postgres-client -- psql -h postgresqlserver-sample-5n5z7-6nkz9.test -U postgres -d postgres --password
+kubectl run -n default -it --rm --image=postgres:latest postgres-client -- psql -h postgresqlserver-sample.test -U postgres -d postgres --password jölkjlö
+
+kubectl run my-postgresql-client --rm --tty -i --restart='Never' --namespace default --image docker.io/bitnami/postgresql:16.2.0-debian-12-r5 --env="PGPASSWORD=$POSTGRES_PASSWORD" \
+      --command -- psql --host my-postgresql -U postgres -d postgres -p 5432
 ```
-
-
-## TODO
-- folder structure supporting collaboration with third party composition providers
-- custom username, password? secret darf nicht im claim sein, da man es in Argo sieht
-- build package
 
 
 
