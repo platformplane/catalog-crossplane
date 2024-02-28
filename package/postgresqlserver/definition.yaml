@@ -1,0 +1,46 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: postgresqlservercomposites.catalog.cluster.local
+spec:
+  group: catalog.cluster.local
+  connectionSecretKeys: # is not needed, so maybe more harm than good, but could be useful for catalog UI or other tools like console?
+    - username
+    - password
+    - host
+    - port
+    - database
+  names:
+    kind: PostgreSQLServerComposite
+    plural: postgresqlservercomposites
+  claimNames:
+    kind: PostgreSQLServer
+    plural: postgresqlservers
+  versions:
+    - name: v1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: PostgreSQL is an open-source, powerful, advanced object-relational database management system that supports a wide variety of data types and allows high scalability and complex queries.
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                size:
+                  type: string
+                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                databaseName:
+                  type: string
+            status:
+              type: object
+              properties:
+                credentials:
+                  type: object
+                  description: "Misuse composite status as temporary storage."
+                  properties:
+                    host:
+                      type: string
+
+                  
