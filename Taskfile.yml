@@ -1,0 +1,13 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  REPOSITORY: index.docker.io/platformplane/platform-catalog:0.0.2
+
+tasks:
+  publish:
+    dir: postgres/postgresqlserver
+    cmds:
+      - crossplane xpkg build -o platform-catalog.xpkg
+      - crossplane xpkg push -f platform-catalog.xpkg {{.REPOSITORY}}
