@@ -1,0 +1,147 @@
+# Composition Definition: https://doc.crds.dev/github.com/crossplane/crossplane/apiextensions.crossplane.io/Composition/v1@v1.15.0
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: redisservers.catalog.cluster.local
+  annotations:
+    catalog.cluster.local/displayName: "Redis Server"
+    catalog.cluster.local/description: "Unmanaged RedisServer instance running within the cluster."
+    catalog.cluster.local/contact: ""
+    catalog.cluster.local/tags: "database,unmanaged,helm"
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v1
+    kind: RedisServerComposite
+
+  writeConnectionSecretsToNamespace: crossplane-system
+
+  resources:
+    - name: helm-release
+      base:
+        apiVersion: helm.crossplane.io/v1beta1
+        kind: Release
+        spec:
+          providerConfigRef:
+            name: provider-helm
+          forProvider:
+            chart:
+              name: redis
+              repository: oci://registry-1.docker.io/bitnamicharts
+              version: 18.17.0
+            namespace: tbd
+            values:
+              commonLabels:
+                catalog.cluster.local/kind: tbd
+                catalog.cluster.local/name: tbd
+              fullnameOverride: tbd
+              architecture: standalone
+              master:
+                persistence:
+                  size: 8Gi
+                persistentVolumeClaimRetentionPolicy:
+                  enabled: true
+                  whenDeleted: Delete
+              metrics:
+                enabled: true
+                serviceMonitor:
+                  enabled: true                
+
+          connectionDetails:
+            - apiVersion: v1
+              kind: Secret
+              name: # patch taken from spec.claimRef.name
+              namespace: # patch taken from composite spec.claimRef.namespace
+              fieldPath: data.redis-password
+              toConnectionSecretKey: password
+
+            - apiVersion: v1
+              kind: Service
+              name: # patch taken from spec.claimRef.name
+              namespace: # patch taken from composite spec.claimRef.namespace
+              fieldPath: spec.ports[0].port
+              toConnectionSecretKey: port
+
+          writeConnectionSecretToRef:
+            namespace: tbd
+
+      connectionDetails:
+        - name: password
+          type: FromConnectionSecretKey
+          fromConnectionSecretKey: password
+
+        - name: port
+          type: FromConnectionSecretKey
+          fromConnectionSecretKey: port
+
+        - name: host
+          type: FromFieldPath
+          fromFieldPath: "metadata.annotations['host']"
+
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.size"
+          toFieldPath: "spec.forProvider.values.master.persistence.size"        
+          
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.values.fullnameOverride"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/name']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.kind"
+          toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.forProvider.namespace"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.connectionDetails[0].name"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.connectionDetails[0].namespace"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.connectionDetails[1].name"
+          transforms:
+            - type: string
+              string:
+                type: Format
+                fmt: "%s-master"
+        
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.connectionDetails[1].namespace"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.writeConnectionSecretToRef.namespace"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.resourceRefs[0].name"
+          toFieldPath: "spec.writeConnectionSecretToRef.name"
+          transforms:
+            - type: string
+              string:
+                type: Format
+                fmt: "%s-connection"
+                
+        - type: CombineToComposite
+          combine:
+            variables:
+              - fromFieldPath: spec.forProvider.values.fullnameOverride
+              - fromFieldPath: spec.forProvider.namespace
+            strategy: string
+            string:
+              fmt: "%s-master.%s"
+          toFieldPath: status.credentials.host
+          
+        - type: FromCompositeFieldPath
+          fromFieldPath: "status.credentials.host"
+          toFieldPath: "metadata.annotations['host']"

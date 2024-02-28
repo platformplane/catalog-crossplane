@@ -1,0 +1,7 @@
+apiVersion: catalog.cluster.local/v1
+kind: PostgreSQLServer
+metadata: 
+  name: postgresqlserver-sample
+spec:
+  size: 1Gi
+  databaseName: sample
