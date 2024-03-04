@@ -52,7 +52,6 @@ jobs:
             registry-password=${{ secrets.REGISTRY_TOKEN }}
           build-args: |
             DOCKER_REGISTRY=${{ vars.REGISTRY_URL }}
-            IMAGE_NAME=platform-catalog
             IMAGE_VERSION=${{ steps.gitversion.outputs.semVer }}
             CACHEBUST=$(date +%s)
             REGISTRY_IMAGE=${{ vars.REGISTRY_URL }}/platform/platform-ci/platform-catalog
