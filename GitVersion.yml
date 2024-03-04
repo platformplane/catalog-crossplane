@@ -1,0 +1,6 @@
+mode: ContinuousDeployment
+branches:
+  main:
+    regex: ^main$
+    increment: Minor
+    tag: rc

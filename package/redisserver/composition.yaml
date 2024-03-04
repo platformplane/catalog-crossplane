@@ -7,6 +7,7 @@ metadata:
     catalog.cluster.local/displayName: "Redis Server"
     catalog.cluster.local/description: "Unmanaged RedisServer instance running within the cluster."
     catalog.cluster.local/contact: ""
+    catalog.cluster.local/url: "https://redis.io/"
     catalog.cluster.local/tags: "database,unmanaged,helm"
 spec:
   compositeTypeRef:
