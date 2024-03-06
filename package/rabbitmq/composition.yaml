@@ -1,17 +1,17 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: redisservers.catalog.cluster.local
+  name: rabbitmqservers.catalog.cluster.local
   annotations:
-    catalog.cluster.local/displayName: "Redis Server"
-    catalog.cluster.local/description: "Unmanaged RedisServer instance running within the cluster."
+    catalog.cluster.local/displayName: "RabbitMQ Server"
+    catalog.cluster.local/description: "Unmanaged RabbitMQServer instance running within the cluster."
     catalog.cluster.local/contact: ""
-    catalog.cluster.local/url: "https://redis.io/"
-    catalog.cluster.local/tags: "database,unmanaged,helm"
+    catalog.cluster.local/url: "https://www.rabbitmq.com"
+    catalog.cluster.local/tags: "mq,unmanaged,helm"
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v1
-    kind: RedisServerComposite
+    kind: RabbitMQServerComposite
 
   writeConnectionSecretsToNamespace: crossplane-system
 
@@ -25,19 +25,22 @@ spec:
             name: provider-helm
           forProvider:
             chart:
-              name: redis
+              name: rabbitmq
               repository: oci://registry-1.docker.io/bitnamicharts
-              version: 18.17.0
+              version: 12.15.0
             namespace: tbd
             values:
               commonLabels:
                 catalog.cluster.local/kind: tbd
                 catalog.cluster.local/name: tbd
+              podLabels:
+                catalog.cluster.local/kind: tbd
+                catalog.cluster.local/name: tbd
               fullnameOverride: tbd
-              architecture: standalone
-              master:
-                persistence:
-                  size: 8Gi
+              auth:
+                username: platform
+              persistence:
+                size: 8Gi
                 persistentVolumeClaimRetentionPolicy:
                   enabled: true
                   whenDeleted: Delete
@@ -49,15 +52,15 @@ spec:
           connectionDetails:
             - apiVersion: v1
               kind: Secret
-              name: tbd
-              namespace: tbd
-              fieldPath: data.redis-password
+              name: # patch taken from spec.claimRef.name
+              namespace: # patch taken from composite spec.claimRef.namespace
+              fieldPath: data.rabbitmq-password
               toConnectionSecretKey: password
 
             - apiVersion: v1
               kind: Service
-              name: tbd
-              namespace: tbd
+              name: # patch taken from spec.claimRef.name
+              namespace: # patch taken from composite spec.claimRef.namespace
               fieldPath: spec.ports[0].port
               toConnectionSecretKey: port
 
@@ -65,6 +68,10 @@ spec:
             namespace: tbd
 
       connectionDetails:
+        - name: username
+          type: FromValue
+          value: platform
+
         - name: password
           type: FromConnectionSecretKey
           fromConnectionSecretKey: password
@@ -80,7 +87,7 @@ spec:
       patches:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.size"
-          toFieldPath: "spec.forProvider.values.master.persistence.size"        
+          toFieldPath: "spec.forProvider.values.persistence.size"        
           
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
@@ -93,6 +100,14 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.kind"
           toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
+        
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.values.podLabels['catalog.cluster.local/name']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.kind"
+          toFieldPath: "spec.forProvider.values.podLabels['catalog.cluster.local/kind']"          
 
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.namespace"
@@ -109,11 +124,6 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.connectionDetails[1].name"
-          transforms:
-            - type: string
-              string:
-                type: Format
-                fmt: "%s-master"
         
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.namespace"
@@ -139,7 +149,7 @@ spec:
               - fromFieldPath: spec.forProvider.namespace
             strategy: string
             string:
-              fmt: "%s-master.%s"
+              fmt: "%s.%s"
           toFieldPath: status.credentials.host
           
         - type: FromCompositeFieldPath

@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: CompositeResourceDefinition
 metadata:
-  name: redisservercomposites.catalog.cluster.local
+  name: rabbitmqservercomposites.catalog.cluster.local
 spec:
   group: catalog.cluster.local
   connectionSecretKeys:
@@ -9,18 +9,18 @@ spec:
     - host
     - port
   names:
-    kind: RedisServerComposite
-    plural: redisservercomposites
+    kind: RabbitMQServerComposite
+    plural: rabbitmqservercomposites
   claimNames:
-    kind: RedisServer
-    plural: redisservers
+    kind: RabbitMQServer
+    plural: rabbitmqservers
   versions:
     - name: v1
       served: true
       referenceable: true
       schema:
         openAPIV3Schema:
-          description: The open-source, in-memory data store used by millions of developers as a cache, vector database, document database, streaming engine, and message broker.
+          description: RabbitMQ is a reliable and mature messaging and streaming broker.
           type: object
           properties:
             spec:
