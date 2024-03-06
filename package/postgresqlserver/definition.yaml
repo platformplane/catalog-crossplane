@@ -4,7 +4,7 @@ metadata:
   name: postgresqlservercomposites.catalog.cluster.local
 spec:
   group: catalog.cluster.local
-  connectionSecretKeys: # is not needed, so maybe more harm than good, but could be useful for catalog UI or other tools like console?
+  connectionSecretKeys:
     - username
     - password
     - host
