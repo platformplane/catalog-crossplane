@@ -4,10 +4,6 @@ metadata:
   name: rabbitmqservercomposites.catalog.cluster.local
 spec:
   group: catalog.cluster.local
-  connectionSecretKeys:
-    - password
-    - host
-    - port
   names:
     kind: RabbitMQServerComposite
     plural: rabbitmqservercomposites
