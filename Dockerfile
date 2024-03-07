@@ -1,6 +1,6 @@
 FROM docker AS build
 
-RUN apk add --no-cache ca-certificates curl git
+RUN apk add --no-cache ca-certificates curl
 
 # Crossplane CLI
 RUN curl -sL https://raw.githubusercontent.com/crossplane/crossplane/master/install.sh | sh && \
@@ -30,7 +30,6 @@ RUN --mount=type=secret,id=registry-password \
 ARG CACHEBUST
 RUN crossplane xpkg build -o catalog-items.xpkg
 
-RUN --mount=type=secret,id=registry-password cat /run/secrets/registry-password | \
-    docker login $DOCKER_REGISTRY --username $REGISTRY_USERNAME --password-stdin
+COPY home/runner/.docker/config.json /root/.docker/config.json
 
 RUN crossplane xpkg push -f catalog-items.xpkg $REGISTRY_IMAGE:$IMAGE_VERSION
