@@ -12,6 +12,7 @@ COPY ./package /package
 WORKDIR /package
 
 ARG DOCKER_REGISTRY
+ARG REGISTRY_USERNAME
 ARG REGISTRY_IMAGE
 ARG IMAGE_VERSION
 
@@ -29,7 +30,7 @@ RUN --mount=type=secret,id=registry-password \
 ARG CACHEBUST
 RUN crossplane xpkg build -o catalog-items.xpkg
 
-RUN --mount=type=secret,id=registry-password \
-    cat /run/secrets/registry-password | docker login $DOCKER_REGISTRY --username platform --password-stdin
+RUN --mount=type=secret,id=registry-password cat /run/secrets/registry-password | \
+    docker login $DOCKER_REGISTRY --username $REGISTRY_USERNAME --password-stdin
 
 RUN crossplane xpkg push -f catalog-items.xpkg $REGISTRY_IMAGE:$IMAGE_VERSION

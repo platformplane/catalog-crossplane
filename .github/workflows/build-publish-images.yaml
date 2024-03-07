@@ -49,9 +49,10 @@ jobs:
           pull: true
           push: false
           secrets: |
-            registry-password=${{ secrets.REGISTRY_TOKEN }}
+            registry-password=${{ secrets.DOCKERHUB_TOKEN }}
           build-args: |
             DOCKER_REGISTRY=${{ vars.REGISTRY_URL }}
+            REGISTRY_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
+            REGISTRY_IMAGE=${{ vars.REGISTRY_URL }}/platformplane/platform-catalog
             IMAGE_VERSION=${{ steps.gitversion.outputs.semVer }}
             CACHEBUST=$(date +%s)
-            REGISTRY_IMAGE=${{ vars.REGISTRY_URL }}/platform/platform-ci/platform-catalog
