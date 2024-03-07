@@ -45,7 +45,9 @@ jobs:
       - name: Install crossplane cli
         run: "[ -f crossplane ] || curl -sL https://raw.githubusercontent.com/crossplane/crossplane/master/install.sh | sh"
         shell: bash
-        working-directory: package
+
+      - name: Add crossplane to PATH
+        run: echo "$PWD" >> $GITHUB_PATH
 
       - name: Build xpkg
         run: crossplane xpkg build -o catalog-items.xpkg
