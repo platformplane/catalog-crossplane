@@ -42,17 +42,15 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          file: ./Dockerfile
-          pull: true
-          push: false
-          secrets: |
-            registry-password=${{ secrets.DOCKERHUB_TOKEN }}
-          build-args: |
-            DOCKER_REGISTRY=${{ vars.REGISTRY_URL }}
-            REGISTRY_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
-            REGISTRY_IMAGE=${{ vars.REGISTRY_URL }}/platformplane/platform-catalog
-            IMAGE_VERSION=${{ steps.gitversion.outputs.semVer }}
-            CACHEBUST=$(date +%s)
+      - name: Install crossplane cli
+        run: "[ -f crossplane ] || curl -sL https://raw.githubusercontent.com/crossplane/crossplane/master/install.sh | sh"
+        shell: bash
+        working-directory: package
+
+      - name: Build xpkg
+        run: crossplane xpkg build -o catalog-items.xpkg
+        working-directory: package
+
+      - name: Push xpkg
+        run: crossplane xpkg push -f catalog-items.xpkg ${{ vars.REGISTRY_URL }}/platformplane/platform-catalog:${{ steps.gitversion.outputs.semVer }}
+        working-directory: package
