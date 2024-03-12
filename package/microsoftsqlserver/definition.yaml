@@ -1,0 +1,51 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: microsoftsqlservercomposites.catalog.cluster.local
+spec:
+  group: catalog.cluster.local
+  connectionSecretKeys:
+    - username
+    - password
+    - host
+    - port
+    - database
+  names:
+    kind: MicrosoftSQLServerComposite
+    plural: microsoftsqlservercomposites
+  claimNames:
+    kind: MicrosoftSQLServer
+    plural: microsoftsqlservers
+  versions:
+    - name: v1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: MicrosoftSQLServer is the Schema for the microsoftsqlservers API
+          type: object
+          properties:
+            spec:
+              description: MicrosoftSQLServerSpec defines the desired state of MicrosoftSQLServer
+              type: object
+              properties:
+                size:
+                  type: string
+                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+            status:
+              description: MicrosoftSQLServerStatus defines the observed state of MicrosoftSQLServer
+              type: object
+              properties:
+                binding:
+                  properties:
+                    name:
+                      type: string
+                  type: object
+                credentials:
+                  type: object
+                  description: "Misuse composite status as temporary storage."
+                  properties:
+                    host:
+                      type: string
+
+                  
