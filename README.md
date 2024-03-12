@@ -34,7 +34,7 @@ crossplane xpkg push -f catalog-items.xpkg index.docker.io/platformplane/platfor
 
 ## Catalog Integration
 
-The catalog operator watches the ConfigMap `crossplane` in the namespace `platformplane` which contains a list of Crossplane packages to be installed. This allows us to combine catalog items from different source (e.g. some "simple common" items from the platformplane Docker Hub, and some Nimbus or LGT DEV specific items from their respective registries).
+The Crossplane operator runs in the Platform space and watches the ConfigMap `crossplane` in the namespace `platformplane` which contains a list of Crossplane packages to be installed. This allows us to combine catalog items from different source (e.g. some "simple common" items from the platformplane Docker Hub, and some Nimbus or LGT DEV specific items from their respective registries).
 
 ```yaml
 apiVersion: v1
@@ -92,3 +92,8 @@ In order that the catalog actually shows your items, you need to make sure the C
 ## Further improvements
 
 - add dependabot to the repo
+- try out what happens when the platformplane does not install providers but instead let crossplane install them based on the dependencies in the configurations (the provider configs etc. will probably be needed anyways, with some default name references)
+- test what happens when we install a new platform-catalog version that does not include an XRD anymore that was previously installed (will the resources be deleted?)
+- use secret generator (e.g. in mssql) to generate the password secret
+  - convert the patching to a crossplane function step in a pipeline (for the idea, see [here](https://github.com/23technologies/xp-fn-rndstr))
+  - add another step to create the secret (but instead of what is done in the above example, use [this](https://github.com/crossplane-contrib/function-go-templating/tree/main) with [this improvement](https://github.com/crossplane/crossplane/issues/1895#issuecomment-1969733598))
