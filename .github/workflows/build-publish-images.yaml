@@ -30,6 +30,7 @@ jobs:
         uses: gittools/actions/gitversion/execute@v1.1.1
         with:
           useConfigFile: true
+          disableShallowCloneCheck: true
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
