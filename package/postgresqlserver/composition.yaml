@@ -67,7 +67,7 @@ spec:
             # name: tbd # patch taken from composite spec.resourceRefs[0].name + "-connection" # not entirely sure what is going on here, it writes two secrets (two ending in -connection), if uncommented only one with -connection but one that is called tbd
             namespace: tbd # patch taken from composite spec.claimRef.namespace
 
-      # the "combined connection details" (combination of all the resources connection details)
+      # connection secrets mentioned here will be added to the "combined connection details" (combination of all the resources connection details)
       # Attention: add the items listed here as allowed ones in the definition
       connectionDetails:
         - name: username

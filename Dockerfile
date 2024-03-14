@@ -27,11 +27,9 @@ RUN --mount=type=secret,id=registry-password \
 
 # Build and push the xpkg
 ARG CACHEBUST
-RUN crossplane xpkg build -o catalog-items.xpkg
+RUN crossplane xpkg build --package-file catalog-items.xpkg
 
 RUN --mount=type=secret,id=registry-password \
-    cat /run/secrets/registry-password | docker login $DOCKER_REGISTRY --username common --password-stdin
+    cat /run/secrets/registry-password | docker login $DOCKER_REGISTRY --username platformplanebot --password-stdin
 
-RUN crossplane xpkg push -f catalog-items.xpkg $REGISTRY_IMAGE:cache
-
-RUN crossplane xpkg push -f catalog-items.xpkg $REGISTRY_IMAGE:$IMAGE_VERSION
+RUN crossplane xpkg push --package-files catalog-items.xpkg $REGISTRY_IMAGE:$IMAGE_VERSION

@@ -29,7 +29,8 @@ The CACHEBUST is not really needed but useful when amending git commits or testi
 ```bash
 cd package
 echo $REGISTRY_PASSWORD | docker login -u $REGISTRY_USERNAME --password-stdin
-crossplane xpkg push -f catalog-items.xpkg index.docker.io/platformplane/platform-catalog:0.0.1
+crossplane xpkg build --package-file catalog-items.xpkg
+crossplane xpkg push --package-files catalog-items.xpkg index.docker.io/platformplane/platform-catalog:0.0.1
 ```
 
 ## Catalog Integration

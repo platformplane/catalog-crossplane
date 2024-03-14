@@ -2,6 +2,5 @@ apiVersion: catalog.cluster.local/v1
 kind: MicrosoftSQLServer
 metadata:
   name: example-mssqlserver
-  namespace: default
 spec:
   size: 3Gi
