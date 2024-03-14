@@ -70,8 +70,8 @@ spec:
 
       connectionDetails:
         - name: username
-          type: FromValue
-          value: platform
+          type: FromFieldPath
+          fromFieldPath: "spec.forProvider.values.auth.username"
 
         - name: password
           type: FromConnectionSecretKey
