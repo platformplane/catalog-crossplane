@@ -32,12 +32,11 @@ spec:
               apiVersion: v1
               kind: Secret
               metadata:
-                name: tbd-appname
+                name: tbd-name
                 namespace: tbd-namespace
                 labels:
-                  app: tbd-appname
                   catalog.cluster.local/kind: tbd-kind
-                  catalog.cluster.local/name: tbd-appname
+                  catalog.cluster.local/name: tbd-name
               stringData:
                 sa-password: "Ex4mple!" # check whether i can crate this with crossplane
 
@@ -69,10 +68,6 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.namespace"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
-
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.manifest.metadata.labels['app']"
 
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
@@ -124,24 +119,21 @@ spec:
               kind: StatefulSet
               metadata:
                 labels:
-                  app: tbd-appname
                   catalog.cluster.local/kind: tbd-kind
-                  catalog.cluster.local/name: tbd-appname
-                name: tbd-appname
+                  catalog.cluster.local/name: tbd-name
+                name: tbd-name
                 namespace: tbd-namespace
               spec:
                 selector:
                   matchLabels:
-                    app: tbd-appname
                     catalog.cluster.local/kind: tbd-kind
-                    catalog.cluster.local/name: tbd-appname
-                serviceName: tbd-appname
+                    catalog.cluster.local/name: tbd-name
+                serviceName: tbd-name
                 template:
                   metadata:
                     labels:
-                      app: tbd-appname
                       catalog.cluster.local/kind: tbd-kind
-                      catalog.cluster.local/name: tbd-appname
+                      catalog.cluster.local/name: tbd-name
                   spec:
                     initContainers:
                     - command:
@@ -168,7 +160,7 @@ spec:
                         valueFrom:
                           secretKeyRef:
                             key: sa-password
-                            name: tbd-appname
+                            name: tbd-name
                       ports:
                       - containerPort: 1433
                         protocol: TCP
@@ -179,9 +171,8 @@ spec:
                 volumeClaimTemplates:
                 - metadata:
                     labels:
-                      app: tbd-appname
                       catalog.cluster.local/kind: tbd-kind
-                      catalog.cluster.local/name: tbd-appname
+                      catalog.cluster.local/name: tbd-name
                     name: data
                   spec:
                     accessModes:
@@ -199,10 +190,6 @@ spec:
       patches:
 
         # get the values for the chart from the claim
-        - type: FromCompositeFieldPath # from composite (MicrosoftSQLServerComposite) to managed resource (Object)
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.manifest.metadata.labels['app']"
-
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.manifest.metadata.labels['catalog.cluster.local/name']"
@@ -221,10 +208,6 @@ spec:
 
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.manifest.spec.selector.matchLabels['app']"
-
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.manifest.spec.selector.matchLabels['catalog.cluster.local/name']"
 
         - type: FromCompositeFieldPath
@@ -237,10 +220,6 @@ spec:
 
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.manifest.spec.template.metadata.labels['app']"
-
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.manifest.spec.template.metadata.labels['catalog.cluster.local/name']"
 
         - type: FromCompositeFieldPath
@@ -250,10 +229,6 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.manifest.spec.template.spec.containers[0].env[2].valueFrom.secretKeyRef.name"
-
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.manifest.spec.volumeClaimTemplates[0].metadata.labels['app']"
 
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.kind"
