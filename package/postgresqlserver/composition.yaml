@@ -39,7 +39,7 @@ spec:
                 catalog.cluster.local/name: tbd # patch taken from composite spec.claimRef.name
               fullnameOverride: tbd # patch taken from composite metadata.name (needed because the chart creates a secret with an unpredictable name otherwise)
               auth:
-                database: postgres # patch taken from composite spec.claimRef.namespace
+                database: postgres # patch taken from composite spec.databaseName
               primary:
                 persistence:
                   size: 8Gi # patch taken from composite spec.size
@@ -141,7 +141,7 @@ spec:
           toFieldPath: "spec.writeConnectionSecretToRef.namespace"
 
         - type: FromCompositeFieldPath
-          fromFieldPath: "spec.resourceRefs[0].name" # "spec.claimRef.name"
+          fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.writeConnectionSecretToRef.name"
           transforms: # not sure why two secrets are created :(
             - type: string
