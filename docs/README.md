@@ -7,19 +7,20 @@ helm install crossplane crossplane-stable/crossplane --namespace crossplane-syst
 
 kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=crossplane --namespace crossplane-system --timeout=120s
 
+kubectl create secret docker-registry gitlab-nimbus-registry --docker-server=registry.nimbusplane.io --docker-username=platform --docker-password=glpat-x -n crossplane-system
+kubectl patch serviceaccount crossplane -p '{"imagePullSecrets": [{"name": "gitlab-nimbus-registry"}]}' -n crossplane-system
+
+kubectl apply -f providers/kubernetes.yaml
 kubectl apply -f providers/helm-account.yaml
 # wait a bit
 kubectl apply -f providers/helm.yaml
-kubectl wait --for condition=established crd/providerconfigs.helm.crossplane.io --timeout=60s
 kubectl apply -f providers/helm-config.yaml
 
 kubectl apply -f postgresqlserver/definition.yaml
 kubectl apply -f postgresqlserver/composition.yaml
 
 kubectl create ns test
-kubectl create ns platform
 
-kubectl apply -f examples/postgresqlserver.yaml -n test
 
 kubectl get postgresqlservers catalog.cluster.local -n test   
 
@@ -31,12 +32,12 @@ kubectl get secret 50f606c7-743d-4392-a807-8a6a417b7bcf -n crossplane-system
 
 
 # cycle
-kubectl delete -f examples/postgresqlserver.yaml -n test
-kubectl delete -f postgresqlserver/definition.yaml
-kubectl delete -f postgresqlserver/composition.yaml
-kubectl apply -f postgresqlserver/definition.yaml
-kubectl apply -f postgresqlserver/composition.yaml
-kubectl apply -f examples/postgresqlserver.yaml -n test
+kubectl delete -f examples/dclconstellation.yaml -n test
+kubectl delete -f package/dclconstellation/definition.yaml
+kubectl delete -f package/dclconstellation/composition.yaml
+kubectl apply -f package/dclconstellation/definition.yaml
+kubectl apply -f package/dclconstellation/composition.yaml
+kubectl apply -f examples/dclconstellation.yaml -n test
 
 kubectl delete -f examples -n test
 kubectl apply -f examples -n test

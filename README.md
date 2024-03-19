@@ -44,15 +44,27 @@ data:
   packages.yaml: |
     - name: platform-catalog
       package: index.docker.io/platformplane/platform-catalog:0.1.0-rc.9
+    - name: catalog-items-nimbus
+      package: registry.nimbusplane.io/common/lgt/platform/catalog-items:0.1.0-rc.2
 ```
 
-If the packages are to be fetched from private registries, Crossplane needs package pull secrets (similar to ImagePullSecrets) to be able to pull the packages. This is done by creating a secret in the `crossplane-system` namespace, e.g. `gitlab-registry`:
+If the packages are to be fetched from private registries, Crossplane needs package pull secrets (similar to ImagePullSecrets) to be able to pull the packages. This is done by the platform (gitlab-operator). It creates the secret `default-registry` in the `crossplane-system` namespace similar to:
+
+```bash
+kubectl create secret docker-registry default-registry --docker-server=registry.nimbusplane.io --docker-username=spacename --docker-password=glpat-... -n crossplane-system
+```
+
+Furthermore, it adds the username and password again to the data section of this secret so that helm.crossplane.io/v1beta1 resources can reference it in their spec.forProvider.chart.pullSecretRef section.
+
+The secret will look like this in the cluster:
 
 ```yaml
 apiVersion: v1
 kind: Secret
 type: kubernetes.io/dockerconfigjson
 data:
+  username: Y29tbW9u
+  password: Z2xw...
   .dockerconfigjson: >-
     eyJhdX.....
 ```
@@ -63,7 +75,7 @@ The encoded part is basically a docker config.json file:
 {
   "auths": {
     "registry.nimbusplane.io": {
-      "username": "platform",
+      "username": "spacename",
       "password": "glpat-...",
       "auth": "..."
     }
@@ -89,6 +101,19 @@ In order that the catalog actually shows your items, you need to make sure the C
 - merge the merge request after it got approved
 - if wanted tag the merge commit with a version number (e.g. `0.0.1`)
 - coordinate the release with the Nimbus team who has to update the `crossplane` ConfigMap in the `platformplane` namespace on Nimbus so that other developers can use it
+
+## How to debug e.g. a new helm-based catalog item
+- does the claim exist and what is its state? Describe it to see the status.
+  `k get dclconstellations`
+- what is the state of the corresponding composite?
+  `k get dclconstellationcomposite`
+  `k get dclconstellationcomposite dclconstellation-sample-hx5hk -o jsonpath='{.status.conditions}'`
+- what is the state of the helm release?
+  `k get releases`
+  `k get release dclconstellation-sample-hx5hk-n5r6r -o jsonpath='{.status.conditions}'`
+- what is the status of the pkg.crossplane.io configurations?
+  `k get configurations`
+  `k get configuration catalog-items-lgtdev -o jsonpath='{.status.conditions}'`
 
 ## Further improvements
 
