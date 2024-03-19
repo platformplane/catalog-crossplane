@@ -1,0 +1,147 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: mongodbservers.catalog.cluster.local
+  annotations:
+    catalog.cluster.local/title: "MongoDB Server"
+    catalog.cluster.local/description: "Unmanaged MongoDBServer instance running within the cluster."
+    catalog.cluster.local/icon: "PCFET0NUWVBFIHN2ZyBQVUJMSUMgIi0vL1czQy8vRFREIFNWRyAxLjEvL0VOIiAiaHR0cDovL3d3dy53My5vcmcvR3JhcGhpY3MvU1ZHLzEuMS9EVEQvc3ZnMTEuZHRkIj4KCjwhLS0gVXBsb2FkZWQgdG86IFNWRyBSZXBvLCB3d3cuc3ZncmVwby5jb20sIFRyYW5zZm9ybWVkIGJ5OiBTVkcgUmVwbyBNaXhlciBUb29scyAtLT4KPHN2ZyB3aWR0aD0iNjRweCIgaGVpZ2h0PSI2NHB4IiB2aWV3Qm94PSIwIDAgMTAyNCAxMDI0IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9IiMwMDAwMDAiPgoKPGcgaWQ9IlNWR1JlcG9fYmdDYXJyaWVyIiBzdHJva2Utd2lkdGg9IjAiLz4KCjxnIGlkPSJTVkdSZXBvX3RyYWNlckNhcnJpZXIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgoKPGcgaWQ9IlNWR1JlcG9faWNvbkNhcnJpZXIiPiA8Y2lyY2xlIGN4PSI1MTIiIGN5PSI1MTIiIHI9IjUxMiIgc3R5bGU9ImZpbGw6IzEzYWE1MiIvPiA8cGF0aCBkPSJNNjQ4Ljg2IDQ0OS40NGMtMzIuMzQtMTQyLjczLTEwOC43Ny0xODkuNjYtMTE3LTIwNy41OS05LTEyLjY1LTE4LjEyLTM1LjE1LTE4LjEyLTM1LjE1LS4xNS0uMzgtLjM5LTEuMDUtLjY3LTEuNy0uOTMgMTIuNjUtMS40MSAxNy41My0xMy4zNyAzMC4yOS0xOC41MiAxNC40OC0xMTMuNTQgOTQuMjEtMTIxLjI3IDI1Ni4zNy03LjIxIDE1MS4yNCAxMDkuMjUgMjQxLjM2IDEyNSAyNTIuODVsMS43OSAxLjI3di0uMTFjLjEuNzYgNSAzNiA4LjQ0IDczLjM0SDUyNmE3MjYuNjggNzI2LjY4IDAgMCAxIDEzLTc4LjUzbDEtLjY1YTIwNC40OCAyMDQuNDggMCAwIDAgMjAuMTEtMTYuNDVsLjcyLS42NWMzMy40OC0zMC45MyA5My42Ny0xMDIuNDcgOTMuMDgtMjE2LjUzYTM0Ny4wNyAzNDcuMDcgMCAwIDAtNS4wNS01Ni43NnpNNTEyLjM1IDY1OS4xMnMwLTIxMi4xMiA3LTIxMi4wOGM1LjQ2IDAgMTIuNTMgMjczLjYxIDEyLjUzIDI3My42MS05LjcyLTEuMTctMTkuNTMtNDUuMDMtMTkuNTMtNjEuNTN6IiBzdHlsZT0iZmlsbDojZmZmIi8+IDwvZz4KCjwvc3ZnPg=="
+    catalog.cluster.local/maintainer: ""
+    catalog.cluster.local/url: "https://www.mongodb.com"
+    catalog.cluster.local/tags: "database,unmanaged,helm"
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v1
+    kind: MongoDBServerComposite
+
+  writeConnectionSecretsToNamespace: crossplane-system
+
+  resources:
+    - name: helm-release
+      base:
+        apiVersion: helm.crossplane.io/v1beta1
+        kind: Release
+        spec:
+          providerConfigRef:
+            name: provider-helm
+          forProvider:
+            chart:
+              name: mongodb
+              repository: oci://registry-1.docker.io/bitnamicharts
+              version: 15.0.2
+            namespace: tbd
+            values:
+              commonLabels:
+                catalog.cluster.local/kind: tbd
+                catalog.cluster.local/name: tbd
+              fullnameOverride: tbd
+              architecture: standalone
+
+              auth:
+                rootUser: root
+
+              persistence:
+                size: 8Gi
+
+              persistentVolumeClaimRetentionPolicy:
+                enabled: true
+                whenDeleted: Delete
+
+          connectionDetails:
+            - apiVersion: v1
+              kind: Secret
+              name:
+              namespace:
+              fieldPath: data.mongodb-root-password
+              toConnectionSecretKey: password
+
+            - apiVersion: v1
+              kind: Service
+              name:
+              namespace:
+              fieldPath: spec.ports[0].port
+              toConnectionSecretKey: port
+
+          writeConnectionSecretToRef:
+            namespace: tbd
+
+      connectionDetails:
+        - name: username
+          type: FromValue
+          value: root
+
+        - name: password
+          type: FromConnectionSecretKey
+          fromConnectionSecretKey: password
+
+        - name: port
+          type: FromConnectionSecretKey
+          fromConnectionSecretKey: port
+
+        - name: host
+          type: FromFieldPath
+          fromFieldPath: "metadata.annotations['host']"
+
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.size"
+          toFieldPath: "spec.forProvider.values.persistence.size"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.values.fullnameOverride"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/name']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.kind"
+          toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.forProvider.namespace"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.connectionDetails[0].name"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.connectionDetails[0].namespace"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.connectionDetails[1].name"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.connectionDetails[1].namespace"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.writeConnectionSecretToRef.namespace"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.resourceRefs[0].name"
+          toFieldPath: "spec.writeConnectionSecretToRef.name"
+          transforms:
+            - type: string
+              string:
+                type: Format
+                fmt: "%s-connection"
+
+        - type: CombineToComposite
+          combine:
+            variables:
+              - fromFieldPath: spec.forProvider.values.fullnameOverride
+              - fromFieldPath: spec.forProvider.namespace
+            strategy: string
+            string:
+              fmt: "%s.%s"
+          toFieldPath: status.credentials.host
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "status.credentials.host"
+          toFieldPath: "metadata.annotations['host']"
