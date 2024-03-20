@@ -34,6 +34,7 @@ spec:
               commonLabels:
                 catalog.cluster.local/kind: tbd
                 catalog.cluster.local/name: tbd
+
               fullnameOverride: tbd
               architecture: standalone
 
@@ -46,6 +47,12 @@ spec:
               persistentVolumeClaimRetentionPolicy:
                 enabled: true
                 whenDeleted: Delete
+
+              metrics:
+                enabled: true
+
+                serviceMonitor:
+                  enabled: true
 
           connectionDetails:
             - apiVersion: v1

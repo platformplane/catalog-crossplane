@@ -31,7 +31,7 @@ spec:
               properties:
                 credentials:
                   type: object
-                  description: "Misuse composite status as temporary storage."
+                  description: "Missuse composite status as temporary storage."
                   properties:
                     host:
                       type: string
