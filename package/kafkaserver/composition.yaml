@@ -49,10 +49,11 @@ spec:
                 persistence:
                   size: 8Gi # patch taken from composite spec.size
               metrics:
+                enabled: true
                 kafka:
                   enabled: true
-                # serviceMonitor:
-                #   enabled: true
+                serviceMonitor:
+                  enabled: true
 
           # the connection details of this resource
           connectionDetails: # list the "secrets" created by this managed resources (further down, they are used to create the connection details for the whole composite)

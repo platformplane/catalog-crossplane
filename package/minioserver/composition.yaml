@@ -35,10 +35,16 @@ spec:
                 catalog.cluster.local/kind: tbd
                 catalog.cluster.local/name: tbd
               fullnameOverride: tbd
+              extraEnvVars:
+                - name: MINIO_BROWSER_LOGIN_ANIMATION
+                  value: "off"
               rootUser: admin
-              primary:
-                persistence:
-                  size: 8Gi
+              persistence:
+                size: 8Gi
+              metrics:
+                enabled: true
+                serviceMonitor:
+                  enabled: true
 
           connectionDetails:
             - apiVersion: v1
@@ -82,7 +88,7 @@ spec:
       patches:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.size"
-          toFieldPath: "spec.forProvider.values.primary.persistence.size"
+          toFieldPath: "spec.forProvider.values.persistence.size"
           
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"

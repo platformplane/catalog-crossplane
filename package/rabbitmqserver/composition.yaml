@@ -42,9 +42,9 @@ spec:
                 username: platform
               persistence:
                 size: 8Gi
-                persistentVolumeClaimRetentionPolicy:
-                  enabled: true
-                  whenDeleted: Delete
+              persistentVolumeClaimRetentionPolicy:
+                enabled: true
+                whenDeleted: Delete
               metrics:
                 enabled: true
                 serviceMonitor:
