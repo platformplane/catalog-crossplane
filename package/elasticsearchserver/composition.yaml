@@ -87,7 +87,7 @@ spec:
       patches:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.size"
-          toFieldPath: "spec.forProvider.values.primary.persistence.size"
+          toFieldPath: "spec.forProvider.values.master.persistence.size"
           
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
