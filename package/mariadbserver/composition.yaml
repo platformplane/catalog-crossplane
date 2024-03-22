@@ -72,7 +72,7 @@ spec:
       connectionDetails:
         - name: username
           type: FromValue
-          value: mysql
+          value: root
 
         - name: password
           type: FromConnectionSecretKey

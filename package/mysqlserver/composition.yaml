@@ -38,8 +38,6 @@ spec:
                 catalog.cluster.local/kind: tbd # patch taken from composite spec.claimRef.kind
                 catalog.cluster.local/name: tbd # patch taken from composite spec.claimRef.name
               fullnameOverride: tbd # patch taken from composite metadata.name (needed because the chart creates a secret with an unpredictable name otherwise)
-              auth:
-                database: db # patch taken from composite spec.claimRef.databaseName?
               primary:
                 persistence:
                   size: 8Gi # patch taken from composite spec.size
@@ -83,8 +81,8 @@ spec:
           fromConnectionSecretKey: port
 
         - name: database
-          type: FromFieldPath
-          fromFieldPath: "spec.forProvider.values.auth.database"
+          type: FromValue
+          value: db
 
         - name: host
           type: FromFieldPath
