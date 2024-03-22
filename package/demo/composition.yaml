@@ -1,0 +1,168 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: demos.catalog.cluster.local
+  annotations:
+    catalog.cluster.local/title: "Demo"
+    catalog.cluster.local/description: "Simple demo app for demonstration purposes."
+    catalog.cluster.local/icon: "PHN2ZyB2aWV3Qm94PSI0LjI1IC0xLjQ1MDk5NTQ0NTM0OTM0MiA1MC44NDU3MDQ2NzgwMjQzMDUgNzMuMDQwNjgwMjk5NTE3MyIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB3aWR0aD0iMTQwNSIgaGVpZ2h0PSIxNTAwIj48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSg4KSI+PHBhdGggZD0iTS42MiAzNC42M2MuMDkgMS44OSAyIDEgMi44My40MnMxLS4wOSAxLjEyLTEuMmExOC4xMyAxOC4xMyAwIDAgMCAuMDktMi4xOCA1LjM1IDUuMzUgMCAwIDAtMy41Ny45MWMtLjUyLjM4LTEuNDkgMS41OC0uNDggMiIgZmlsbD0iI2Y2ZDJhMiIvPjxwYXRoIGQ9Ik0xLjYgMzZhMS4yIDEuMiAwIDAgMS0uNTQtLjEyIDEuMjQgMS4yNCAwIDAgMS0uNjItMS4xLjgyLjgyIDAgMCAxLS40NS0uNjUgMi4zIDIuMyAwIDAgMSAxLTEuNjYgNS41IDUuNSAwIDAgMSAzLjY5LS45NGguMTV2LjE1YTEzIDEzIDAgMCAxLS4wNSAxLjcxdi41Yy0uMDUuNzgtLjIuOS0uNiAxYTIuMjMgMi4yMyAwIDAgMC0uNi4yOUE0LjA5IDQuMDkgMCAwIDEgMS42IDM2em0yLjU0LTQuMTNhNSA1IDAgMCAwLTIuOTQuOSAyIDIgMCAwIDAtLjg0IDEuMzQuNS41IDAgMCAwIC4zNC40MWguMXYuMTFhMSAxIDAgMCAwIC40Mi45IDIuNjIgMi42MiAwIDAgMCAyLjEzLS42MiAyLjU4IDIuNTggMCAwIDEgLjY4LS4zNGMuMjYtLjA5LjMyLS4xMS4zNi0uNzN2LS41YTE0IDE0IDAgMCAwIC4wNi0xLjVoLS4zMXoiIGZpbGw9IiMwMTAxMDEiLz48cGF0aCBkPSJNLjYyIDM0LjYzYTEuNDkgMS40OSAwIDAgMCAuNzUtLjQyIiBmaWxsPSIjYzdiMTk5Ii8+PHBhdGggZD0iTS42MiAzNC44MWEuMTgzLjE4MyAwIDAgMS0uMTEtLjM1aC4xMmExLjA4IDEuMDggMCAwIDAgLjU1LS4zMi4xODIuMTgyIDAgMSAxIC4yOS4yMiAxLjQgMS40IDAgMCAxLS43Mi40NEguNjJ6IiBmaWxsPSIjMDEwMTAxIi8+PHBhdGggZD0iTTQuOTggMTIuMTRjLTcuMjMtMi0xLjg1LTExLjIzIDQtNy40NXoiIGZpbGw9IiM3NGNkZGQiLz48cGF0aCBkPSJNNS4wNyAxMi4zNWgtLjE0Yy0yLjA2LS41OC0zLjMzLTEuOC0zLjU3LTMuNDNBNC43OSA0Ljc5IDAgMCAxIDMuNTkgNC40YTQuODQgNC44NCAwIDAgMSA1LjQ0LjE4bC4xNC4wOXptMS04LjM4YTQuMjMgNC4yMyAwIDAgMC0yLjMxLjY5IDQuNDIgNC40MiAwIDAgMC0yLjA3IDQuMTdjLjIyIDEuNDUgMS4zNCAyLjU1IDMuMTcgMy4xbDMuOC03LjE3QTUgNSAwIDAgMCA2LjEgNHoiIGZpbGw9IiMwMTAxMDEiLz48cGF0aCBkPSJNMzcuMSA0YzUuNzItNCAxMC44OSA1IDQuMjQgNy4zM3oiIGZpbGw9IiM3NGNkZGQiLz48cGF0aCBkPSJNNDEuMjYgMTEuNTVsLTQuNC03LjYuMTMtLjA5YTQuNzIgNC43MiAwIDAgMSA1LjI1LS40NCA0Ljg1IDQuODUgMCAwIDEgMi4zOSA0LjQ4Yy0uMSAxLS42NCAyLjcxLTMuMjMgMy42em0tMy45Mi03LjVsNC4wOCA3LjA2YTMuOTEgMy45MSAwIDAgMCAyLjg1LTMuMjQgNC40OCA0LjQ4IDAgMCAwLTIuMjEtNC4xNSA0LjI1IDQuMjUgMCAwIDAtNC43Mi4zM3oiIGZpbGw9IiMwMTAxMDEiLz48cGF0aCBkPSJNMzguMzMgNTcuODdjMS40NS45IDQuMTEgMy42MiAxLjkzIDQuOTQtMi4wOSAxLjkyLTMuMjctMi4xMS01LjExLTIuNjZhNS4wOSA1LjA5IDAgMCAxIDMuMTgtMi4yOHoiIGZpbGw9IiNmNmQyYTIiLz48cGF0aCBkPSJNMzkuMTUgNjMuNWgtLjA4Yy0uODMtLjA1LTEuNTEtLjg2LTIuMTctMS42M2E0LjY2IDQuNjYgMCAwIDAtMS44LTEuNTVsLS4yNC0uMDcuMTUtLjI1YTUuMzEgNS4zMSAwIDAgMSAzLjI5LTIuMzVoLjEzYy45My41OCAyLjg1IDIuMjYgMi44NCAzLjc4YTEuNjcgMS42NyAwIDAgMS0uOSAxLjQ1IDEuODEgMS44MSAwIDAgMS0xLjIyLjYyem0tMy43Mi0zLjQ0YTUuNzMgNS43MyAwIDAgMSAxLjczIDEuNTcgMy40OSAzLjQ5IDAgMCAwIDEuOTIgMS41MSAxLjQzIDEuNDMgMCAwIDAgMS0uNDcgMS4zMiAxLjMyIDAgMCAwIC43NC0xLjE2YzAtMS4yMi0xLjU0LTIuNzUtMi42MS0zLjQ0YTQuNyA0LjcgMCAwIDAtMi43NyAxLjk5eiIgZmlsbD0iIzAxMDEwMSIvPjxwYXRoIGQ9Ik00MC4yNiA2M2EuMTguMTggMCAwIDEtLjE2LS4xIDYuNjcgNi42NyAwIDAgMS0uMjgtLjY4IDMgMyAwIDAgMC0uNjYtMS4yMi4xOC4xOCAwIDEgMSAuMjUtLjI2IDMuMzEgMy4zMSAwIDAgMSAuNzQgMS4zMiA2LjQxIDYuNDEgMCAwIDAgLjI3LjY0LjE4LjE4IDAgMCAxLS4wOC4yNHoiIGZpbGw9IiMwMTAxMDEiLz48cGF0aCBkPSJNMTIuMzYgNjAuOTRjLTEuNzEuMjYtMi42NyAxLjgtNC4wOSAyLjU4YTEuMjQgMS4yNCAwIDAgMS0yLS40Ny42NS42NSAwIDAgMS0uNTItLjI0Yy0xLjI0LTIgMS4yOS0zLjM5IDIuNjItNC4zNyAxLjg3LS4zNiAzLjAyIDEuMjMgMy45OSAyLjV6IiBmaWxsPSIjZjZkMmEyIi8+PHBhdGggZD0iTTcuMzcgNjRhMS4yMiAxLjIyIDAgMCAxLS4zMiAwIDEuNDggMS40OCAwIDAgMS0uODctLjc1LjYuNiAwIDAgMS0uNDktLjI2Yy0xLjItMS44OS44NC0zLjMyIDIuMTktNC4yN2wuNDctLjM0YzEuODktLjM4IDMuMDkgMS4xOCA0LjA1IDIuNDRsLjI3LjM2aC0uM2E1LjE3IDUuMTcgMCAwIDAtMi41MyAxLjQ1IDkuMTkgOS4xOSAwIDAgMS0xLjUgMS4xMiAyIDIgMCAwIDEtLjk3LjI1em0tMS4yLTEuMTZhLjQ5LjQ5IDAgMCAxIC4yMSAwaC4wNWwuMDguMTZhMS4xNiAxLjE2IDAgMCAwIC42Ny42MSAxLjM3IDEuMzcgMCAwIDAgMS0uMjQgOC45MyA4LjkzIDAgMCAwIDEuNDUtMS4wOCA2IDYgMCAwIDEgMi40MS0xLjQ3Yy0uOTItMS4yLTItMi41LTMuNTctMi4ybC0uNDUuMzJjLTEuMzggMS0zLjA5IDIuMTgtMi4xIDMuNzdhLjI5LjI5IDAgMCAwIC4yMS4xNHoiIGZpbGw9IiMwMTAxMDEiLz48cGF0aCBkPSJNNi4zIDYzLjI0YS4xOC4xOCAwIDAgMS0uMTgtLjI0IDIuNzQgMi43NCAwIDAgMSAuNTgtMS4zMSA0LjIyIDQuMjIgMCAwIDAgLjM4LS42My4xODEuMTgxIDAgMCAxIC4zMy4xNSA0LjU2IDQuNTYgMCAwIDEtLjQxLjY5IDIuNDMgMi40MyAwIDAgMC0uNDkgMS4xNy4xOC4xOCAwIDAgMS0uMjEuMTd6TTUuMjggOS42Yy0xLS41LTEuNjUtMS4xOS0xLjA3LTIuMjlzMS41NC0uOTEgMi41LS40MXpNMzkuODMgOC42NGMxLS41IDEuNjUtMS4xOSAxLjA3LTIuMjlzLTEuNTQtLjkxLTIuNS0uNDF6IiBmaWxsPSIjMDEwMTAxIi8+PHBhdGggZD0iTTQ2LjQgMzQuMzljLS4wOSAxLjg5LTIgMS0yLjgzLjQycy0xLS4wOS0xLjEyLTEuMmExOC4xMyAxOC4xMyAwIDAgMS0uMDktMi4xOCA1LjM1IDUuMzUgMCAwIDEgMy41Ny45MWMuNTIuMzggMS40OSAxLjU4LjQ4IDIiIGZpbGw9IiNmNmQyYTIiLz48cGF0aCBkPSJNNDUuNDIgMzUuNzJhNC4wOSA0LjA5IDAgMCAxLTEuOTEtLjcyIDIuMjMgMi4yMyAwIDAgMC0uNi0uMjljLS40LS4xNC0uNTUtLjI2LS42LTF2LS41YTEzIDEzIDAgMCAxLS4wNS0xLjcxdi0uMjRoLjE1YTUuNSA1LjUgMCAwIDEgMy42OS45NCAyLjMgMi4zIDAgMCAxIDEgMS42Ni44Mi44MiAwIDAgMS0uNDUuNjUgMS4yNCAxLjI0IDAgMCAxLS42MiAxLjEgMS4yMSAxLjIxIDAgMCAxLS42MS4xMXptLTIuOTEtNC4xMmExNC4wNSAxNC4wNSAwIDAgMCAuMDYgMS41di41YzAgLjYxLjA5LjYzLjM2LjczYTIuNTggMi41OCAwIDAgMSAuNjguMzQgMi42MSAyLjYxIDAgMCAwIDIuMTMuNjIgMSAxIDAgMCAwIC40Mi0uOXYtLjEyaC4xYS41LjUgMCAwIDAgLjM0LS40MSAyIDIgMCAwIDAtLjg0LTEuMzQgNS4xIDUuMSAwIDAgMC0zLjI1LS45MnoiIGZpbGw9IiMwMTAxMDEiLz48cGF0aCBkPSJNNDYuNCAzNC4zOWExLjQ5IDEuNDkgMCAwIDEtLjc1LS4zOSIgZmlsbD0iI2M3YjE5OSIvPjxwYXRoIGQ9Ik00Ni40IDM0LjU3aC0uMTlhMS40IDEuNCAwIDAgMS0uNy0uNS4xODIuMTgyIDAgMSAxIC4yOS0uMjIgMS4wOCAxLjA4IDAgMCAwIC41NS4zMmguMTJhLjIwMy4yMDMgMCAwIDEtLjA3LjR6IiBmaWxsPSIjMDEwMTAxIi8+PHBhdGggZD0iTTIyLjc5LjE4YzcuMjQgMCAxNCAxIDE3LjU2IDggMy4xNyA3Ljc5IDIgMTYuMiAyLjUzIDI0LjQzLjQyIDcuMDcgMS4zNCAxNS4yNC0xLjk0IDIxLjgtMy40MyA2Ljg4LTEyLjA5IDguNTktMTkuMTkgOC4zNi01LjU4LS4yLTEyLjMyLTItMTUuNDctNy4xMi0zLjctNi0xLjk1LTE0Ljg4LTEuNjgtMjEuNTMuMzItNy44OC0yLjE0LTE1Ljc5LjQ1LTIzLjUxQzcuNzQgMi42MSAxNC45OC44IDIyLjc4LjE4IiBmaWxsPSIjNzRjZGRkIi8+PHBhdGggZD0iTTIyLjk4IDYzaC0xLjI0YTI2LjM5IDI2LjM5IDAgMCAxLTguNzEtMS43NCAxMy45MyAxMy45MyAwIDAgMS02LjkxLTUuNDdjLTMtNC44NC0yLjQ2LTExLjUyLTItMTcuNDIuMTItMS40OC4yMy0yLjg5LjI4LTQuMjFhNjcuODMgNjcuODMgMCAwIDAtLjM2LTguMzhjLS40Mi01LS44Ni0xMC4xNy44Mi0xNS4xOGExMy4yOCAxMy4yOCAwIDAgMSA3LTguMDljMi43LTEuMzIgNi0yLjA4IDEwLjg1LTIuNDZDMjkuODUgMCAzNi44OSAxIDQwLjUxIDguMDljMi4zMiA1LjcgMi4zNSAxMS44MiAyLjM5IDE3Ljc0IDAgMi4yMiAwIDQuNTEuMTYgNi43NSAwIC42OC4wOCAxLjM3LjEzIDIuMDYuNDIgNi40OS45IDEzLjg2LTIuMDkgMTkuODJDMzcuMzYgNjEuOTIgMjcuOTYgNjMgMjIuOTggNjN6TTIyLjc5LjM2QzE1LjI2IDEgNy45MiAyLjYyIDUuMjIgMTAuNjdjLTEuNjYgNC45NC0xLjIyIDEwLjA3LS44MSAxNWE2OC4wOSA2OC4wOSAwIDAgMSAuMzYgOC40MmMtLjA1IDEuMzMtLjE3IDIuNzQtLjI4IDQuMjMtLjQ2IDUuODQtMSAxMi40NyAxLjkzIDE3LjIgMS4yMyAyIDUuMTkgNi42NyAxNS4zMyA3IDQuMzkuMTYgMTUtLjM0IDE5LTguMjggMi45NC01Ljg4IDIuNDctMTMuMTkgMi4wNS0xOS42NCAwLS43LS4wOS0xLjM5LS4xMy0yLjA2LS4xMS0yLjE4LS4xNi00LjQ4LS4xNi02LjcgMC01Ljg4LS4wNi0xMi0yLjM2LTE3LjZhMTIuODcgMTIuODcgMCAwIDAtNy4yOS02LjUxQTI5LjkgMjkuOSAwIDAgMCAyMi43OS4zNnoiIGZpbGw9IiMwMTAxMDEiLz48cGF0aCBkPSJNMjQuMDYgOS44OWMxLjMgNy41NSAxMy42NCA1LjU2IDExLjg3LTIuMDZDMzQuMzQgMSAyMy42MyAyLjg5IDI0LjA2IDkuODkiIGZpbGw9IiNmZmYiLz48cGF0aCBkPSJNMjkuOTMgMTQuODJhNi45MSA2LjkxIDAgMCAxLTIuMjYtLjM3IDUuNTkgNS41OSAwIDAgMS0zLjc4LTQuNTMgNS43NiA1Ljc2IDAgMCAxIDEuNTYtNC40NCA2LjgxIDYuODEgMCAwIDEgNC0yIDYuNCA2LjQgMCAwIDEgNC4wNi43IDUuNDUgNS40NSAwIDAgMSAyLjU5IDMuNjEgNS4yOCA1LjI4IDAgMCAxLTEuNTQgNS4zNiA3IDcgMCAwIDEtNC42MyAxLjY3em0tNS42OS00Ljk1YTUuMjUgNS4yNSAwIDAgMCAzLjU1IDQuMjUgNi44MyA2LjgzIDAgMCAwIDYuNTUtMS4yNCA1IDUgMCAwIDAgMS40My01IDUuMzQgNS4zNCAwIDAgMC02LjI2LTQuMDYgNS43NyA1Ljc3IDAgMCAwLTUuMjcgNi4wNXoiIGZpbGw9IiMwMTAxMDEiLz48cGF0aCBkPSJNOS4zMSAxMS4xMmMxLjY4IDYuNTcgMTIuMiA0Ljg4IDExLjgxLTEuNzFDMjAuNjUgMS41MSA3LjcgMyA5LjMxIDExLjEyIiBmaWxsPSIjZmZmIi8+PHBhdGggZD0iTTE0LjkzIDE1LjQ1YTYuNDYgNi40NiAwIDAgMS0zLjA3LS43NSA1LjQ1IDUuNDUgMCAwIDEtMi43MS0zLjU1IDUuNTEgNS41MSAwIDAgMSAxLjg4LTUuNjUgNy4xIDcuMSAwIDAgMSA3LjA2LS45IDUuMzQgNS4zNCAwIDAgMSAzLjIgNC44Yy4yMSAzLjUtMi41NyA1LjU0LTUuMjMgNmE3LjMxIDcuMzEgMCAwIDEtMS4xMy4wNXptLTUuNDItNC4zN2E1LjQ2IDUuNDYgMCAwIDAgNi41MyA0YzIuNTItLjQgNS4xNS0yLjMyIDQuOTUtNS42MWE1IDUgMCAwIDAtMy00LjUyIDYuNzUgNi43NSAwIDAgMC02LjcxLjg2IDUuMTkgNS4xOSAwIDAgMC0xLjc3IDUuMjd6IiBmaWxsPSIjMDEwMTAxIi8+PHBhdGggZD0iTTI1LjUxIDE5YTE3IDE3IDAgMCAxIDAgMy4xMyAyIDIgMCAwIDEtMS4xNy43MiAxLjcyIDEuNzIgMCAwIDEtMS4zMS0xIDIyLjIyIDIyLjIyIDAgMCAxIC4wOS0zLjU0eiIgZmlsbD0iI2ZmZiIvPjxwYXRoIGQ9Ik0yNC40NSAyM2gtLjA1YTEuODkgMS44OSAwIDAgMS0xLjQ1LTEuMTMgMTEuODggMTEuODggMCAwIDEgMC0yLjQzYzAtLjM3LjA2LS43Ni4wNy0xLjE0VjE4bDIuNy44M1YxOWMwIC4zMiAwIC42Ni4wNSAxYTguNTcgOC41NyAwIDAgMSAwIDIuMTV2LjA1YTEuNSAxLjUgMCAwIDEtLjk1LjY4bC0uMzEuMTJ6bS0xLjE2LTEuMjZhMS41MyAxLjUzIDAgMCAwIDEuMTIuODlsLjI4LS4xMWExLjIgMS4yIDAgMCAwIC43My0uNTIgOC40MyA4LjQzIDAgMCAwIDAtMmMwLS4zMSAwLS42MS0uMDUtLjkxbC0yLS42MWMwIC4zMSAwIC42Mi0uMDYuOTJhMTEuNTQgMTEuNTQgMCAwIDAtLjAzIDIuMzN6IiBmaWxsPSIjMDEwMTAxIi8+PGVsbGlwc2UgY3g9IjEyLjIxIiBjeT0iMTAuMDQiIGZpbGw9IiMwMTAxMDEiIHJ4PSIxLjc4IiByeT0iMS45MyIvPjxlbGxpcHNlIGN4PSIxMy4wMiIgY3k9IjEwLjQ4IiBmaWxsPSIjZmZmIiByeD0iLjQyIiByeT0iLjQ5Ii8+PGVsbGlwc2UgY3g9IjI3LjExIiBjeT0iOS41NiIgZmlsbD0iIzAxMDEwMSIgcng9IjEuNzUiIHJ5PSIxLjkzIi8+PGVsbGlwc2UgY3g9IjI3LjkiIGN5PSIxMCIgZmlsbD0iI2ZmZiIgcng9Ii40MSIgcnk9Ii40OSIvPjxwYXRoIGQ9Ik0yMC41MSAxOC44NWMtLjc4IDEuODguNDMgNS42NCAyLjU0IDIuODdhMjIuMjIgMjIuMjIgMCAwIDEgLjA5LTMuNTR6IiBmaWxsPSIjZmZmIi8+PHBhdGggZD0iTTIxLjYgMjIuODlhMSAxIDAgMCAxLS41Mi0uMTRjLS44NS0uNDktMS4zOC0yLjUtLjc4LTR2LS4wOGwzLS43NnYuMjRjMCAuMzkgMCAuNzgtLjA3IDEuMTVhMTEuNDMgMTEuNDMgMCAwIDAgMCAyLjM2di4xM2EyLjExIDIuMTEgMCAwIDEtMS42MyAxLjF6TTIwLjYxIDE5Yy0uNDMgMS4xNy0uMDkgMyAuNjYgMy40My41NC4zMSAxLjE0LS4yMyAxLjU2LS43N2ExMi4yMyAxMi4yMyAwIDAgMSAwLTIuMzZjMC0uMjkgMC0uNi4wNi0uOXoiIGZpbGw9IiMwMTAxMDEiLz48cGF0aCBkPSJNMjAuNzQgMTUuMjNhMi4yOSAyLjI5IDAgMCAwLTEuODggMy4yYzEgMS44IDMuMjItLjE2IDQuNiAwIDEuNTkgMCAyLjkgMS42OCA0LjE4LjMgMS40Mi0xLjU0LS42MS0zLTIuMi0zLjcxeiIgZmlsbD0iI2Y2ZDJhMiIvPjxwYXRoIGQ9Ik0yNi41MSAxOS40OWE0IDQgMCAwIDEtMS40Ni0uNDEgNC40MSA0LjQxIDAgMCAwLTEuNTgtLjQ0IDQgNCAwIDAgMC0xLjY2LjM2Yy0xLjEyLjM5LTIuMzkuODMtMy4xMS0uNDZhMi4xNiAyLjE2IDAgMCAxIDAtMi4xIDIuNTYgMi41NiAwIDAgMSAyLTEuMzdsNC44MS0uMjFjMS4xOC41IDIuNTMgMS40MSAyLjc2IDIuNDdhMS45MSAxLjkxIDAgMCAxLTEuNzYgMi4xNnptLTMtMS4yMWE0LjcgNC43IDAgMCAxIDEuNy40N2MuOS4zOCAxLjYxLjY3IDIuMzMtLjExYTEuMzMgMS4zMyAwIDAgMCAuNDEtMS4yMWMtLjItLjkyLTEuNDctMS43Ni0yLjUxLTIuMmwtNC42NS4xOWEyLjIyIDIuMjIgMCAwIDAtMS43IDEuMTggMS44MSAxLjgxIDAgMCAwIDAgMS43NWMuNTcgMSAxLjU5LjY3IDIuNjguM2E0LjI0IDQuMjQgMCAwIDEgMS43NC0uMzd6IiBmaWxsPSIjMjMxZjIwIi8+PHBhdGggZD0iTTIwLjUxIDE1LjE2Yy0uMTEtMi41IDQuNjctMi44MiA1LjIzLS43MnMtNSAyLjU4LTUuMjMuNzJ6IiBmaWxsPSIjMDEwMTAxIi8+PC9nPjwvc3ZnPg=="
+    catalog.cluster.local/maintainer: "Nimbus"
+    catalog.cluster.local/url: ""
+    catalog.cluster.local/tags: "demo,unmanaged,helm"
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v1
+    kind: DemoComposite
+
+  writeConnectionSecretsToNamespace: crossplane-system
+
+  resources:
+    - name: deployment
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: provider-kubernetes
+          forProvider:
+            manifest:
+              apiVersion: v1
+              kind: Pod
+              metadata:
+                name: tbd
+                namespace: tbd
+                labels:
+                  catalog.cluster.local/kind: tbd
+                  catalog.cluster.local/name: tbd
+              spec:
+                containers:
+                  - name: catalog-demo
+                    image: adrianliechti/demo:latest
+                    ports:
+                      - name: http
+                        containerPort: 8080
+                        protocol: TCP
+  
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.name"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.kind"
+          toFieldPath: "spec.forProvider.manifest.metadata.labels['catalog.cluster.local/kind']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.labels['catalog.cluster.local/name']"
+
+    - name: service
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: provider-kubernetes
+          forProvider:
+            manifest:
+              apiVersion: v1
+              kind: Service
+              metadata:
+                name: tbd
+                namespace: tbd
+                labels:
+                  catalog.cluster.local/kind: tbd
+                  catalog.cluster.local/name: tbd
+              spec:
+                ports:
+                  - name: http
+                    protocol: TCP
+                    port: 80
+                    targetPort: 8080
+                selector:
+                  catalog.cluster.local/kind: tbd
+                  catalog.cluster.local/name: tbd
+
+          connectionDetails:
+            - apiVersion: v1
+              kind: Service
+              name:
+              namespace:
+              fieldPath: spec.ports[0].port
+              toConnectionSecretKey: port
+
+          writeConnectionSecretToRef:
+            namespace: tbd
+
+      connectionDetails:
+        - name: port
+          type: FromConnectionSecretKey
+          fromConnectionSecretKey: port
+
+        - name: host
+          type: FromFieldPath
+          fromFieldPath: "metadata.annotations['host']"
+
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.name"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.kind"
+          toFieldPath: "spec.forProvider.manifest.metadata.labels['catalog.cluster.local/kind']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.labels['catalog.cluster.local/name']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.kind"
+          toFieldPath: "spec.forProvider.manifest.spec.selector['catalog.cluster.local/kind']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.spec.selector['catalog.cluster.local/name']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.connectionDetails[0].name"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.connectionDetails[0].namespace"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.writeConnectionSecretToRef.namespace"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.writeConnectionSecretToRef.name"
+          transforms:
+            - type: string
+              string:
+                type: Format
+                fmt: "%s-connection"
+
+        - type: CombineToComposite
+          combine:
+            variables:
+              - fromFieldPath: spec.forProvider.manifest.metadata.name
+              - fromFieldPath: spec.forProvider.manifest.metadata.namespace
+            strategy: string
+            string:
+              fmt: "%s.%s"
+          toFieldPath: status.credentials.host
+          
+        - type: FromCompositeFieldPath
+          fromFieldPath: "status.credentials.host"
+          toFieldPath: "metadata.annotations['host']"

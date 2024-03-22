@@ -122,4 +122,4 @@ In order that the catalog actually shows your items, you need to make sure the C
 - test what happens when we install a new platform-catalog version that does not include an XRD anymore that was previously installed (will the resources be deleted?)
 - use secret generator (e.g. in mssql) to generate the password secret
   - convert the patching to a crossplane function step in a pipeline (for the idea, see [here](https://github.com/23technologies/xp-fn-rndstr))
-  - add another step to create the secret (but instead of what is done in the above example, use [this](https://github.com/crossplane-contrib/function-go-templating/tree/main) with [this improvement](https://github.com/crossplane/crossplane/issues/1895#issuecomment-1969733598))
+  - add another step to create the secret (but instead of what is done in the above example, use [this](https://github.com/crossplane-contrib/function-go-templating/tree/main) with [this improvement](https://github.com/crossplane/crossplane/issues/1895#issuecomment-1969733598)) or just use the go-template function and use [sprig](https://masterminds.github.io/sprig/crypto.html)

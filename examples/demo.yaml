@@ -1,0 +1,5 @@
+apiVersion: catalog.cluster.local/v1
+kind: Demo
+metadata: 
+  name: demo-sample
+spec: {}
