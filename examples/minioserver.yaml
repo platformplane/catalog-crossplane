@@ -1,0 +1,6 @@
+apiVersion: catalog.cluster.local/v1
+kind: MinIOServer
+metadata: 
+  name: minioserver-sample
+spec:
+  size: 1Gi

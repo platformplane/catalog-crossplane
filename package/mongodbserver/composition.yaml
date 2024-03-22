@@ -1,18 +1,18 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: rabbitmqservers.catalog.cluster.local
+  name: mongodbservers.catalog.cluster.local
   annotations:
-    catalog.cluster.local/title: "RabbitMQ Server"
-    catalog.cluster.local/description: "RabbitMQ is a powerful and flexible open-source message broker that enables efficient communication between distributed systems. It provides reliable message queuing, delivery acknowledgments, flexible routing, and support for multiple messaging protocols. RabbitMQ is widely used in modern software architectures to build scalable and resilient applications."
-    catalog.cluster.local/icon: "PHN2ZyB3aWR0aD0iMjM2MiIgaGVpZ2h0PSIyNTAwIiB2aWV3Qm94PSIwIDAgMjU2IDI3MSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJ4TWlkWU1pZCI+PHBhdGggZD0iTTI0NS40NCAxMDguMzA4aC04NS4wOWE3LjczOCA3LjczOCAwIDAgMS03LjczNS03LjczNHYtODguNjhDMTUyLjYxNSA1LjMyNyAxNDcuMjkgMCAxNDAuNzI2IDBoLTMwLjM3NWMtNi41NjggMC0xMS44OSA1LjMyNy0xMS44OSAxMS44OTR2ODguMTQzYzAgNC41NzMtMy42OTcgOC4yOS04LjI3IDguMzFsLTI3Ljg4NS4xMzNjLTQuNjEyLjAyNS04LjM1OS0zLjcxNy04LjM1LTguMzI1bC4xNzMtODguMjQxQzU0LjE0NCA1LjMzNyA0OC44MTcgMCA0Mi4yNCAwSDExLjg5QzUuMzIxIDAgMCA1LjMyNyAwIDExLjg5NFYyNjAuMjFjMCA1LjgzNCA0LjcyNiAxMC41NiAxMC41NTUgMTAuNTZIMjQ1LjQ0YzUuODM0IDAgMTAuNTYtNC43MjYgMTAuNTYtMTAuNTZWMTE4Ljg2OGMwLTUuODM0LTQuNzI2LTEwLjU2LTEwLjU2LTEwLjU2em0tMzkuOTAyIDkzLjIzM2MwIDcuNjQ1LTYuMTk4IDEzLjg0NC0xMy44NDMgMTMuODQ0SDE2Ny42OWMtNy42NDYgMC0xMy44NDQtNi4xOTktMTMuODQ0LTEzLjg0NHYtMjQuMDA1YzAtNy42NDYgNi4xOTgtMTMuODQ0IDEzLjg0NC0xMy44NDRoMjQuMDA1YzcuNjQ1IDAgMTMuODQzIDYuMTk4IDEzLjg0MyAxMy44NDR2MjQuMDA1eiIgZmlsbD0iI0Y2MCIvPjwvc3ZnPg=="
+    catalog.cluster.local/title: "MongoDB Server"
+    catalog.cluster.local/description: "MongoDB is a popular NoSQL database that provides a flexible and scalable solution for storing and retrieving data. It is designed to handle large amounts of unstructured data, making it suitable for a wide range of applications."
+    catalog.cluster.local/icon: "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCAzMiAzMiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE1LjkuMDg3bC44NTQgMS42MDRjLjE5Mi4yOTYuNC41NTguNjQ1LjgwMi43MTUuNzE1IDEuMzk0IDEuNDY0IDIuMDA0IDIuMjY2IDEuNDQ3IDEuOSAyLjQyMyA0LjAxIDMuMTIgNi4yOTIuNDE4IDEuMzk0LjY0NSAyLjgyNC42NjIgNC4yNy4wNyA0LjMyMy0xLjQxMiA4LjAzNS00LjQgMTEuMTItLjQ4OC40ODgtMS4wMS45NC0xLjU3IDEuMzQyLS4yOTYgMC0uNDM2LS4yMjctLjU1OC0uNDM2LS4yMjctLjM4My0uMzY2LS44Mi0uNDM2LTEuMjU1LS4xMDUtLjUyMy0uMTc0LTEuMDQ2LS4xNC0xLjU4NnYtLjI0NEMxNi4wNTcgMjQuMjEgMTUuNzk2LjIxIDE1LjkuMDg3eiIgZmlsbD0iIzU5OTYzNiIvPgo8cGF0aCBkPSJNMTUuOS4wMzRjLS4wMzUtLjA3LS4wNy0uMDE3LS4xMDUuMDE3LjAxNy4zNS0uMTA1LjY2Mi0uMjk2Ljk2LS4yMS4yOTYtLjQ4OC41MjMtLjc2Ny43NjctMS41NSAxLjM0Mi0yLjc3IDIuOTYzLTMuNzQ3IDQuNzc2LTEuMyAyLjQ0LTEuOTcgNS4wNTUtMi4xNiA3LjgwOC0uMDg3Ljk5My4zMTQgNC40OTcuNjI3IDUuNTA4Ljg1NCAyLjY4NCAyLjM4OCA0LjkzMyA0LjM3NSA2Ljg4NS40ODguNDcgMS4wMS45MDYgMS41NSAxLjMyNS4xNTcgMCAuMTc0LS4xNC4yMS0uMjQ0YTQuNzggNC43OCAwIDAgMCAuMTU3LS42OGwuMzUtMi42MTRMMTUuOS4wMzR6IiBmaWxsPSIjNmNhYzQ4Ii8+CjxwYXRoIGQ9Ik0xNi43NTQgMjguODQ1Yy4wMzUtLjQuMjI3LS43MzIuNDM2LTEuMDYzLS4yMS0uMDg3LS4zNjYtLjI2LS40ODgtLjQ1My0uMTA1LS4xNzQtLjE5Mi0uMzgzLS4yNi0uNTc1LS4yNDQtLjczMi0uMjk2LTEuNS0uMzY2LTIuMjQ4di0uNDUzYy0uMDg3LjA3LS4xMDUuNjYyLS4xMDUuNzVhMTcuMzcgMTcuMzcgMCAwIDEtLjMxNCAyLjM1M2MtLjA1Mi4zMTQtLjA4Ny42MjctLjI4LjkwNiAwIC4wMzUgMCAuMDcuMDE3LjEyMi4zMTQuOTI0LjQgMS44NjUuNDUzIDIuODI0di4zNWMwIC40MTgtLjAxNy4zMy4zMy40Ny4xNC4wNTIuMjk2LjA3LjQzNi4xNzQuMTA1IDAgLjEyMi0uMDg3LjEyMi0uMTU3bC0uMDUyLS41NzV2LTEuNjA0Yy0uMDE3LS4yOC4wMzUtLjU1OC4wNy0uODJ6IiBmaWxsPSIjYzJiZmJmIi8+Cjwvc3ZnPgo="
     catalog.cluster.local/maintainer: ""
-    catalog.cluster.local/url: "https://www.rabbitmq.com"
-    catalog.cluster.local/tags: "mq,unmanaged,helm"
+    catalog.cluster.local/url: "https://www.mongodb.com"
+    catalog.cluster.local/tags: "database,unmanaged,helm"
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v1
-    kind: RabbitMQServerComposite
+    kind: MongoDBServerComposite
 
   writeConnectionSecretsToNamespace: crossplane-system
 
@@ -26,42 +26,46 @@ spec:
             name: provider-helm
           forProvider:
             chart:
-              name: rabbitmq
+              name: mongodb
               repository: oci://registry-1.docker.io/bitnamicharts
-              version: 12.15.0
+              version: 15.0.2
             namespace: tbd
             values:
               commonLabels:
                 catalog.cluster.local/kind: tbd
                 catalog.cluster.local/name: tbd
-              podLabels:
-                catalog.cluster.local/kind: tbd
-                catalog.cluster.local/name: tbd
+
               fullnameOverride: tbd
+              architecture: standalone
+
               auth:
-                username: platform
+                rootUser: root
+
               persistence:
                 size: 8Gi
+
               persistentVolumeClaimRetentionPolicy:
                 enabled: true
                 whenDeleted: Delete
+
               metrics:
                 enabled: true
+
                 serviceMonitor:
-                  enabled: true                
+                  enabled: true
 
           connectionDetails:
             - apiVersion: v1
               kind: Secret
-              name: # patch taken from spec.claimRef.name
-              namespace: # patch taken from composite spec.claimRef.namespace
-              fieldPath: data.rabbitmq-password
+              name:
+              namespace:
+              fieldPath: data.mongodb-root-password
               toConnectionSecretKey: password
 
             - apiVersion: v1
               kind: Service
-              name: # patch taken from spec.claimRef.name
-              namespace: # patch taken from composite spec.claimRef.namespace
+              name:
+              namespace:
               fieldPath: spec.ports[0].port
               toConnectionSecretKey: port
 
@@ -70,8 +74,8 @@ spec:
 
       connectionDetails:
         - name: username
-          type: FromFieldPath
-          fromFieldPath: "spec.forProvider.values.auth.username"
+          type: FromValue
+          value: root
 
         - name: password
           type: FromConnectionSecretKey
@@ -88,8 +92,8 @@ spec:
       patches:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.size"
-          toFieldPath: "spec.forProvider.values.persistence.size"        
-          
+          toFieldPath: "spec.forProvider.values.persistence.size"
+
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.values.fullnameOverride"
@@ -101,14 +105,6 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.kind"
           toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
-        
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.values.podLabels['catalog.cluster.local/name']"
-
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.kind"
-          toFieldPath: "spec.forProvider.values.podLabels['catalog.cluster.local/kind']"          
 
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.namespace"
@@ -125,7 +121,7 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.connectionDetails[1].name"
-        
+
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.namespace"
           toFieldPath: "spec.connectionDetails[1].namespace"
@@ -135,14 +131,14 @@ spec:
           toFieldPath: "spec.writeConnectionSecretToRef.namespace"
 
         - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
+          fromFieldPath: "spec.resourceRefs[0].name"
           toFieldPath: "spec.writeConnectionSecretToRef.name"
           transforms:
             - type: string
               string:
                 type: Format
                 fmt: "%s-connection"
-                
+
         - type: CombineToComposite
           combine:
             variables:
@@ -152,7 +148,7 @@ spec:
             string:
               fmt: "%s.%s"
           toFieldPath: status.credentials.host
-          
+
         - type: FromCompositeFieldPath
           fromFieldPath: "status.credentials.host"
           toFieldPath: "metadata.annotations['host']"

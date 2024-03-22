@@ -1,0 +1,141 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: elasticsearchservers.catalog.cluster.local
+  annotations:
+    catalog.cluster.local/title: "ElasticSearch"
+    catalog.cluster.local/description: "Elasticsearch is a highly scalable open-source search and analytics engine. It allows you to store, search, and analyze large volumes of data quickly and in near real-time. With its distributed architecture and powerful querying capabilities, Elasticsearch is the perfect choice for building robust search and analytics applications."
+    catalog.cluster.local/icon: "PHN2ZyB3aWR0aD0iMjUwMCIgaGVpZ2h0PSIyNTAwIiB2aWV3Qm94PSIwIDAgMjU2IDI1NiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJ4TWluWU1pbiBtZWV0Ij48cGF0aCBkPSJNMjU1Ljk2IDEzNC4zOTNjMC0yMS41MjEtMTMuMzczLTQwLjExNy0zMy4yMjMtNDcuNDNhNzUuMjM5IDc1LjIzOSAwIDAgMCAxLjI1My0xMy43OTFjMC0zOS45MDktMzIuMzg2LTcyLjI5NS03Mi4yOTUtNzIuMjk1LTIzLjE5MyAwLTQ0LjkyMyAxMS4wNzQtNTguNTA1IDMwLjA4OC02LjY4Ni01LjIyNC0xNC44MzUtNy45NC0yMy40MDItNy45NC0yMS4xMDQgMC0zOC40NDYgMTcuMTMzLTM4LjQ0NiAzOC40NDYgMCA0LjU5Ny44MzYgOS4xOTQgMi4yOTggMTMuMzczQzEzLjU4MiA4MS43MzkgMCAxMDAuOTYyIDAgMTIyLjI3NGMwIDIxLjUyMiAxMy4zNzMgNDAuMzI3IDMzLjQzMSA0Ny42NC0uODM1IDQuMzg4LTEuMjUzIDguOTg1LTEuMjUzIDEzLjc5IDAgMzkuNyAzMi4zODYgNzIuMDg3IDcyLjA4NiA3Mi4wODcgMjMuNDAyIDAgNDQuOTI0LTExLjI4MyA1OC41MDUtMzAuMDg4IDYuNjg2IDUuMjIzIDE1LjA0NCA4LjE0OSAyMy42MTEgOC4xNDkgMjEuMTA0IDAgMzguNDQ2LTE3LjEzNCAzOC40NDYtMzguNDQ2IDAtNC41OTctLjgzNi05LjE5NC0yLjI5OC0xMy4zNzMgMTkuNjQtNy4xMDQgMzMuNDMxLTI2LjMyNyAzMy40MzEtNDcuNjR6IiBmaWxsPSIjRkZGIi8+PHBhdGggZD0iTTEwMC4wODUgMTEwLjM2NGw1Ny4wNDMgMjYuMTE5IDU3LjY2OS01MC41NjVhNjQuMzEyIDY0LjMxMiAwIDAgMCAxLjI1My0xMi43NDZjMC0zNS41Mi0yOC44MzQtNjQuMzU1LTY0LjM1NS02NC4zNTUtMjEuMzEzIDAtNDEuMTYyIDEwLjQ0Ny01My4wNzIgMjcuOTk4bC05LjYxMiA0OS43MyAxMS4wNzQgMjMuODJ6IiBmaWxsPSIjRjRCRDE5Ii8+PHBhdGggZD0iTTQwLjk1MyAxNzAuNzVjLS44MzUgNC4xNzktMS4yNTMgOC41NjctMS4yNTMgMTIuOTU1IDAgMzUuNTIgMjkuMDQzIDY0LjU2NCA2NC41NjQgNjQuNTY0IDIxLjUyMiAwIDQxLjM3Mi0xMC42NTYgNTMuNDktMjguMjA4bDkuNDAzLTQ5LjcyOS0xMi43NDYtMjQuMjM4LTU3LjI1MS0yNi4xMTgtNTYuMjA3IDUwLjc3NHoiIGZpbGw9IiMzQ0JFQjEiLz48cGF0aCBkPSJNNDAuNTM2IDcxLjkxOGwzOS4wNzMgOS4xOTQgOC43NzUtNDQuNTA2Yy01LjQzMi00LjE3OS0xMS45MS02LjI2OC0xOC44MDUtNi4yNjgtMTYuOTI1IDAtMzAuOTI0IDEzLjc5LTMwLjkyNCAzMC45MjQgMCAzLjU1Mi42MjcgNy4zMTMgMS44OCAxMC42NTZ6IiBmaWxsPSIjRTk0NzhDIi8+PHBhdGggZD0iTTM3LjE5MiA4MS4zMmMtMTcuNTUxIDUuNjQyLTI5LjY3IDIyLjU2Ny0yOS42NyA0MC45NTQgMCAxNy45NyAxMS4wNzQgMzQuMDU5IDI3Ljc5IDQwLjMyN2w1NC45NTMtNDkuNzMtMTAuMDMtMjEuNTItNDMuMDQzLTEwLjAzeiIgZmlsbD0iIzJDNDU4RiIvPjxwYXRoIGQ9Ik0xNjcuNzg0IDIxOS44NTJjNS40MzIgNC4xOCAxMS45MSA2LjQ3OCAxOC41OTYgNi40NzggMTYuOTI1IDAgMzAuOTI0LTEzLjc5IDMwLjkyNC0zMC45MjQgMC0zLjc2MS0uNjI3LTcuMzE0LTEuODgtMTAuNjU3bC0zOS4wNzMtOS4xOTMtOC41NjcgNDQuMjk2eiIgZmlsbD0iIzk1QzYzRCIvPjxwYXRoIGQ9Ik0xNzUuNzI0IDE2NS4zMTdsNDMuMDQzIDEwLjAzYzE3LjU1MS01Ljg1IDI5LjY3LTIyLjU2NiAyOS42Ny00MC45NTQgMC0xNy45Ny0xMS4wNzQtMzMuODQ5LTI3Ljc5LTQwLjMyNmwtNTYuNDE1IDQ5LjMxMSAxMS40OTIgMjEuOTR6IiBmaWxsPSIjMTc2NjU1Ii8+PC9zdmc+"
+    catalog.cluster.local/maintainer: ""
+    catalog.cluster.local/url: "https://www.elastic.co/elasticsearch"
+    catalog.cluster.local/tags: "storage,unmanaged,helm"
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v1
+    kind: ElasticsearchServerComposite
+
+  writeConnectionSecretsToNamespace: crossplane-system
+
+  resources:
+    - name: helm-release
+      base:
+        apiVersion: helm.crossplane.io/v1beta1
+        kind: Release
+        spec:
+          providerConfigRef:
+            name: provider-helm
+          forProvider:
+            chart:
+              name: elasticsearch
+              repository: oci://registry-1.docker.io/bitnamicharts
+              version: 20.0.0
+            namespace: tbd
+            values:
+              commonLabels:
+                catalog.cluster.local/kind: tbd
+                catalog.cluster.local/name: tbd
+              fullnameOverride: tbd
+              master:
+                masterOnly: false
+                replicaCount: 1
+                persistence:
+                  size: 8Gi
+              data:
+                replicaCount: 0
+              coordinating:
+                replicaCount: 0
+              ingest:
+                replicaCount: 0
+              metrics:
+                enabled: true
+                serviceMonitor:
+                  enabled: true
+              # think about password and kibana parameters https://artifacthub.io/packages/helm/bitnami/elasticsearch
+
+          connectionDetails:
+            - apiVersion: v1
+              kind: Service
+              name:
+              namespace:
+              fieldPath: spec.ports[0].port
+              toConnectionSecretKey: port
+
+          writeConnectionSecretToRef:
+            namespace: tbd
+
+      connectionDetails:
+        - name: username
+          type: FromFieldPath
+          fromFieldPath: "spec.forProvider.values.rootUser"
+
+        - name: password
+          type: FromConnectionSecretKey
+          fromConnectionSecretKey: password
+
+        - name: port
+          type: FromConnectionSecretKey
+          fromConnectionSecretKey: port
+
+        - name: database
+          type: FromFieldPath
+          fromFieldPath: "spec.forProvider.values.auth.database"
+
+        - name: host
+          type: FromFieldPath
+          fromFieldPath: "metadata.annotations['host']"
+
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.size"
+          toFieldPath: "spec.forProvider.values.master.persistence.size"
+          
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.values.fullnameOverride"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/name']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.kind"
+          toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.forProvider.namespace"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.connectionDetails[0].name"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.connectionDetails[0].namespace"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.writeConnectionSecretToRef.namespace"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.writeConnectionSecretToRef.name"
+          transforms:
+            - type: string
+              string:
+                type: Format
+                fmt: "%s-connection"
+
+        - type: CombineToComposite
+          combine:
+            variables:
+              - fromFieldPath: spec.forProvider.values.fullnameOverride
+              - fromFieldPath: spec.forProvider.namespace
+            strategy: string
+            string:
+              fmt: "%s.%s"
+          toFieldPath: status.credentials.host
+          
+        - type: FromCompositeFieldPath
+          fromFieldPath: "status.credentials.host"
+          toFieldPath: "metadata.annotations['host']"
