@@ -1,15 +1,9 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: CompositeResourceDefinition
 metadata:
-  name: mariadbsqlservercomposites.catalog.cluster.local
+  name: mariadbservercomposites.catalog.cluster.local
 spec:
   group: catalog.cluster.local
-  connectionSecretKeys:
-    - username
-    - password
-    - host
-    - port
-    - database
   names:
     kind: MariaDBServerComposite
     plural: mariadbservercomposites

@@ -4,12 +4,6 @@ metadata:
   name: mysqlservercomposites.catalog.cluster.local
 spec:
   group: catalog.cluster.local
-  connectionSecretKeys:
-    - username
-    - password
-    - host
-    - port
-    - database
   names:
     kind: MySQLServerComposite
     plural: mysqlservercomposites

@@ -38,12 +38,19 @@ spec:
                 catalog.cluster.local/kind: tbd # patch taken from composite spec.claimRef.kind
                 catalog.cluster.local/name: tbd # patch taken from composite spec.claimRef.name
               fullnameOverride: tbd # patch taken from composite metadata.name (needed because the chart creates a secret with an unpredictable name otherwise)
+              architecture: standalone
+              auth:
+                database: db
               primary:
                 persistence:
                   size: 8Gi # patch taken from composite spec.size
                 persistentVolumeClaimRetentionPolicy:
                   enabled: true
                   whenDeleted: Delete
+              metrics:
+                enabled: true
+                serviceMonitor:
+                  enabled: true
 
           # the connection details of this resource
           connectionDetails: # list the "secrets" created by this managed resources (further down, they are used to create the connection details for the whole composite)
@@ -81,8 +88,8 @@ spec:
           fromConnectionSecretKey: port
 
         - name: database
-          type: FromValue
-          value: db
+          type: FromFieldPath
+          fromFieldPath: "spec.forProvider.values.auth.database"
 
         - name: host
           type: FromFieldPath

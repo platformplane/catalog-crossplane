@@ -4,12 +4,6 @@ metadata:
   name: microsoftsqlservercomposites.catalog.cluster.local
 spec:
   group: catalog.cluster.local
-  connectionSecretKeys:
-    - username
-    - password
-    - host
-    - port
-    - database
   names:
     kind: MicrosoftSQLServerComposite
     plural: microsoftsqlservercomposites
@@ -47,5 +41,3 @@ spec:
                   properties:
                     host:
                       type: string
-
-                  

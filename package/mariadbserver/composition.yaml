@@ -13,7 +13,7 @@ metadata:
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v1
-    kind: MariaDBSQLServerComposite
+    kind: MariaDBServerComposite
 
   writeConnectionSecretsToNamespace: crossplane-system # this writes the connection secrets listed in the below resources connectionDetails sections to the specified namespace as a combined secret of all resources https://docs.crossplane.io/knowledge-base/guides/connection-details/#connection-secrets-in-compositions
   # Be aware that you can't patch this field (it's in the composition, not in a resource or the composite)
@@ -38,14 +38,19 @@ spec:
                 catalog.cluster.local/kind: tbd # patch taken from composite spec.claimRef.kind
                 catalog.cluster.local/name: tbd # patch taken from composite spec.claimRef.name
               fullnameOverride: tbd # patch taken from composite metadata.name (needed because the chart creates a secret with an unpredictable name otherwise)
+              architecture: standalone
               auth:
-                database: mariadb # patch taken from composite spec.claimRef.databaseName?
+                database: db # patch taken from composite spec.claimRef.databaseName?
               primary:
                 persistence:
                   size: 8Gi # patch taken from composite spec.size
                 persistentVolumeClaimRetentionPolicy:
                   enabled: true
                   whenDeleted: Delete
+              metrics:
+                enabled: true
+                serviceMonitor:
+                  enabled: true
 
           # the connection details of this resource
           connectionDetails: # list the "secrets" created by this managed resources (further down, they are used to create the connection details for the whole composite)
@@ -54,7 +59,7 @@ spec:
               name: # patch taken from spec.claimRef.name
               namespace: # patch taken from composite spec.claimRef.namespace
               fieldPath: data.mariadb-root-password
-              toConnectionSecretKey: root-password
+              toConnectionSecretKey: password
 
             - apiVersion: v1
               kind: Service
