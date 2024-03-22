@@ -1,40 +1,35 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: CompositeResourceDefinition
 metadata:
-  name: microsoftsqlservercomposites.catalog.cluster.local
+  name: mysqlservercomposites.catalog.cluster.local
 spec:
   group: catalog.cluster.local
   names:
-    kind: MicrosoftSQLServerComposite
-    plural: microsoftsqlservercomposites
+    kind: MySQLServerComposite
+    plural: mysqlservercomposites
   claimNames:
-    kind: MicrosoftSQLServer
-    plural: microsoftsqlservers
+    kind: MySQLServer
+    plural: mysqlservers
   versions:
     - name: v1
       served: true
       referenceable: true
       schema:
         openAPIV3Schema:
-          description: MicrosoftSQLServer is the Schema for the microsoftsqlservers API
+          description: MySQL is a relational database management system (RDBMS) developed by Oracle that is based on structured query language (SQL). A database is a structured collection of data. It may be anything from a simple shopping list to a picture gallery or a place to hold the vast amounts of information in a corporate network.
           type: object
           properties:
             spec:
-              description: MicrosoftSQLServerSpec defines the desired state of MicrosoftSQLServer
               type: object
               properties:
                 size:
                   type: string
                   pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                databaseName:
+                  type: string
             status:
-              description: MicrosoftSQLServerStatus defines the observed state of MicrosoftSQLServer
               type: object
               properties:
-                binding:
-                  properties:
-                    name:
-                      type: string
-                  type: object
                 credentials:
                   type: object
                   description: "Misuse composite status as temporary storage."
