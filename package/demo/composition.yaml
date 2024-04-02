@@ -26,8 +26,8 @@ spec:
             name: provider-kubernetes
           forProvider:
             manifest:
-              apiVersion: v1
-              kind: Pod
+              apiVersion: apps/v1
+              kind: Deployment
               metadata:
                 name: tbd
                 namespace: tbd
@@ -35,13 +35,24 @@ spec:
                   catalog.cluster.local/kind: tbd
                   catalog.cluster.local/name: tbd
               spec:
-                containers:
-                  - name: catalog-demo
-                    image: adrianliechti/demo:latest
-                    ports:
-                      - name: http
-                        containerPort: 8080
-                        protocol: TCP
+                replicas: 1
+                selector:
+                  matchLabels:
+                    catalog.cluster.local/kind: tbd
+                    catalog.cluster.local/name: tbd
+                template:
+                  metadata:
+                    labels:
+                      catalog.cluster.local/kind: tbd
+                      catalog.cluster.local/name: tbd
+                  spec:
+                    containers:
+                      - name: catalog-demo
+                        image: adrianliechti/demo:latest
+                        ports:
+                          - name: http
+                            containerPort: 8080
+                            protocol: TCP
   
       patches:
         - type: FromCompositeFieldPath
@@ -59,6 +70,22 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.manifest.metadata.labels['catalog.cluster.local/name']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.kind"
+          toFieldPath: "spec.forProvider.manifest.spec.selector.matchLabels['catalog.cluster.local/kind']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.spec.selector.matchLabels['catalog.cluster.local/name']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.kind"
+          toFieldPath: "spec.forProvider.manifest.spec.template.metadata.labels['catalog.cluster.local/kind']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.spec.template.metadata.labels['catalog.cluster.local/name']"
 
     - name: service
       base:
