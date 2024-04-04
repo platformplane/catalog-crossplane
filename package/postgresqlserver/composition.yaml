@@ -24,6 +24,9 @@ spec:
       base:
         apiVersion: helm.crossplane.io/v1beta1
         kind: Release # full example, see: https://github.com/crossplane-contrib/provider-helm/blob/master/examples/sample/release.yaml
+        metadata:
+          annotations:
+            crossplane.io/external-name: tbd # patch taken from composite spec.claimRef.name
         spec:
           providerConfigRef:
             name: provider-helm
@@ -31,7 +34,7 @@ spec:
             chart:
               name: postgresql
               repository: oci://registry-1.docker.io/bitnamicharts
-              version: 14.2.3
+              version: 15.2.2
             namespace: tbd # patch taken from composite spec.claimRef.namespace
             values:
               commonLabels:
@@ -39,7 +42,7 @@ spec:
                 catalog.cluster.local/name: tbd # patch taken from composite spec.claimRef.name
               fullnameOverride: tbd # patch taken from composite metadata.name (needed because the chart creates a secret with an unpredictable name otherwise)
               auth:
-                database: postgres # patch taken from composite spec.databaseName
+                database: postgres
               primary:
                 persistence:
                   size: 8Gi # patch taken from composite spec.size
@@ -99,10 +102,6 @@ spec:
           toFieldPath: "spec.forProvider.values.primary.persistence.size"
 
         - type: FromCompositeFieldPath
-          fromFieldPath: "spec.databaseName"
-          toFieldPath: "spec.forProvider.values.auth.database"
-          
-        - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.values.fullnameOverride"
 
@@ -115,6 +114,10 @@ spec:
           toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
 
         # give resources (service, secrets, ...) the name and namespace of the claim
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "metadata.annotations[crossplane.io/external-name]"
+
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.namespace"
           toFieldPath: "spec.forProvider.namespace"
