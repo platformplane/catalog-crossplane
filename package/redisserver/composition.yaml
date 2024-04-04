@@ -21,6 +21,9 @@ spec:
       base:
         apiVersion: helm.crossplane.io/v1beta1
         kind: Release
+        metadata:
+          annotations:
+            crossplane.io/external-name: tbd
         spec:
           providerConfigRef:
             name: provider-helm
@@ -28,7 +31,7 @@ spec:
             chart:
               name: redis
               repository: oci://registry-1.docker.io/bitnamicharts
-              version: 18.17.0
+              version: 19.0.2
             namespace: tbd
             values:
               commonLabels:
@@ -94,6 +97,10 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.kind"
           toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "metadata.annotations[crossplane.io/external-name]"
 
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.namespace"
