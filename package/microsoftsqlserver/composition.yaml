@@ -181,11 +181,6 @@ spec:
                       requests:
                         storage: 10Gi # patched from claim
 
-      connectionDetails:
-        - name: port
-          type: FromFieldPath
-          fromFieldPath: "spec.forProvider.manifest.spec.template.spec.containers[0].ports[0].containerPort"
-
       # # copy stuff from claim/composite to resource (Release) and the other way around
       patches:
 
@@ -241,3 +236,110 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.size"
           toFieldPath: "spec.forProvider.manifest.spec.volumeClaimTemplates[0].spec.resources.requests.storage"
+
+    - name: service
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: provider-kubernetes
+          forProvider:
+            manifest:
+              apiVersion: v1
+              kind: Service
+              metadata:
+                name: tbd
+                namespace: tbd
+                labels:
+                  catalog.cluster.local/kind: tbd
+                  catalog.cluster.local/name: tbd
+              spec:
+                ports:
+                  - name: http
+                    protocol: TCP
+                    port: 1433
+                    targetPort: 1433
+                selector:
+                  catalog.cluster.local/kind: tbd
+                  catalog.cluster.local/name: tbd
+
+          connectionDetails:
+            - apiVersion: v1
+              kind: Service
+              name:
+              namespace:
+              fieldPath: spec.ports[0].port
+              toConnectionSecretKey: port
+
+          writeConnectionSecretToRef:
+            namespace: tbd
+
+      connectionDetails:
+        - name: port
+          type: FromConnectionSecretKey
+          fromConnectionSecretKey: port
+
+        - name: host
+          type: FromFieldPath
+          fromFieldPath: "metadata.annotations['host']"
+
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.name"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.kind"
+          toFieldPath: "spec.forProvider.manifest.metadata.labels['catalog.cluster.local/kind']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.labels['catalog.cluster.local/name']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.kind"
+          toFieldPath: "spec.forProvider.manifest.spec.selector['catalog.cluster.local/kind']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.spec.selector['catalog.cluster.local/name']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.connectionDetails[0].name"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.connectionDetails[0].namespace"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.writeConnectionSecretToRef.namespace"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.writeConnectionSecretToRef.name"
+          transforms:
+            - type: string
+              string:
+                type: Format
+                fmt: "%s-connection"
+
+        - type: CombineToComposite
+          combine:
+            variables:
+              - fromFieldPath: spec.forProvider.manifest.metadata.name
+              - fromFieldPath: spec.forProvider.manifest.metadata.namespace
+            strategy: string
+            string:
+              fmt: "%s.%s"
+          toFieldPath: status.credentials.host
+          
+        - type: FromCompositeFieldPath
+          fromFieldPath: "status.credentials.host"
+          toFieldPath: "metadata.annotations['host']"

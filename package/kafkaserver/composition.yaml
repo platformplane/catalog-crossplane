@@ -34,7 +34,7 @@ spec:
             chart:
               name: kafka
               repository: oci://registry-1.docker.io/bitnamicharts
-              version: 28.0.1
+              version: 27.1.2 # version 28.0.2 did not work (pods were never healthy)
             namespace: tbd # patch taken from composite spec.claimRef.namespace
             values:
               commonLabels:
@@ -44,10 +44,11 @@ spec:
               sasl:
                 client:
                   users:
-                    - user # patch taken from composite spec.claimRef.user
+                    - user
               controller:
                 persistence:
                   size: 8Gi # patch taken from composite spec.size
+                replicaCount: 3
               broker:
                 persistence:
                   size: 8Gi # patch taken from composite spec.size
