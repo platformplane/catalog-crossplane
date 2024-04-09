@@ -34,7 +34,7 @@ spec:
             chart:
               name: postgresql
               repository: oci://registry-1.docker.io/bitnamicharts
-              version: 15.2.2
+              version: 12.8.0
             namespace: tbd # patch taken from composite spec.claimRef.namespace
             values:
               commonLabels:
@@ -112,6 +112,15 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.kind"
           toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.version"
+          toFieldPath: "spec.forProvider.chart.version"
+          transforms:
+            - type: map
+              map:
+                "15": "12.8.0"
+                "16": "15.2.4"
 
         # give resources (service, secrets, ...) the name and namespace of the claim
         - type: FromCompositeFieldPath

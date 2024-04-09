@@ -25,6 +25,11 @@ spec:
                 size:
                   type: string
                   pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                version:
+                  type: string
+                  enum:
+                    - "15"
+                    - "16"
             status:
               type: object
               properties:
