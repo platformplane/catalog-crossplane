@@ -48,7 +48,7 @@ spec:
               controller:
                 persistence:
                   size: 8Gi # patch taken from composite spec.size
-                replicaCount: 3
+                replicaCount: 3 # 1 does not work since internal topic __consumer_offsets still wants to have 3 replicas
               broker:
                 persistence:
                   size: 8Gi # patch taken from composite spec.size

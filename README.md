@@ -117,6 +117,7 @@ In order that the catalog actually shows your items, you need to make sure the C
 
 ## Further improvements
 
+- add OracleDB catalog item
 - add dependabot to the repo
 - try out what happens when the platformplane does not install providers but instead let crossplane install them based on the dependencies in the configurations (the provider configs etc. will probably be needed anyways, with some default name references)
 - test what happens when we install a new platform-catalog version that does not include an XRD anymore that was previously installed (will the resources be deleted?)

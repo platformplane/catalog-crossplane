@@ -31,7 +31,7 @@ spec:
             chart:
               name: elasticsearch
               repository: oci://registry-1.docker.io/bitnamicharts
-              version: 20.0.2
+              version: 20.0.4
             namespace: tbd
             values:
               commonLabels:
@@ -49,10 +49,10 @@ spec:
                 replicaCount: 0
               ingest:
                 replicaCount: 0
-              metrics:
-                enabled: true
-                serviceMonitor:
-                  enabled: true
+              # metrics: # this is disabled because the metrics deployment is not deleted when the release is deleted (version 20.0.4)
+              #   enabled: true
+              #   serviceMonitor:
+              #     enabled: true
               # think about password and kibana parameters https://artifacthub.io/packages/helm/bitnami/elasticsearch
 
           connectionDetails:

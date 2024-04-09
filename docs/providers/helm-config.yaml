@@ -24,5 +24,20 @@ spec:
   #         containers:
   #           - name: package-runtime
   #             args:
+  #               - --help
   #               - --enable-external-secret-stores # not available
   
+  
+# Flags:
+#       --help                   Show context-sensitive help (also try --help-long
+#                                and --help-man).
+#   -d, --debug                  Run with debug logging.
+#   -l, --leader-election        Use leader election for the conroller manager.
+#       --timeout=10m            Controls how long helm commands may run before
+#                                they are killed.
+#   -s, --sync=1h                How often all resources will be double-checked
+#                                for drift from the desired state.
+#       --poll=10m               How often individual resources will be checked
+#                                for drift from the desired state
+#       --max-reconcile-rate=10  The global maximum rate per second at which
+#                                resources may checked for drift from the desired
