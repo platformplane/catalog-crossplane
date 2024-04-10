@@ -148,7 +148,7 @@ spec:
                         name: data
                         subPath: mssql
                     containers:
-                    - image: mcr.microsoft.com/mssql/server:2022-latest
+                    - image: mcr.microsoft.com/mssql/server:2019-latest
                       imagePullPolicy: Always
                       name: mssql
                       env:
@@ -226,6 +226,15 @@ spec:
           toFieldPath: "spec.forProvider.manifest.spec.template.spec.containers[0].env[2].valueFrom.secretKeyRef.name"
 
         - type: FromCompositeFieldPath
+          fromFieldPath: "spec.version"
+          toFieldPath: "spec.forProvider.manifest.spec.template.spec.containers[0].image"
+          transforms:
+            - type: map
+              map:
+                "2019": "mcr.microsoft.com/mssql/server:2019-latest"
+                "2022": "mcr.microsoft.com/mssql/server:2022-latest"
+
+        - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.kind"
           toFieldPath: "spec.forProvider.manifest.spec.volumeClaimTemplates[0].metadata.labels['catalog.cluster.local/kind']"
 
@@ -264,21 +273,10 @@ spec:
                   catalog.cluster.local/kind: tbd
                   catalog.cluster.local/name: tbd
 
-          connectionDetails:
-            - apiVersion: v1
-              kind: Service
-              name:
-              namespace:
-              fieldPath: spec.ports[0].port
-              toConnectionSecretKey: port
-
-          writeConnectionSecretToRef:
-            namespace: tbd
-
       connectionDetails:
         - name: port
-          type: FromConnectionSecretKey
-          fromConnectionSecretKey: port
+          type: FromValue
+          value: "1433"
 
         - name: host
           type: FromFieldPath
@@ -308,27 +306,6 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.manifest.spec.selector['catalog.cluster.local/name']"
-
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.connectionDetails[0].name"
-
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.connectionDetails[0].namespace"
-
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.writeConnectionSecretToRef.namespace"
-
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.writeConnectionSecretToRef.name"
-          transforms:
-            - type: string
-              string:
-                type: Format
-                fmt: "%s-connection"
 
         - type: CombineToComposite
           combine:

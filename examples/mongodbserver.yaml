@@ -4,3 +4,4 @@ metadata:
   name: mongodbserver-sample
 spec:
   size: 4Gi
+  version: "7"

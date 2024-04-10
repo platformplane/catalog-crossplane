@@ -4,3 +4,4 @@ metadata:
   name: mysqlserver-sample
 spec:
   size: 1Gi
+  version: "8"

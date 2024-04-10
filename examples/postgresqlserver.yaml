@@ -4,3 +4,4 @@ metadata:
   name: postgresqlserver-sample
 spec:
   size: 1Gi
+  version: "16"

@@ -32,8 +32,11 @@ spec:
                 size:
                   type: string
                   pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                databaseName:
+                version:
                   type: string
+                  enum:
+                    - "2024.4"
+                    - "2023.7"
             status:
               type: object
               properties:

@@ -4,3 +4,4 @@ metadata:
   name: minioserver-sample
 spec:
   size: 1Gi
+  version: "2024.4"

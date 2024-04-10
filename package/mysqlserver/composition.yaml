@@ -117,6 +117,15 @@ spec:
           fromFieldPath: "spec.claimRef.kind"
           toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
 
+          
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.version"
+          toFieldPath: "spec.forProvider.chart.version"
+          transforms:
+            - type: map
+              map:
+                "8": "10.1.1"
+
         # give resources (service, secrets, ...) the name and namespace of the claim
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"

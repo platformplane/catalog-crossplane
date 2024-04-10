@@ -12,6 +12,10 @@ The items shown in the catalog v2 are developed here.
 - [Dockerfile](Dockerfile) The Dockerfile uses the Crossplane CLI to build and push the Crossplane configuration package (OCI image) to a registry (may be useful for local testing).
 - [.github/workflows](./.github/workflows/build-publish-images.yaml) The GitHub pipeline calculates a version number and builds the Crossplane package on every commit.
 
+## Update Strategy of Catalog Items
+
+We assume that minor versions can be updated without breaking changes. This means that the `spec.forProvider.chart.version` field in the Crossplane configuration can be updated within the same minor version (anyways, read the release notes to be sure). Note that this field only specifies the default version (if no version is specified in the claim, there is a patch in every configuration with a map transformation) and is sometimes outdated in order not to break existing installations (from catalog v1). Most of the times, therefore, you need to update the versions in the map patch in the composition file. Applying the latest Crossplane configuration will replace the Helm release with the new version and therefore cause downtime and potentially issues for the customers!
+
 ## Create the Crossplane package locally
 
 ### Via Dockerfile (no need to install Crossplane CLI)
@@ -99,21 +103,25 @@ In order that the catalog actually shows your items, you need to make sure the C
 - iterate until you are happy
 - if everything works, create a merge request, assign it to a Nimbus team member and ask for a review
 - merge the merge request after it got approved
-- if wanted tag the merge commit with a version number (e.g. `0.0.1`)
+- if wanted, tag the merge commit with a version number (e.g. `0.0.1`)
 - coordinate the release with the Nimbus team who has to update the `crossplane` ConfigMap in the `platformplane` namespace on Nimbus so that other developers can use it
 
 ## How to debug e.g. a new helm-based catalog item
+
 - does the claim exist and what is its state? Describe it to see the status.
   `k get dclconstellations`
 - what is the state of the corresponding composite?
   `k get dclconstellationcomposite`
   `k get dclconstellationcomposite dclconstellation-sample-hx5hk -o jsonpath='{.status.conditions}'`
-- what is the state of the helm release?
+- what is the state of the managed resource (in this case the helm release)?
   `k get releases`
   `k get release dclconstellation-sample-hx5hk-n5r6r -o jsonpath='{.status.conditions}'`
 - what is the status of the pkg.crossplane.io configurations?
   `k get configurations`
   `k get configuration catalog-items-lgtdev -o jsonpath='{.status.conditions}'`
+- what is the status of the pkg.crossplane.io providers?
+  `k get providers`
+  `k get providers provider-helm -o jsonpath='{.status.conditions}'`
 
 ## Further improvements
 

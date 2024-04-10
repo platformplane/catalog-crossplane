@@ -4,3 +4,4 @@ metadata:
   name: mariadbserver-sample
 spec:
   size: 1Gi
+  version: "11"

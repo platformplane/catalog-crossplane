@@ -4,3 +4,4 @@ metadata:
   name: example-rabbitmqserver
 spec:
   size: 3Gi
+  version: "3"

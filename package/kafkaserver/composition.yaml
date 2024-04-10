@@ -34,7 +34,7 @@ spec:
             chart:
               name: kafka
               repository: oci://registry-1.docker.io/bitnamicharts
-              version: 27.1.2 # version 28.0.2 did not work (pods were never healthy)
+              version: 27.1.2 # version 28.0.3 did not work (pods were never healthy)
             namespace: tbd # patch taken from composite spec.claimRef.namespace
             values:
               commonLabels:
@@ -128,6 +128,14 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.kind"
           toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.version"
+          toFieldPath: "spec.forProvider.chart.version"
+          transforms:
+            - type: map
+              map:
+                "3": "27.1.2"
 
         # give resources (service, secrets, ...) the name and namespace of the claim
         - type: FromCompositeFieldPath

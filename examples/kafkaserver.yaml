@@ -4,3 +4,4 @@ metadata:
   name: kafkaserver-sample
 spec:
   size: 1Gi
+  version: "3"

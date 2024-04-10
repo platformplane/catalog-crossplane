@@ -31,7 +31,7 @@ spec:
             chart:
               name: redis
               repository: oci://registry-1.docker.io/bitnamicharts
-              version: 19.0.2
+              version: 19.1.0
             namespace: tbd
             values:
               commonLabels:
@@ -97,6 +97,14 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.kind"
           toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
+          
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.version"
+          toFieldPath: "spec.forProvider.chart.version"
+          transforms:
+            - type: map
+              map:
+                "7": "19.1.0"
 
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"

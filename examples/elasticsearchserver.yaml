@@ -4,3 +4,4 @@ metadata:
   name: elasticsearchserver-sample
 spec:
   size: 1Gi
+  version: "8"

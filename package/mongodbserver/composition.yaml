@@ -31,7 +31,7 @@ spec:
             chart:
               name: mongodb
               repository: oci://registry-1.docker.io/bitnamicharts
-              version: 15.1.1
+              version: 13.16.2
             namespace: tbd
             values:
               commonLabels:
@@ -108,6 +108,16 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.kind"
           toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
+
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.version"
+          toFieldPath: "spec.forProvider.chart.version"
+          transforms:
+            - type: map
+              map:
+                "7": "15.1.4"
+                "6": "13.16.2"
 
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"

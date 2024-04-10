@@ -4,3 +4,4 @@ metadata:
   name: redisserver-sample
 spec:
   size: 1Gi
+  version: "7"

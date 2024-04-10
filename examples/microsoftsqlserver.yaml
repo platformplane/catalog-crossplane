@@ -4,3 +4,4 @@ metadata:
   name: example-mssqlserver
 spec:
   size: 3Gi
+  version: "2022"

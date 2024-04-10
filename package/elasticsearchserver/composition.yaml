@@ -105,6 +105,14 @@ spec:
           toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
 
         - type: FromCompositeFieldPath
+          fromFieldPath: "spec.version"
+          toFieldPath: "spec.forProvider.chart.version"
+          transforms:
+            - type: map
+              map:
+                "8": "20.0.4"
+
+        - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "metadata.annotations[crossplane.io/external-name]"
 

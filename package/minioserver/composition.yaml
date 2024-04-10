@@ -31,7 +31,7 @@ spec:
             chart:
               name: minio
               repository: oci://registry-1.docker.io/bitnamicharts
-              version: 14.1.4
+              version: 12.6.12
             namespace: tbd
             values:
               commonLabels:
@@ -104,6 +104,15 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.kind"
           toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.version"
+          toFieldPath: "spec.forProvider.chart.version"
+          transforms:
+            - type: map
+              map:
+                "2024.4": "14.1.7"
+                "2023.7": "12.6.12"
 
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"

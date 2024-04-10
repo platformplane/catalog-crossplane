@@ -31,7 +31,7 @@ spec:
             chart:
               name: rabbitmq
               repository: oci://registry-1.docker.io/bitnamicharts
-              version: 13.0.2
+              version: 13.0.3
             namespace: tbd
             values:
               commonLabels:
@@ -104,7 +104,15 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.kind"
           toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
-        
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.version"
+          toFieldPath: "spec.forProvider.chart.version"
+          transforms:
+            - type: map
+              map:
+                "3": "13.0.3"
+
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "metadata.annotations[crossplane.io/external-name]"

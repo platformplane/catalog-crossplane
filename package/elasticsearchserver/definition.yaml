@@ -26,8 +26,10 @@ spec:
                 size:
                   type: string
                   pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                databaseName:
+                version:
                   type: string
+                  enum:
+                    - "8"
             status:
               description: ElasticsearchServerStatus defines the observed state of ElasticsearchServer
               type: object

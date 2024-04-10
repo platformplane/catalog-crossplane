@@ -43,7 +43,7 @@ spec:
               fullnameOverride: tbd # patch taken from composite metadata.name (needed because the chart creates a secret with an unpredictable name otherwise)
               architecture: standalone
               auth:
-                database: db # patch taken from composite spec.claimRef.databaseName?
+                database: db
               primary:
                 persistence:
                   size: 8Gi # patch taken from composite spec.size
@@ -106,10 +106,6 @@ spec:
           toFieldPath: "spec.forProvider.values.primary.persistence.size"
 
         - type: FromCompositeFieldPath
-          fromFieldPath: "spec.databaseName"
-          toFieldPath: "spec.forProvider.values.auth.database"
-
-        - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.values.fullnameOverride"
 
@@ -120,6 +116,14 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.kind"
           toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.version"
+          toFieldPath: "spec.forProvider.chart.version"
+          transforms:
+            - type: map
+              map:
+                "11": "18.0.1"
 
         # give resources (service, secrets, ...) the name and namespace of the claim
         - type: FromCompositeFieldPath
