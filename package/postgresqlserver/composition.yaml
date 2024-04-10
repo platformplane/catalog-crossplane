@@ -121,6 +121,15 @@ spec:
               map:
                 "15": "12.8.0"
                 "16": "15.2.4"
+                
+        - type: ToCompositeFieldPath
+          fromFieldPath: "spec.forProvider.chart.version"
+          toFieldPath: "spec.version"
+          transforms:
+            - type: map
+              map:
+                "12.8.0": "15"
+                "15.2.4": "16"
 
         # give resources (service, secrets, ...) the name and namespace of the claim
         - type: FromCompositeFieldPath

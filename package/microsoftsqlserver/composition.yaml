@@ -234,6 +234,15 @@ spec:
                 "2019": "mcr.microsoft.com/mssql/server:2019-latest"
                 "2022": "mcr.microsoft.com/mssql/server:2022-latest"
 
+        - type: ToCompositeFieldPath
+          fromFieldPath: "spec.forProvider.chart.version"
+          toFieldPath: "spec.version"
+          transforms:
+            - type: map
+              map:
+                "mcr.microsoft.com/mssql/server:2019-latest": "2019"
+                "mcr.microsoft.com/mssql/server:2022-latest": "2022"
+                
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.kind"
           toFieldPath: "spec.forProvider.manifest.spec.volumeClaimTemplates[0].metadata.labels['catalog.cluster.local/kind']"

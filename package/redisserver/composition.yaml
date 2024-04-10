@@ -105,6 +105,14 @@ spec:
             - type: map
               map:
                 "7": "19.1.0"
+                
+        - type: ToCompositeFieldPath
+          fromFieldPath: "spec.forProvider.chart.version"
+          toFieldPath: "spec.version"
+          transforms:
+            - type: map
+              map:
+                "19.1.0": "7"
 
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
