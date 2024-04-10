@@ -109,19 +109,30 @@ In order that the catalog actually shows your items, you need to make sure the C
 ## How to debug e.g. a new helm-based catalog item
 
 - does the claim exist and what is its state? Describe it to see the status.
-  `k get dclconstellations`
+  ```yaml
+  kubectl get dclconstellations
+  kubectl describe dclconstellations sample-dclconstellation
+  ```
 - what is the state of the corresponding composite?
-  `k get dclconstellationcomposite`
-  `k get dclconstellationcomposite dclconstellation-sample-hx5hk -o jsonpath='{.status.conditions}'`
+  ```yaml
+  kubectl get dclconstellationcomposite
+  kubectl get dclconstellationcomposite dclconstellation-sample-hx5hk -o jsonpath='{.status.conditions}'
+  ```
 - what is the state of the managed resource (in this case the helm release)?
-  `k get releases`
-  `k get release dclconstellation-sample-hx5hk-n5r6r -o jsonpath='{.status.conditions}'`
+  ```yaml
+  kubectl get releases
+  kubectl get release dclconstellation-sample-hx5hk-n5r6r -o jsonpath='{.status.conditions}'
+  ```
 - what is the status of the pkg.crossplane.io configurations?
-  `k get configurations`
-  `k get configuration catalog-items-lgtdev -o jsonpath='{.status.conditions}'`
+  ```yaml
+  kubectl get configurations
+  kubectl get configuration catalog-items-lgtdev -o jsonpath='{.status.conditions}'
+  ```
 - what is the status of the pkg.crossplane.io providers?
-  `k get providers`
-  `k get providers provider-helm -o jsonpath='{.status.conditions}'`
+  ```yaml
+  kubectl get providers
+  kubectl get providers provider-helm -o jsonpath='{.status.conditions}'
+  ```
 
 ## Further improvements
 
