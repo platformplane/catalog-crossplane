@@ -52,6 +52,8 @@ data:
       package: registry.nimbusplane.io/common/lgt/platform/catalog-items:0.1.0-rc.2
 ```
 
+Please note that removing an entry from this list will not remove the Crossplane definitions (along with the CRDs and CRs). In case you want to remove all resources of a specific package (inlcuding all instances!), you need to delete the configuration package from `configurations.pkg.crossplane.io`.
+
 If the packages are to be fetched from private registries, Crossplane needs package pull secrets (similar to ImagePullSecrets) to be able to pull the packages. This is done by the platform (gitlab-operator). It creates the secret `default-registry` in the `crossplane-system` namespace similar to:
 
 ```bash
@@ -133,6 +135,15 @@ In order that the catalog actually shows your items, you need to make sure the C
   kubectl get providers
   kubectl get providers provider-helm -o jsonpath='{.status.conditions}'
   ```
+
+## Useful commands to test items
+
+### Elasticsearch
+
+```bash
+curl http://elasticsearchserver-sample:9200/_cluster/health?pretty
+```
+
 
 ## Further improvements
 
