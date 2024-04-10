@@ -2,6 +2,8 @@
 
 The items shown in the catalog v2 are developed here.
 
+Reference to old catalog v1 controllers: [here](https://github.com/platformplane/catalog-operator/blob/95a60704fe4cb6d6781cbc869fd331c023ea9722/internal/controller)
+
 ![catalogv1ui](catalogv1ui.png)
 
 ## Repo Overview
@@ -144,6 +146,123 @@ In order that the catalog actually shows your items, you need to make sure the C
 curl http://elasticsearchserver-sample:9200/_cluster/health?pretty
 ```
 
+### Kafka
+
+```bash
+create file client.properties:
+security.protocol=SASL_PLAINTEXT
+sasl.mechanism=SCRAM-SHA-256
+sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required \
+    username="user" \
+    password="$(kubectl get secret kafka-user-passwords --namespace test -o jsonpath='{.data.client-passwords}' | base64 -d | cut -d , -f 1)";
+kubectl run kafka-kafka-client --restart='Never' --image docker.io/bitnami/kafka:3.7.0-debian-12-r0 --namespace test --command -- sleep infinity
+kubectl cp --namespace test ./client.properties kafka-kafka-client:/tmp/client.properties
+kubectl exec --tty -i kafka-kafka-client --namespace test -- bash
+kafka-console-producer.sh \
+            --producer.config /tmp/client.properties \
+            --broker-list kafka-controller-0.kafka-controller-headless.test.svc.cluster.local:9092 \
+            --topic test
+kafka-console-consumer.sh \
+            --consumer.config /tmp/client.properties \
+            --bootstrap-server kafka-controller-0.kafka-controller-headless.test.svc.cluster.local:9092 \
+            --topic test --from-beginning
+```
+
+### MariaDB
+
+```bash
+kubectl exec -it maria-0 -n test -- mysql -u root -p db
+```
+
+### MinIO
+
+```bash
+mc alias set myminio http://minio:9000 admin mT8cbUPOlD
+mc mb myminio/bucket
+mc ls myminio
+```
+
+### Redis
+
+```bash
+redis-cli -h redis-master -p 6379 -a bLaesXrA1V
+```
+
+## Known issues
+
+- Several charts (elastic, kafka, mariadb, MsSql which is plain yaml) do not provide the `persistentVolumeClaimRetentionPolicy` parameter which is needed to remove the PVCs when the Helm release is deleted. Therefore, the crossplane operator removes them manually after the catalog item removal. Alternatively, we could create our own PCV with Crossplane as part of the composition and reference that as existingClaim in the Helm release:
+
+```yaml
+  resources:
+    - name: pvc
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: provider-kubernetes
+          forProvider:
+            manifest:
+              apiVersion: v1
+              kind: PersistentVolumeClaim
+              metadata:
+                name: tbd-name
+                namespace: tbd-namespace
+                labels:
+                  catalog.cluster.local/kind: tbd-kind
+                  catalog.cluster.local/name: tbd-name
+              spec:
+                accessModes:
+                  - ReadWriteOnce
+                resources:
+                  requests:
+                    storage: 8Gi
+
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.name"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.kind"
+          toFieldPath: "spec.forProvider.manifest.metadata.labels['catalog.cluster.local/kind']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.labels['catalog.cluster.local/name']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.size"
+          toFieldPath: "spec.forProvider.manifest.spec.resources.requests.storage"
+
+    - name: helm-release
+      base:
+      ...
+        spec:
+          forProvider:
+            values:
+              master:
+                persistence:
+                  existingClaim: tbd
+      ...            
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.values.master.persistence.existingClaim"
+```
+
+### Kafka
+
+- The replica count cannot be set to 1 as internal topics like `__consumer_offsets` require a replication factor of 3. All settings to change this tried with chart version 27.1.2 did not work.
+- Chart version 28.0.3 is not working at all (just doing `helm install my-release oci://registry-1.docker.io/bitnamicharts/kafka` does not lead to healthy pods)
+
+### Redis
+
+- `consoel redis client` is not authenticating correctly, see error message when calling e.g. `INFO` command
 
 ## Further improvements
 

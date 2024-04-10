@@ -1,71 +1,8 @@
 TODOs
 
-old v1 list: https://github.com/platformplane/catalog-operator/blob/95a60704fe4cb6d6781cbc869fd331c023ea9722/internal/controller/redisserver_controller.go
-
-Testing:
-Demo: curl demo:80
-
-ElasticSearch: curl http://elastic:9200/_cluster/health?pretty
-- pvc not deleted (possible via chart? via crossplane? otherwise e.g. use existingvolume and create it as part of composition?)
-
-Kafka: 
-create file client.properties:
-security.protocol=SASL_PLAINTEXT
-sasl.mechanism=SCRAM-SHA-256
-sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required \
-    username="user" \
-    password="$(kubectl get secret kafka-user-passwords --namespace test -o jsonpath='{.data.client-passwords}' | base64 -d | cut -d , -f 1)";
-kubectl run kafka-kafka-client --restart='Never' --image docker.io/bitnami/kafka:3.7.0-debian-12-r0 --namespace test --command -- sleep infinity
-kubectl cp --namespace test ./client.properties kafka-kafka-client:/tmp/client.properties
-kubectl exec --tty -i kafka-kafka-client --namespace test -- bash
-kafka-console-producer.sh \
-            --producer.config /tmp/client.properties \
-            --broker-list kafka-controller-0.kafka-controller-headless.test.svc.cluster.local:9092 \
-            --topic test
-kafka-console-consumer.sh \
-            --consumer.config /tmp/client.properties \
-            --bootstrap-server kafka-controller-0.kafka-controller-headless.test.svc.cluster.local:9092 \
-            --topic test --from-beginning
-
-
-- controller.replicaCount auf 1 (statt default 3) setzen? Latest version geht sonst nicht, evtl. sowieso einfacher? Oder letzte Version nehmen, bei der es mit 3 noch ging?
-- PVCs bleiben
-
-MariaDB: kubectl exec -it maria-0 -n test -- mysql -u root -p db
-- PVC bleibt
-
-MS SQL:
-- mssql is not part of console anymore? but commands shown in UI (never was there, create it, see teams)
-- PVC bleibt
-
-Minio: 
-mc alias set myminio http://minio:9000 admin mT8cbUPOlD
-mc mb myminio/bucket
-mc ls myminio
-
-MongoDB:
-
-Postgres: 
-
-RabbitMQ:
-
-Redis: redis-cli -h redis-master -p 6379 -a bLaesXrA1V
-- console redis client geht nicht (not authenticated)
-console redis client
-v crossplane-test
-v default/redisserver-sample
-^[[17;1RSET key cal
-                                                                                                                     ^
- [18;118RINFO
-127.0.0.1:6379> INFO
-NOAUTH Authentication required.
-
 Allgemein:
-- console info zeigt öfters nichts / nicht alles an
 - wollen wir den "Server" Suffix in den Namen behalten, z.B. "PostgreSQLServer" oder nur "PostgreSQL"?
 
-
-dcl-constellation
 
 
 # Migration Simulation Kind:

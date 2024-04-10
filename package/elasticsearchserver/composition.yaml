@@ -17,51 +17,6 @@ spec:
   writeConnectionSecretsToNamespace: crossplane-system
 
   resources:
-    - name: pvc
-      base:
-        apiVersion: kubernetes.crossplane.io/v1alpha2
-        kind: Object
-        spec:
-          providerConfigRef:
-            name: provider-kubernetes
-          forProvider:
-            manifest:
-              apiVersion: v1
-              kind: PersistentVolumeClaim
-              metadata:
-                name: tbd-name
-                namespace: tbd-namespace
-                labels:
-                  catalog.cluster.local/kind: tbd-kind
-                  catalog.cluster.local/name: tbd-name
-              spec:
-                accessModes:
-                  - ReadWriteOnce
-                resources:
-                  requests:
-                    storage: 10Gi
-
-      patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.manifest.metadata.name"
-
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
-
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.kind"
-          toFieldPath: "spec.forProvider.manifest.metadata.labels['catalog.cluster.local/kind']"
-
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.manifest.metadata.labels['catalog.cluster.local/name']"
-
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.size"
-          toFieldPath: "spec.forProvider.manifest.spec.resources.requests.storage"
-
     - name: helm-release
       base:
         apiVersion: helm.crossplane.io/v1beta1
@@ -87,7 +42,7 @@ spec:
                 masterOnly: false
                 replicaCount: 1
                 persistence:
-                  existingClaim: tbd
+                  size: 8Gi
               data:
                 replicaCount: 0
               coordinating:
@@ -134,8 +89,8 @@ spec:
 
       patches:
         - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.values.master.persistence.existingClaim"
+          fromFieldPath: "spec.size"
+          toFieldPath: "spec.forProvider.values.master.persistence.size"
           
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
