@@ -31,7 +31,7 @@ spec:
             chart:
               name: rabbitmq
               repository: oci://registry-1.docker.io/bitnamicharts
-              version: 13.0.3
+              version: 13.0.3 # also update the version in the map transform below!
             namespace: tbd
             values:
               commonLabels:

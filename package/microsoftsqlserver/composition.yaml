@@ -148,7 +148,7 @@ spec:
                         name: data
                         subPath: mssql
                     containers:
-                    - image: mcr.microsoft.com/mssql/server:2019-latest
+                    - image: mcr.microsoft.com/mssql/server:2022-latest # also update the version in the map transform below!
                       imagePullPolicy: Always
                       name: mssql
                       env:

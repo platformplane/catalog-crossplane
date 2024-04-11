@@ -149,22 +149,24 @@ curl http://elasticsearchserver-sample:9200/_cluster/health?pretty
 ### Kafka
 
 ```bash
-create file client.properties:
+code client.properties
+# paste the following content
 security.protocol=SASL_PLAINTEXT
 sasl.mechanism=SCRAM-SHA-256
 sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required \
     username="user" \
     password="$(kubectl get secret kafka-user-passwords --namespace test -o jsonpath='{.data.client-passwords}' | base64 -d | cut -d , -f 1)";
+# save the file and run the following commands
 kubectl run kafka-kafka-client --restart='Never' --image docker.io/bitnami/kafka:3.7.0-debian-12-r0 --namespace test --command -- sleep infinity
 kubectl cp --namespace test ./client.properties kafka-kafka-client:/tmp/client.properties
 kubectl exec --tty -i kafka-kafka-client --namespace test -- bash
 kafka-console-producer.sh \
             --producer.config /tmp/client.properties \
-            --broker-list kafka-controller-0.kafka-controller-headless.test.svc.cluster.local:9092 \
+            --broker-list kafkaserver-sample-controller-0.kafkaserver-sample-controller-headless.test.svc.cluster.local:9092 \
             --topic test
 kafka-console-consumer.sh \
             --consumer.config /tmp/client.properties \
-            --bootstrap-server kafka-controller-0.kafka-controller-headless.test.svc.cluster.local:9092 \
+            --bootstrap-server kafkaserver-sample-controller-0.kafkaserver-sample-controller-headless.test.svc.cluster.local:9092 \
             --topic test --from-beginning
 ```
 
@@ -177,7 +179,7 @@ kubectl exec -it maria-0 -n test -- mysql -u root -p db
 ### MinIO
 
 ```bash
-mc alias set myminio http://minio:9000 admin mT8cbUPOlD
+mc alias set myminio http://minioserver-sample:9000 admin kPUMn2JZTc
 mc mb myminio/bucket
 mc ls myminio
 ```
@@ -190,6 +192,7 @@ redis-cli -h redis-master -p 6379 -a bLaesXrA1V
 
 ## Known issues
 
+- console intregration does not offer all options shown in UI and sometimes does not seem to show all connection information
 - Several charts (elastic, kafka, mariadb, MsSql which is plain yaml) do not provide the `persistentVolumeClaimRetentionPolicy` parameter which is needed to remove the PVCs when the Helm release is deleted. Therefore, the crossplane operator removes them manually after the catalog item removal. Alternatively, we could create our own PCV with Crossplane as part of the composition and reference that as existingClaim in the Helm release:
 
 ```yaml
@@ -254,11 +257,6 @@ redis-cli -h redis-master -p 6379 -a bLaesXrA1V
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.values.master.persistence.existingClaim"
 ```
-
-### Kafka
-
-- The replica count cannot be set to 1 as internal topics like `__consumer_offsets` require a replication factor of 3. All settings to change this tried with chart version 27.1.2 did not work.
-- Chart version 28.0.3 is not working at all (just doing `helm install my-release oci://registry-1.docker.io/bitnamicharts/kafka` does not lead to healthy pods)
 
 ### Redis
 

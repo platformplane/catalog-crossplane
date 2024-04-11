@@ -31,7 +31,7 @@ spec:
             chart:
               name: minio
               repository: oci://registry-1.docker.io/bitnamicharts
-              version: 12.6.12
+              version: 14.1.7 # also update the version in the map transform below!
             namespace: tbd
             values:
               commonLabels:

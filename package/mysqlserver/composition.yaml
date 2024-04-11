@@ -34,7 +34,7 @@ spec:
             chart:
               name: mysql
               repository: oci://registry-1.docker.io/bitnamicharts
-              version: 10.1.1
+              version: 10.1.1 # also update the version in the map transform below!
             namespace: tbd # patch taken from composite spec.claimRef.namespace
             values:
               commonLabels:

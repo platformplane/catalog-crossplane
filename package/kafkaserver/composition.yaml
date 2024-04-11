@@ -34,7 +34,7 @@ spec:
             chart:
               name: kafka
               repository: oci://registry-1.docker.io/bitnamicharts
-              version: 27.1.2 # version 28.0.3 did not work (pods were never healthy)
+              version: 28.0.3 # also update the version in the map transform below!
             namespace: tbd # patch taken from composite spec.claimRef.namespace
             values:
               commonLabels:
@@ -48,7 +48,7 @@ spec:
               controller:
                 persistence:
                   size: 8Gi # patch taken from composite spec.size
-                replicaCount: 3 # 1 does not work since internal topic __consumer_offsets still wants to have 3 replicas
+                replicaCount: 1
               broker:
                 persistence:
                   size: 8Gi # patch taken from composite spec.size
@@ -58,6 +58,9 @@ spec:
                   enabled: true
                 serviceMonitor:
                   enabled: true
+              extraConfig: |-
+                offsets.topic.replication.factor=1
+                transaction.state.log.replication.factor=1
 
           # the connection details of this resource
           connectionDetails: # list the "secrets" created by this managed resources (further down, they are used to create the connection details for the whole composite)
@@ -135,7 +138,7 @@ spec:
           transforms:
             - type: map
               map:
-                "3": "27.1.2"
+                "3": "28.0.3"
 
         - type: ToCompositeFieldPath
           fromFieldPath: "spec.forProvider.chart.version"
@@ -143,7 +146,7 @@ spec:
           transforms:
             - type: map
               map:
-                "27.1.2": "3"
+                "28.0.3": "3"
 
         # give resources (service, secrets, ...) the name and namespace of the claim
         - type: FromCompositeFieldPath

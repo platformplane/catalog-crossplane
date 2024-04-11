@@ -1,0 +1,7 @@
+apiVersion: catalog.cluster.local/v1
+kind: MicrosoftSQLServer
+metadata:
+  name: example-mssqlserver
+spec:
+  size: 3Gi
+  version: "2019"
