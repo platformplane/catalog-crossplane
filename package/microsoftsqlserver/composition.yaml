@@ -37,6 +37,9 @@ spec:
                 labels:
                   catalog.cluster.local/kind: tbd-kind
                   catalog.cluster.local/name: tbd-name
+                  app.kubernetes.io/name: mssql
+                  app.kubernetes.io/instance: tbd-name
+                  app.kubernetes.io/version: tbd-version
               stringData:
                 sa-password: "Ex4mple!" # check whether i can crate this with crossplane
 
@@ -68,6 +71,14 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.namespace"
           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.labels['app.kubernetes.io/instance']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.version"
+          toFieldPath: "spec.forProvider.manifest.metadata.labels['app.kubernetes.io/version']"
 
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
@@ -121,6 +132,9 @@ spec:
                 labels:
                   catalog.cluster.local/kind: tbd-kind
                   catalog.cluster.local/name: tbd-name
+                  app.kubernetes.io/name: mssql
+                  app.kubernetes.io/instance: tbd-name
+                  app.kubernetes.io/version: tbd-version
                 name: tbd-name
                 namespace: tbd-namespace
               spec:
@@ -128,12 +142,18 @@ spec:
                   matchLabels:
                     catalog.cluster.local/kind: tbd-kind
                     catalog.cluster.local/name: tbd-name
+                    app.kubernetes.io/name: mssql
+                    app.kubernetes.io/instance: tbd-name
+                    app.kubernetes.io/version: tbd-version
                 serviceName: tbd-name
                 template:
                   metadata:
                     labels:
                       catalog.cluster.local/kind: tbd-kind
                       catalog.cluster.local/name: tbd-name
+                      app.kubernetes.io/name: mssql
+                      app.kubernetes.io/instance: tbd-name
+                      app.kubernetes.io/version: tbd-version
                   spec:
                     initContainers:
                     - command:
@@ -173,6 +193,9 @@ spec:
                     labels:
                       catalog.cluster.local/kind: tbd-kind
                       catalog.cluster.local/name: tbd-name
+                      app.kubernetes.io/name: mssql
+                      app.kubernetes.io/instance: tbd-name
+                      app.kubernetes.io/version: tbd-version
                     name: data
                   spec:
                     accessModes:
@@ -185,6 +208,14 @@ spec:
       patches:
 
         # get the values for the chart from the claim
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.labels['app.kubernetes.io/instance']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.version"
+          toFieldPath: "spec.forProvider.manifest.metadata.labels['app.kubernetes.io/version']"
+
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.manifest.metadata.labels['catalog.cluster.local/name']"
@@ -203,6 +234,14 @@ spec:
 
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.spec.selector.matchLabels['app.kubernetes.io/instance']"
+          
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.version"
+          toFieldPath: "spec.forProvider.manifest.spec.selector.matchLabels['app.kubernetes.io/version']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.manifest.spec.selector.matchLabels['catalog.cluster.local/name']"
 
         - type: FromCompositeFieldPath
@@ -212,6 +251,14 @@ spec:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.manifest.spec.serviceName"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.spec.template.metadata.labels['app.kubernetes.io/instance']"
+          
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.version"
+          toFieldPath: "spec.forProvider.manifest.spec.template.metadata.labels['app.kubernetes.io/version']"
 
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
@@ -235,7 +282,7 @@ spec:
                 "2022": "mcr.microsoft.com/mssql/server:2022-latest"
 
         - type: ToCompositeFieldPath
-          fromFieldPath: "spec.forProvider.chart.version"
+          fromFieldPath: "spec.forProvider.manifest.spec.template.spec.containers[0].image"
           toFieldPath: "spec.version"
           transforms:
             - type: map
@@ -244,12 +291,20 @@ spec:
                 "mcr.microsoft.com/mssql/server:2022-latest": "2022"
                 
         - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.kind"
-          toFieldPath: "spec.forProvider.manifest.spec.volumeClaimTemplates[0].metadata.labels['catalog.cluster.local/kind']"
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.spec.volumeClaimTemplates[0].metadata.labels['app.kubernetes.io/instance']"
+          
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.version"
+          toFieldPath: "spec.forProvider.manifest.spec.volumeClaimTemplates[0].metadata.labels['app.kubernetes.io/version']"
 
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.manifest.spec.volumeClaimTemplates[0].metadata.labels['catalog.cluster.local/name']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.kind"
+          toFieldPath: "spec.forProvider.manifest.spec.volumeClaimTemplates[0].metadata.labels['catalog.cluster.local/kind']"
 
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.size"
@@ -272,6 +327,9 @@ spec:
                 labels:
                   catalog.cluster.local/kind: tbd
                   catalog.cluster.local/name: tbd
+                  app.kubernetes.io/name: mssql
+                  app.kubernetes.io/instance: tbd-name
+                  app.kubernetes.io/version: tbd-version
               spec:
                 ports:
                   - name: http
@@ -281,6 +339,9 @@ spec:
                 selector:
                   catalog.cluster.local/kind: tbd
                   catalog.cluster.local/name: tbd
+                  app.kubernetes.io/name: mssql
+                  app.kubernetes.io/instance: tbd-name
+                  app.kubernetes.io/version: tbd-version
 
       connectionDetails:
         - name: port
@@ -309,12 +370,28 @@ spec:
           toFieldPath: "spec.forProvider.manifest.metadata.labels['catalog.cluster.local/name']"
 
         - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.labels['app.kubernetes.io/instance']"
+          
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.version"
+          toFieldPath: "spec.forProvider.manifest.metadata.labels['app.kubernetes.io/version']"
+
+        - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.kind"
           toFieldPath: "spec.forProvider.manifest.spec.selector['catalog.cluster.local/kind']"
 
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.claimRef.name"
           toFieldPath: "spec.forProvider.manifest.spec.selector['catalog.cluster.local/name']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.spec.selector['app.kubernetes.io/instance']"
+          
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.version"
+          toFieldPath: "spec.forProvider.manifest.spec.selector['app.kubernetes.io/version']"
 
         - type: CombineToComposite
           combine:

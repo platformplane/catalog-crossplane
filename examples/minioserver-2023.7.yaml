@@ -1,7 +1,7 @@
 apiVersion: catalog.cluster.local/v1
 kind: MinIOServer
 metadata: 
-  name: minioserver-sample
+  name: minioserver-sample-2023
 spec:
   size: 1Gi
   version: "2023.7"

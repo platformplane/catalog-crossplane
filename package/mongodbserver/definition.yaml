@@ -29,6 +29,7 @@ spec:
                 version:
                   type: string
                   enum:
+                    - "6"
                     - "7"
             status:
               type: object
