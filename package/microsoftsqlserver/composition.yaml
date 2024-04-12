@@ -21,6 +21,44 @@ spec:
 
   mode: Pipeline
   pipeline:
+# TODO:
+# https://github.com/crossplane-contrib/function-auto-ready
+# https://github.com/crossplane-contrib/function-go-templating/blob/main/example/custom-delims/composition.yaml
+# https://github.com/crossplane-contrib/function-go-templating?tab=readme-ov-file
+# https://github.com/crossplane/crossplane/issues/1895#issuecomment-1969733598
+    # - step: create-a-random-secret
+    #   functionRef:
+    #     name: function-go-templating
+    #   input:
+    #     apiVersion: gotemplating.fn.crossplane.io/v1beta1
+    #     kind: GoTemplate
+    #     source: Inline
+    #     inline:
+    #       template: |
+    #         apiVersion: v1
+    #         kind: Secret
+    #         metadata:
+    #           name: {{ .observed.composite.resource.spec.claimRef.name }}
+    #           namespace: {{ .observed.composite.resource.spec.claimRef.namespace }}
+    #           labels:
+    #             catalog.cluster.local/kind: {{ .observed.composite.resource.spec.claimRef.kind }}
+    #             catalog.cluster.local/name: {{ .observed.composite.resource.spec.claimRef.name }}
+    #             app.kubernetes.io/name: mssql
+    #             app.kubernetes.io/instance: {{ .observed.composite.resource.spec.claimRef.name }}
+    #             app.kubernetes.io/version: {{ .observed.composite.resource.spec.version }}
+    #         stringData:
+    #           sa-password: {{ dig "resources" "my-resource" "resource" "stringData" "sa-password" (randAlphaNum 12) .observed }}
+    #         ---
+    #         apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+    #         kind: CompositeConnectionDetails
+    #         {{ if eq $.observed.resources nil }}
+    #         data: {}
+    #         {{ else }}
+    #         data:
+    #           password: connection-secret-value
+    #         {{ end }}
+        
+
     - step: patch-and-transform
       functionRef:
         name: crossplane-contrib-function-patch-and-transform
