@@ -15,150 +15,160 @@ spec:
     kind: ElasticsearchServerComposite
 
   writeConnectionSecretsToNamespace: crossplane-system
+  
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: crossplane-contrib-function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        environment: null
+        kind: Resources
+        patchSets: []
+        resources:
+          - name: helm-release
+            base:
+              apiVersion: helm.crossplane.io/v1beta1
+              kind: Release
+              metadata:
+                annotations:
+                  crossplane.io/external-name: tbd
+              spec:
+                providerConfigRef:
+                  name: provider-helm
+                forProvider:
+                  chart:
+                    name: elasticsearch
+                    repository: oci://registry-1.docker.io/bitnamicharts
+                    version: 20.0.4
+                  namespace: tbd
+                  values:
+                    commonLabels:
+                      catalog.cluster.local/kind: tbd
+                      catalog.cluster.local/name: tbd
+                    fullnameOverride: tbd
+                    master:
+                      masterOnly: false
+                      replicaCount: 1
+                      persistence:
+                        size: 8Gi
+                    data:
+                      replicaCount: 0
+                    coordinating:
+                      replicaCount: 0
+                    ingest:
+                      replicaCount: 0
+                    # metrics: # this is disabled because the metrics deployment is not deleted when the release is deleted (version 20.0.4)
+                    #   enabled: true
+                    #   serviceMonitor:
+                    #     enabled: true
+                    # think about password and kibana parameters https://artifacthub.io/packages/helm/bitnami/elasticsearch
 
-  resources:
-    - name: helm-release
-      base:
-        apiVersion: helm.crossplane.io/v1beta1
-        kind: Release
-        metadata:
-          annotations:
-            crossplane.io/external-name: tbd
-        spec:
-          providerConfigRef:
-            name: provider-helm
-          forProvider:
-            chart:
-              name: elasticsearch
-              repository: oci://registry-1.docker.io/bitnamicharts
-              version: 20.0.4
-            namespace: tbd
-            values:
-              commonLabels:
-                catalog.cluster.local/kind: tbd
-                catalog.cluster.local/name: tbd
-              fullnameOverride: tbd
-              master:
-                masterOnly: false
-                replicaCount: 1
-                persistence:
-                  size: 8Gi
-              data:
-                replicaCount: 0
-              coordinating:
-                replicaCount: 0
-              ingest:
-                replicaCount: 0
-              # metrics: # this is disabled because the metrics deployment is not deleted when the release is deleted (version 20.0.4)
-              #   enabled: true
-              #   serviceMonitor:
-              #     enabled: true
-              # think about password and kibana parameters https://artifacthub.io/packages/helm/bitnami/elasticsearch
+                connectionDetails:
+                  - apiVersion: v1
+                    kind: Service
+                    name:
+                    namespace:
+                    fieldPath: spec.ports[0].port
+                    toConnectionSecretKey: port
 
-          connectionDetails:
-            - apiVersion: v1
-              kind: Service
-              name:
-              namespace:
-              fieldPath: spec.ports[0].port
-              toConnectionSecretKey: port
+                writeConnectionSecretToRef:
+                  namespace: tbd
 
-          writeConnectionSecretToRef:
-            namespace: tbd
+            connectionDetails:
+              - name: username
+                type: FromFieldPath
+                fromFieldPath: "spec.forProvider.values.rootUser"
 
-      connectionDetails:
-        - name: username
-          type: FromFieldPath
-          fromFieldPath: "spec.forProvider.values.rootUser"
+              - name: password
+                type: FromConnectionSecretKey
+                fromConnectionSecretKey: password
 
-        - name: password
-          type: FromConnectionSecretKey
-          fromConnectionSecretKey: password
+              - name: port
+                type: FromConnectionSecretKey
+                fromConnectionSecretKey: port
 
-        - name: port
-          type: FromConnectionSecretKey
-          fromConnectionSecretKey: port
+              - name: database
+                type: FromFieldPath
+                fromFieldPath: "spec.forProvider.values.auth.database"
 
-        - name: database
-          type: FromFieldPath
-          fromFieldPath: "spec.forProvider.values.auth.database"
+              - name: host
+                type: FromFieldPath
+                fromFieldPath: "metadata.annotations['host']"
 
-        - name: host
-          type: FromFieldPath
-          fromFieldPath: "metadata.annotations['host']"
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.size"
+                toFieldPath: "spec.forProvider.values.master.persistence.size"
+                
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "spec.forProvider.values.fullnameOverride"
 
-      patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.size"
-          toFieldPath: "spec.forProvider.values.master.persistence.size"
-          
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.values.fullnameOverride"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/name']"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/name']"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.kind"
+                toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.kind"
-          toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.version"
+                toFieldPath: "spec.forProvider.chart.version"
+                transforms:
+                  - type: map
+                    map:
+                      "8": "20.0.4"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.version"
-          toFieldPath: "spec.forProvider.chart.version"
-          transforms:
-            - type: map
-              map:
-                "8": "20.0.4"
+              - type: ToCompositeFieldPath
+                fromFieldPath: "spec.forProvider.chart.version"
+                toFieldPath: "spec.version"
+                transforms:
+                  - type: map
+                    map:
+                      "20.0.4": "8"
 
-        - type: ToCompositeFieldPath
-          fromFieldPath: "spec.forProvider.chart.version"
-          toFieldPath: "spec.version"
-          transforms:
-            - type: map
-              map:
-                "20.0.4": "8"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "metadata.annotations[crossplane.io/external-name]"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "metadata.annotations[crossplane.io/external-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.namespace"
+                toFieldPath: "spec.forProvider.namespace"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.forProvider.namespace"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "spec.connectionDetails[0].name"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.connectionDetails[0].name"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.namespace"
+                toFieldPath: "spec.connectionDetails[0].namespace"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.connectionDetails[0].namespace"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.namespace"
+                toFieldPath: "spec.writeConnectionSecretToRef.namespace"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.writeConnectionSecretToRef.namespace"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "spec.writeConnectionSecretToRef.name"
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: "%s-connection"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.writeConnectionSecretToRef.name"
-          transforms:
-            - type: string
-              string:
-                type: Format
-                fmt: "%s-connection"
-
-        - type: CombineToComposite
-          combine:
-            variables:
-              - fromFieldPath: spec.forProvider.values.fullnameOverride
-              - fromFieldPath: spec.forProvider.namespace
-            strategy: string
-            string:
-              fmt: "%s.%s"
-          toFieldPath: status.credentials.host
-          
-        - type: FromCompositeFieldPath
-          fromFieldPath: "status.credentials.host"
-          toFieldPath: "metadata.annotations['host']"
+              - type: CombineToComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.forProvider.values.fullnameOverride
+                    - fromFieldPath: spec.forProvider.namespace
+                  strategy: string
+                  string:
+                    fmt: "%s.%s"
+                toFieldPath: status.credentials.host
+                
+              - type: FromCompositeFieldPath
+                fromFieldPath: "status.credentials.host"
+                toFieldPath: "metadata.annotations['host']"

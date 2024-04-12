@@ -19,191 +19,201 @@ spec:
   # Be aware that you can't patch this field (it's in the composition, not in a resource or the composite)
   # The namespace where the user can get his combined secret (the same as this one) is specified implicitly by the claim's namespace if you set the writeConnectionSecretToRef.name in the claim (one could think that this field here is therefore not needed, but it is, without it, there is also no combined secret written to the claim's namespace)
 
-  resources:
-    - name: helm-release # definition: https://doc.crds.dev/github.com/crossplane-contrib/provider-helm/helm.crossplane.io/Release/v1beta1@v0.15.0
-      base:
-        apiVersion: helm.crossplane.io/v1beta1
-        kind: Release # full example, see: https://github.com/crossplane-contrib/provider-helm/blob/master/examples/sample/release.yaml
-        metadata:
-          annotations:
-            crossplane.io/external-name: tbd
-        spec:
-          providerConfigRef:
-            name: provider-helm
-          forProvider:
-            chart:
-              name: kafka
-              repository: oci://registry-1.docker.io/bitnamicharts
-              version: 28.0.3 # also update the version in the map transform below!
-            namespace: tbd # patch taken from composite spec.claimRef.namespace
-            values:
-              commonLabels:
-                catalog.cluster.local/kind: tbd # patch taken from composite spec.claimRef.kind
-                catalog.cluster.local/name: tbd # patch taken from composite spec.claimRef.name
-              fullnameOverride: tbd # patch taken from composite metadata.name (needed because the chart creates a secret with an unpredictable name otherwise)
-              sasl:
-                client:
-                  users:
-                    - user
-              controller:
-                persistence:
-                  size: 8Gi # patch taken from composite spec.size
-                replicaCount: 1
-              broker:
-                persistence:
-                  size: 8Gi # patch taken from composite spec.size
-              metrics:
-                enabled: true
-                kafka:
-                  enabled: true
-                serviceMonitor:
-                  enabled: true
-              extraConfig: |-
-                offsets.topic.replication.factor=1
-                transaction.state.log.replication.factor=1
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: crossplane-contrib-function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        environment: null
+        kind: Resources
+        patchSets: []
+        resources:
+          - name: helm-release # definition: https://doc.crds.dev/github.com/crossplane-contrib/provider-helm/helm.crossplane.io/Release/v1beta1@v0.15.0
+            base:
+              apiVersion: helm.crossplane.io/v1beta1
+              kind: Release # full example, see: https://github.com/crossplane-contrib/provider-helm/blob/master/examples/sample/release.yaml
+              metadata:
+                annotations:
+                  crossplane.io/external-name: tbd
+              spec:
+                providerConfigRef:
+                  name: provider-helm
+                forProvider:
+                  chart:
+                    name: kafka
+                    repository: oci://registry-1.docker.io/bitnamicharts
+                    version: 28.0.3 # also update the version in the map transform below!
+                  namespace: tbd # patch taken from composite spec.claimRef.namespace
+                  values:
+                    commonLabels:
+                      catalog.cluster.local/kind: tbd # patch taken from composite spec.claimRef.kind
+                      catalog.cluster.local/name: tbd # patch taken from composite spec.claimRef.name
+                    fullnameOverride: tbd # patch taken from composite metadata.name (needed because the chart creates a secret with an unpredictable name otherwise)
+                    sasl:
+                      client:
+                        users:
+                          - user
+                    controller:
+                      persistence:
+                        size: 8Gi # patch taken from composite spec.size
+                      replicaCount: 1
+                    broker:
+                      persistence:
+                        size: 8Gi # patch taken from composite spec.size
+                    metrics:
+                      enabled: true
+                      kafka:
+                        enabled: true
+                      serviceMonitor:
+                        enabled: true
+                    extraConfig: |-
+                      offsets.topic.replication.factor=1
+                      transaction.state.log.replication.factor=1
 
-          # the connection details of this resource
-          connectionDetails: # list the "secrets" created by this managed resources (further down, they are used to create the connection details for the whole composite)
-            - apiVersion: v1
-              kind: Secret
-              name: # patch taken from spec.claimRef.name
-              namespace: # patch taken from composite spec.claimRef.namespace
-              fieldPath: data.client-passwords
-              toConnectionSecretKey: password
+                # the connection details of this resource
+                connectionDetails: # list the "secrets" created by this managed resources (further down, they are used to create the connection details for the whole composite)
+                  - apiVersion: v1
+                    kind: Secret
+                    name: # patch taken from spec.claimRef.name
+                    namespace: # patch taken from composite spec.claimRef.namespace
+                    fieldPath: data.client-passwords
+                    toConnectionSecretKey: password
 
-            - apiVersion: v1
-              kind: Service
-              name: # patch taken from spec.claimRef.name
-              namespace: # patch taken from composite spec.claimRef.namespace
-              fieldPath: spec.ports[0].port
-              toConnectionSecretKey: port
+                  - apiVersion: v1
+                    kind: Service
+                    name: # patch taken from spec.claimRef.name
+                    namespace: # patch taken from composite spec.claimRef.namespace
+                    fieldPath: spec.ports[0].port
+                    toConnectionSecretKey: port
 
-          writeConnectionSecretToRef: # this will write the above connection details from this resource to a secret with this name to the specified namespace (we actually need to write this so that we can reference this connection details in the combined connection details)
-            # name: tbd # patch taken from composite spec.resourceRefs[0].name + "-connection" # not entirely sure what is going on here, it writes two secrets (two ending in -connection), if uncommented only one with -connection but one that is called tbd
-            namespace: tbd # patch taken from composite spec.claimRef.namespace
+                writeConnectionSecretToRef: # this will write the above connection details from this resource to a secret with this name to the specified namespace (we actually need to write this so that we can reference this connection details in the combined connection details)
+                  # name: tbd # patch taken from composite spec.resourceRefs[0].name + "-connection" # not entirely sure what is going on here, it writes two secrets (two ending in -connection), if uncommented only one with -connection but one that is called tbd
+                  namespace: tbd # patch taken from composite spec.claimRef.namespace
 
-      # connection secrets mentioned here will be added to the "combined connection details" (combination of all the resources connection details)
-      # Attention: add the items listed here as allowed ones in the definition
-      connectionDetails:
-        - name: password
-          type: FromConnectionSecretKey
-          fromConnectionSecretKey: password
+            # connection secrets mentioned here will be added to the "combined connection details" (combination of all the resources connection details)
+            # Attention: add the items listed here as allowed ones in the definition
+            connectionDetails:
+              - name: password
+                type: FromConnectionSecretKey
+                fromConnectionSecretKey: password
 
-        - name: port
-          type: FromConnectionSecretKey
-          fromConnectionSecretKey: port
+              - name: port
+                type: FromConnectionSecretKey
+                fromConnectionSecretKey: port
 
-        - name: username
-          type: FromValue
-          value: user
+              - name: username
+                type: FromValue
+                value: user
 
-        - name: saslmechanism
-          type: FromValue
-          value: PLAIN
+              - name: saslmechanism
+                type: FromValue
+                value: PLAIN
 
-        - name: securityprotocol
-          type: FromValue
-          value: SASL_PLAINTEXT
+              - name: securityprotocol
+                type: FromValue
+                value: SASL_PLAINTEXT
 
-        - name: host
-          type: FromFieldPath
-          fromFieldPath: "metadata.annotations['host']"
+              - name: host
+                type: FromFieldPath
+                fromFieldPath: "metadata.annotations['host']"
 
-      # copy stuff from claim/composite to resource (Release) and the other way around
-      patches:
-        # get the values for the chart from the claim
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.size"
-          toFieldPath: "spec.forProvider.values.controller.persistence.size"
+            # copy stuff from claim/composite to resource (Release) and the other way around
+            patches:
+              # get the values for the chart from the claim
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.size"
+                toFieldPath: "spec.forProvider.values.controller.persistence.size"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.size"
-          toFieldPath: "spec.forProvider.values.broker.persistence.size"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.size"
+                toFieldPath: "spec.forProvider.values.broker.persistence.size"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.values.fullnameOverride"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "spec.forProvider.values.fullnameOverride"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/name']"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/name']"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.kind"
-          toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.kind"
+                toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.version"
-          toFieldPath: "spec.forProvider.chart.version"
-          transforms:
-            - type: map
-              map:
-                "3": "28.0.3"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.version"
+                toFieldPath: "spec.forProvider.chart.version"
+                transforms:
+                  - type: map
+                    map:
+                      "3": "28.0.3"
 
-        - type: ToCompositeFieldPath
-          fromFieldPath: "spec.forProvider.chart.version"
-          toFieldPath: "spec.version"
-          transforms:
-            - type: map
-              map:
-                "28.0.3": "3"
+              - type: ToCompositeFieldPath
+                fromFieldPath: "spec.forProvider.chart.version"
+                toFieldPath: "spec.version"
+                transforms:
+                  - type: map
+                    map:
+                      "28.0.3": "3"
 
-        # give resources (service, secrets, ...) the name and namespace of the claim
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "metadata.annotations[crossplane.io/external-name]"
+              # give resources (service, secrets, ...) the name and namespace of the claim
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "metadata.annotations[crossplane.io/external-name]"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.forProvider.namespace"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.namespace"
+                toFieldPath: "spec.forProvider.namespace"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.connectionDetails[0].name"
-          transforms:
-            - type: string
-              string:
-                type: Format
-                fmt: "%s-user-passwords"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "spec.connectionDetails[0].name"
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: "%s-user-passwords"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.connectionDetails[0].namespace"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.namespace"
+                toFieldPath: "spec.connectionDetails[0].namespace"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.connectionDetails[1].name"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "spec.connectionDetails[1].name"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.connectionDetails[1].namespace"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.namespace"
+                toFieldPath: "spec.connectionDetails[1].namespace"
 
-        # set name and namespace to where we write the resource connection details
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.writeConnectionSecretToRef.namespace"
+              # set name and namespace to where we write the resource connection details
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.namespace"
+                toFieldPath: "spec.writeConnectionSecretToRef.namespace"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.resourceRefs[0].name" # "spec.claimRef.name"
-          toFieldPath: "spec.writeConnectionSecretToRef.name"
-          transforms: # not sure why two secrets are created :(
-            - type: string
-              string:
-                type: Format
-                fmt: "%s-connection" # renaming is needed in order not to overwrite the secret created by the chart (from where we take the db password)
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.resourceRefs[0].name" # "spec.claimRef.name"
+                toFieldPath: "spec.writeConnectionSecretToRef.name"
+                transforms: # not sure why two secrets are created :(
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: "%s-connection" # renaming is needed in order not to overwrite the secret created by the chart (from where we take the db password)
 
-        # copy stuff from resource to claim status and back to resource annotations from where it is copied to the connection details # this must be the wrong way but I don't know how to do the string manipulations otherwise
-        # Attention: newly introduced claim fields must be specified in the definition
-        - type: CombineToComposite
-          combine:
-            variables:
-              - fromFieldPath: spec.forProvider.values.fullnameOverride
-              - fromFieldPath: spec.forProvider.namespace
-            strategy: string
-            string:
-              fmt: "%s.%s"
-          toFieldPath: status.credentials.host
+              # copy stuff from resource to claim status and back to resource annotations from where it is copied to the connection details # this must be the wrong way but I don't know how to do the string manipulations otherwise
+              # Attention: newly introduced claim fields must be specified in the definition
+              - type: CombineToComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.forProvider.values.fullnameOverride
+                    - fromFieldPath: spec.forProvider.namespace
+                  strategy: string
+                  string:
+                    fmt: "%s.%s"
+                toFieldPath: status.credentials.host
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "status.credentials.host"
-          toFieldPath: "metadata.annotations['host']"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "status.credentials.host"
+                toFieldPath: "metadata.annotations['host']"

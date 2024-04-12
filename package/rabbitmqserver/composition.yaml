@@ -16,166 +16,176 @@ spec:
 
   writeConnectionSecretsToNamespace: crossplane-system
 
-  resources:
-    - name: helm-release
-      base:
-        apiVersion: helm.crossplane.io/v1beta1
-        kind: Release
-        metadata:
-          annotations:
-            crossplane.io/external-name: tbd
-        spec:
-          providerConfigRef:
-            name: provider-helm
-          forProvider:
-            chart:
-              name: rabbitmq
-              repository: oci://registry-1.docker.io/bitnamicharts
-              version: 14.0.0 # also update the version in the map transform below!
-            namespace: tbd
-            values:
-              commonLabels:
-                catalog.cluster.local/kind: tbd
-                catalog.cluster.local/name: tbd
-              podLabels:
-                catalog.cluster.local/kind: tbd
-                catalog.cluster.local/name: tbd
-              fullnameOverride: tbd
-              auth:
-                username: platform
-              persistence:
-                size: 8Gi
-              persistentVolumeClaimRetentionPolicy:
-                enabled: true
-                whenDeleted: Delete
-              metrics:
-                enabled: true
-                serviceMonitor:
-                  enabled: true                
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: crossplane-contrib-function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        environment: null
+        kind: Resources
+        patchSets: []
+        resources:
+          - name: helm-release
+            base:
+              apiVersion: helm.crossplane.io/v1beta1
+              kind: Release
+              metadata:
+                annotations:
+                  crossplane.io/external-name: tbd
+              spec:
+                providerConfigRef:
+                  name: provider-helm
+                forProvider:
+                  chart:
+                    name: rabbitmq
+                    repository: oci://registry-1.docker.io/bitnamicharts
+                    version: 14.0.0 # also update the version in the map transform below!
+                  namespace: tbd
+                  values:
+                    commonLabels:
+                      catalog.cluster.local/kind: tbd
+                      catalog.cluster.local/name: tbd
+                    podLabels:
+                      catalog.cluster.local/kind: tbd
+                      catalog.cluster.local/name: tbd
+                    fullnameOverride: tbd
+                    auth:
+                      username: platform
+                    persistence:
+                      size: 8Gi
+                    persistentVolumeClaimRetentionPolicy:
+                      enabled: true
+                      whenDeleted: Delete
+                    metrics:
+                      enabled: true
+                      serviceMonitor:
+                        enabled: true                
 
-          connectionDetails:
-            - apiVersion: v1
-              kind: Secret
-              name: # patch taken from spec.claimRef.name
-              namespace: # patch taken from composite spec.claimRef.namespace
-              fieldPath: data.rabbitmq-password
-              toConnectionSecretKey: password
+                connectionDetails:
+                  - apiVersion: v1
+                    kind: Secret
+                    name: # patch taken from spec.claimRef.name
+                    namespace: # patch taken from composite spec.claimRef.namespace
+                    fieldPath: data.rabbitmq-password
+                    toConnectionSecretKey: password
 
-            - apiVersion: v1
-              kind: Service
-              name: # patch taken from spec.claimRef.name
-              namespace: # patch taken from composite spec.claimRef.namespace
-              fieldPath: spec.ports[0].port
-              toConnectionSecretKey: port
+                  - apiVersion: v1
+                    kind: Service
+                    name: # patch taken from spec.claimRef.name
+                    namespace: # patch taken from composite spec.claimRef.namespace
+                    fieldPath: spec.ports[0].port
+                    toConnectionSecretKey: port
 
-          writeConnectionSecretToRef:
-            namespace: tbd
+                writeConnectionSecretToRef:
+                  namespace: tbd
 
-      connectionDetails:
-        - name: username
-          type: FromFieldPath
-          fromFieldPath: "spec.forProvider.values.auth.username"
+            connectionDetails:
+              - name: username
+                type: FromFieldPath
+                fromFieldPath: "spec.forProvider.values.auth.username"
 
-        - name: password
-          type: FromConnectionSecretKey
-          fromConnectionSecretKey: password
+              - name: password
+                type: FromConnectionSecretKey
+                fromConnectionSecretKey: password
 
-        - name: port
-          type: FromConnectionSecretKey
-          fromConnectionSecretKey: port
+              - name: port
+                type: FromConnectionSecretKey
+                fromConnectionSecretKey: port
 
-        - name: host
-          type: FromFieldPath
-          fromFieldPath: "metadata.annotations['host']"
+              - name: host
+                type: FromFieldPath
+                fromFieldPath: "metadata.annotations['host']"
 
-      patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.size"
-          toFieldPath: "spec.forProvider.values.persistence.size"        
-          
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.values.fullnameOverride"
-
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/name']"
-
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.kind"
-          toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
-
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.version"
-          toFieldPath: "spec.forProvider.chart.version"
-          transforms:
-            - type: map
-              map:
-                "3": "14.0.0"
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.size"
+                toFieldPath: "spec.forProvider.values.persistence.size"        
                 
-        - type: ToCompositeFieldPath
-          fromFieldPath: "spec.forProvider.chart.version"
-          toFieldPath: "spec.version"
-          transforms:
-            - type: map
-              map:
-                "14.0.0": "3"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "spec.forProvider.values.fullnameOverride"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "metadata.annotations[crossplane.io/external-name]"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/name']"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.forProvider.values.podLabels['catalog.cluster.local/name']"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.kind"
+                toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.kind"
-          toFieldPath: "spec.forProvider.values.podLabels['catalog.cluster.local/kind']"          
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.version"
+                toFieldPath: "spec.forProvider.chart.version"
+                transforms:
+                  - type: map
+                    map:
+                      "3": "14.0.0"
+                      
+              - type: ToCompositeFieldPath
+                fromFieldPath: "spec.forProvider.chart.version"
+                toFieldPath: "spec.version"
+                transforms:
+                  - type: map
+                    map:
+                      "14.0.0": "3"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.forProvider.namespace"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "metadata.annotations[crossplane.io/external-name]"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.connectionDetails[0].name"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "spec.forProvider.values.podLabels['catalog.cluster.local/name']"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.connectionDetails[0].namespace"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.kind"
+                toFieldPath: "spec.forProvider.values.podLabels['catalog.cluster.local/kind']"          
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.connectionDetails[1].name"
-        
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.connectionDetails[1].namespace"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.namespace"
+                toFieldPath: "spec.forProvider.namespace"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.namespace"
-          toFieldPath: "spec.writeConnectionSecretToRef.namespace"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "spec.connectionDetails[0].name"
 
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.claimRef.name"
-          toFieldPath: "spec.writeConnectionSecretToRef.name"
-          transforms:
-            - type: string
-              string:
-                type: Format
-                fmt: "%s-connection"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.namespace"
+                toFieldPath: "spec.connectionDetails[0].namespace"
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "spec.connectionDetails[1].name"
+              
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.namespace"
+                toFieldPath: "spec.connectionDetails[1].namespace"
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.namespace"
+                toFieldPath: "spec.writeConnectionSecretToRef.namespace"
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "spec.writeConnectionSecretToRef.name"
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: "%s-connection"
+                      
+              - type: CombineToComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.forProvider.values.fullnameOverride
+                    - fromFieldPath: spec.forProvider.namespace
+                  strategy: string
+                  string:
+                    fmt: "%s.%s"
+                toFieldPath: status.credentials.host
                 
-        - type: CombineToComposite
-          combine:
-            variables:
-              - fromFieldPath: spec.forProvider.values.fullnameOverride
-              - fromFieldPath: spec.forProvider.namespace
-            strategy: string
-            string:
-              fmt: "%s.%s"
-          toFieldPath: status.credentials.host
-          
-        - type: FromCompositeFieldPath
-          fromFieldPath: "status.credentials.host"
-          toFieldPath: "metadata.annotations['host']"
+              - type: FromCompositeFieldPath
+                fromFieldPath: "status.credentials.host"
+                toFieldPath: "metadata.annotations['host']"
