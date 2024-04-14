@@ -184,10 +184,23 @@ mc mb myminio/bucket
 mc ls myminio
 ```
 
+### MsSql
+
+```bash
+kubectl run -n test -it --rm --image=mcr.microsoft.com/mssql-tools bash
+sqlcmd -S mssqlserver-sample -U sa
+```
+
 ### Redis
 
 ```bash
 redis-cli -h redis-master -p 6379 -a bLaesXrA1V
+```
+
+### PostgreSQL
+
+```bash
+kubectl run -n test -it --rm --image=postgres:latest postgres-client -- psql -h 10.96.193.248 -U postgres -d postgres --password
 ```
 
 ## Known issues
@@ -261,6 +274,12 @@ redis-cli -h redis-master -p 6379 -a bLaesXrA1V
 ### Redis
 
 - `consoel redis client` is not authenticating correctly, see error message when calling e.g. `INFO` command
+
+### Work with functions
+
+```bash	
+crossplane beta render docs/composite.yaml package/microsoftsqlserver/composition.yaml docs/functions.yaml > out.yaml
+```
 
 ## Further improvements
 

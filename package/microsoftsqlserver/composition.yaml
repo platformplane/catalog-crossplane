@@ -21,43 +21,55 @@ spec:
 
   mode: Pipeline
   pipeline:
-# TODO:
-# https://github.com/crossplane-contrib/function-auto-ready
-# https://github.com/crossplane-contrib/function-go-templating/blob/main/example/custom-delims/composition.yaml
-# https://github.com/crossplane-contrib/function-go-templating?tab=readme-ov-file
-# https://github.com/crossplane/crossplane/issues/1895#issuecomment-1969733598
-    # - step: create-a-random-secret
-    #   functionRef:
-    #     name: function-go-templating
-    #   input:
-    #     apiVersion: gotemplating.fn.crossplane.io/v1beta1
-    #     kind: GoTemplate
-    #     source: Inline
-    #     inline:
-    #       template: |
-    #         apiVersion: v1
-    #         kind: Secret
-    #         metadata:
-    #           name: {{ .observed.composite.resource.spec.claimRef.name }}
-    #           namespace: {{ .observed.composite.resource.spec.claimRef.namespace }}
-    #           labels:
-    #             catalog.cluster.local/kind: {{ .observed.composite.resource.spec.claimRef.kind }}
-    #             catalog.cluster.local/name: {{ .observed.composite.resource.spec.claimRef.name }}
-    #             app.kubernetes.io/name: mssql
-    #             app.kubernetes.io/instance: {{ .observed.composite.resource.spec.claimRef.name }}
-    #             app.kubernetes.io/version: {{ .observed.composite.resource.spec.version }}
-    #         stringData:
-    #           sa-password: {{ dig "resources" "my-resource" "resource" "stringData" "sa-password" (randAlphaNum 12) .observed }}
-    #         ---
-    #         apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
-    #         kind: CompositeConnectionDetails
-    #         {{ if eq $.observed.resources nil }}
-    #         data: {}
-    #         {{ else }}
-    #         data:
-    #           password: connection-secret-value
-    #         {{ end }}
-        
+    # read the following to understand "functions": https://docs.crossplane.io/latest/concepts/composition-functions
+    # observed fields contain the values when the pipeline was invoken
+    # desired fields contain the values that are set by this function or the predecessor functions
+    # A composed resource is a resource created by a composite resource. Composed resources are usually Crossplane managed resources (MRs), but they can be any kind of Crossplane resource.
+    - step: create-a-random-secret
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "secret" # this name is referenced later on again
+            spec:
+              providerConfigRef:
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: Secret
+                  metadata:
+                    name: {{ .observed.composite.resource.spec.claimRef.name }}
+                    namespace: {{ .observed.composite.resource.spec.claimRef.namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ .observed.composite.resource.spec.claimRef.kind }}
+                      catalog.cluster.local/name: {{ .observed.composite.resource.spec.claimRef.name }}
+                      app.kubernetes.io/name: mssql
+                      app.kubernetes.io/instance: {{ .observed.composite.resource.spec.claimRef.name }}
+                      app.kubernetes.io/version: {{ .observed.composite.resource.spec.version | toString | quote }}
+                  stringData:
+                    password: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" (randAlphaNum 12) .observed }}
+            ---
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: CompositeConnectionDetails
+            {{ if eq $.observed.resources nil }}
+            data: {}
+            {{ else }}
+            data:
+              password: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" "no value yet" .observed | b64enc }}
+            {{ end }}
+
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready
 
     - step: patch-and-transform
       functionRef:
@@ -68,103 +80,6 @@ spec:
         kind: Resources
         patchSets: []
         resources:
-          - name: secret
-            base:
-              apiVersion: kubernetes.crossplane.io/v1alpha2
-              kind: Object
-              spec:
-                providerConfigRef:
-                  name: provider-kubernetes
-                forProvider:
-                  manifest:
-                    apiVersion: v1
-                    kind: Secret
-                    metadata:
-                      name: tbd-name
-                      namespace: tbd-namespace
-                      labels:
-                        catalog.cluster.local/kind: tbd-kind
-                        catalog.cluster.local/name: tbd-name
-                        app.kubernetes.io/name: mssql
-                        app.kubernetes.io/instance: tbd-name
-                        app.kubernetes.io/version: tbd-version
-                    stringData:
-                      sa-password: "Ex4mple!" # check whether i can crate this with crossplane
-
-                connectionDetails:
-                  - apiVersion: v1
-                    kind: Secret
-                    name: 
-                    namespace: 
-                    fieldPath: data.sa-password
-                    toConnectionSecretKey: password
-
-                writeConnectionSecretToRef:
-                  namespace: tbd-namespace
-
-            connectionDetails:
-              - name: username
-                type: FromValue
-                value: sa
-
-              - name: password
-                type: FromConnectionSecretKey
-                fromConnectionSecretKey: password
-
-            patches:
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "spec.forProvider.manifest.metadata.name"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.namespace"
-                toFieldPath: "spec.forProvider.manifest.metadata.namespace"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "spec.forProvider.manifest.metadata.labels['app.kubernetes.io/instance']"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.version"
-                toFieldPath: "spec.forProvider.manifest.metadata.labels['app.kubernetes.io/version']"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "spec.forProvider.manifest.metadata.labels['catalog.cluster.local/name']"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.kind"
-                toFieldPath: "spec.forProvider.manifest.metadata.labels['catalog.cluster.local/kind']"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "spec.forProvider.manifest.metadata.name"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.namespace"
-                toFieldPath: "spec.forProvider.manifest.metadata.namespace"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "spec.connectionDetails[0].name"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.namespace"
-                toFieldPath: "spec.connectionDetails[0].namespace"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "spec.writeConnectionSecretToRef.name"
-                transforms:
-                  - type: string
-                    string:
-                      type: Format
-                      fmt: "%s-connection"
-                      
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.namespace"
-                toFieldPath: "spec.writeConnectionSecretToRef.namespace"
-
           - name: stateful-set
             base:
               apiVersion: kubernetes.crossplane.io/v1alpha2
@@ -227,7 +142,7 @@ spec:
                             - name: MSSQL_SA_PASSWORD
                               valueFrom:
                                 secretKeyRef:
-                                  key: sa-password
+                                  key: password
                                   name: tbd-name
                             ports:
                             - containerPort: 1433
@@ -251,6 +166,11 @@ spec:
                           resources:
                             requests:
                               storage: 10Gi # patched from claim
+
+            connectionDetails:
+              - name: username
+                type: FromValue
+                value: sa
 
             # # copy stuff from claim/composite to resource (Release) and the other way around
             patches:
