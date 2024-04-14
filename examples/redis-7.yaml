@@ -1,0 +1,7 @@
+apiVersion: catalog.cluster.local/v1
+kind: Redis
+metadata:
+  name: redis-sample
+spec:
+  size: 1Gi
+  version: "7"

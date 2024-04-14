@@ -1,0 +1,50 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: miniocomposites.catalog.cluster.local
+spec:
+  group: catalog.cluster.local
+  connectionSecretKeys:
+    - username
+    - password
+    - host
+    - port
+    - database
+  names:
+    kind: MinIOComposite
+    plural: miniocomposites
+  claimNames:
+    kind: MinIO
+    plural: minios
+  versions:
+    - name: v1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: MinIO is the Schema for the minios API
+          type: object
+          properties:
+            spec:
+              description: MinIOSpec defines the desired state of MinIO
+              type: object
+              properties:
+                size:
+                  type: string
+                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                version:
+                  type: string
+                  enum:
+                    - "2024.4"
+                    - "2023.7"
+            status:
+              type: object
+              properties:
+                credentials:
+                  type: object
+                  description: "Misuse composite status as temporary storage."
+                  properties:
+                    host:
+                      type: string
+
+                  

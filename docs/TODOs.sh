@@ -1,10 +1,3 @@
-TODOs
-
-Allgemein:
-- wollen wir den "Server" Suffix in den Namen behalten, z.B. "PostgreSQLServer" oder nur "PostgreSQL"?
-
-
-
 # Migration Simulation Kind:
 kind create cluster --name migration
 
@@ -22,8 +15,8 @@ kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/st
 
 # postgres v1
 kubectl apply -f ./docs/catalogv1.yaml
-kubectl apply -f ./examples/postgresqlserver.yaml
-kubectl exec -it postgresqlserver-sample-0 -- psql -U postgres -d postgres # get password from secret U5CPgBZPPB
+kubectl apply -f ./examples/postgresql.yaml
+kubectl exec -it postgresql-sample-0 -- psql -U postgres -d postgres # get password from secret U5CPgBZPPB
 CREATE TABLE test_table (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100)
@@ -32,26 +25,26 @@ INSERT INTO test_table (name) VALUES ('Test Name');
 SELECT * FROM test_table;
 quit
 
-# delete old catalog and postgresqlserver CRD
+# delete old catalog and postgresql CRD
 kubectl delete -f ./docs/catalogv1.yaml
-kubectl edit postgresqlservers.catalog.cluster.local postgresqlserver-sample # remove the finalizer
-kubectl delete -f ./examples/postgresqlserver.yaml
-kubectl delete crd postgresqlservers.catalog.cluster.local
+kubectl edit postgresqls.catalog.cluster.local postgresql-sample # remove the finalizer
+kubectl delete -f ./examples/postgresql.yaml
+kubectl delete crd postgresqls.catalog.cluster.local
 
 # remove helm charts (without PVCs)
-helm uninstall postgresqlserver-sample
+helm uninstall postgresql-sample
 
 # install crossplane config with new CRDs
-kubectl apply -f package/postgresqlserver/definition.yaml
-kubectl apply -f package/postgresqlserver/composition.yaml
-kubectl apply -f ./examples/postgresqlserver.yaml
-kubectl exec -it postgresqlserver-sample-0 -- psql -U postgres -d postgres # new secret generated but the old is still valid :( -> we would also need to patch that if possible
+kubectl apply -f package/postgresql/definition.yaml
+kubectl apply -f package/postgresql/composition.yaml
+kubectl apply -f ./examples/postgresql.yaml
+kubectl exec -it postgresql-sample-0 -- psql -U postgres -d postgres # new secret generated but the old is still valid :( -> we would also need to patch that if possible
 SELECT * FROM test_table;
 quit
 
 # kubectl apply -f docs/helm-import.yaml # does not work, statefulset patch fails (no diff in spec)
-# kubectl delete statefulset postgresqlserver-sample
-# helm upgrade --install postgresqlserver
+# kubectl delete statefulset postgresql-sample
+# helm upgrade --install postgresql
 
 kind delete cluster --name migration
 

@@ -1,0 +1,199 @@
+# Composition Definition: https://doc.crds.dev/github.com/crossplane/crossplane/apiextensions.crossplane.io/Composition/v1@v1.15.0
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: mariadbs.catalog.cluster.local
+  annotations:
+    catalog.cluster.local/title: "MariaDB"
+    catalog.cluster.local/description: "Unmanaged MariaDB instance running within the cluster."
+    catalog.cluster.local/icon: "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBkYXRhLW5hbWU9IkxheWVyIDEiIHZlcnNpb249IjEuMSIgdmlld0JveD0iMCAwIDI5My4zMSAxOTAuODgiCiAgICB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogICAgPHBhdGgKICAgICAgICBkPSJtMjkxLjk0IDAuOTUzOTZhNC4xOCA0LjE4IDAgMCAwLTIuODQtMC45NWMtMi44MyAwLTYuNDkgMS45Mi04LjQ2IDIuOTVsLTAuNzggMC40YTI2Ljg2IDI2Ljg2IDAgMCAxLTEwLjU3IDIuNjZjLTMuNzYgMC4xMi03IDAuMzQtMTEuMjIgMC43OC0yNSAyLjU3LTM2LjE1IDIxLjczLTQ2Ljg5IDQwLjI2LTUuODUgMTAuMDgtMTEuODkgMjAuNTUtMjAuMTcgMjguNTVhNTQuNCA1NC40IDAgMCAxLTUuNDUgNC42M2MtOC41NyA2LjM3LTE5LjMzIDEwLjkyLTI3LjcgMTQuMTQtOC4wNiAzLjA4LTE2Ljg2IDUuODUtMjUuMzYgOC41My03Ljc5IDIuNDUtMTUuMTQgNC43Ny0yMS45IDcuMjgtMy4wNSAxLjEzLTUuNjQgMi03LjkzIDIuNzYtNi4xNiAyLTEwLjYgMy41My0xNy4wOSA4LTIuNTMgMS43My01LjA3IDMuNi02Ljc5IDVhNzEuNjIgNzEuNjIgMCAwIDAtMTMuNTUgMTQuMjcgODQuMjUgODQuMjUgMCAwIDEtMTEuMzggMTMuNjZjLTEuMzcgMS4zNC0zLjggMi03LjQ0IDItNC4yNiAwLTkuNDMtMC44OC0xNC45LTEuODEtNS42NC0xLTExLjQ3LTEuOTUtMTYuNDctMS45NS00LjA2IDAtNy4xNyAwLjY2LTkuNDkgMiAwIDAtMy45MSAyLjI4LTUuNTYgNS4yM2wxLjYyIDAuNzNhMzMuMjEgMzMuMjEgMCAwIDEgNi45MiA1IDM0LjcyIDM0LjcyIDAgMCAwIDcuMiA1LjEyIDYuMTggNi4xOCAwIDAgMSAyLjIyIDEuNDFjLTAuNjggMS0xLjY4IDIuMjktMi43MyAzLjY3LTUuNzcgNy41NS05LjE0IDEyLjMyLTcuMjEgMTQuOTJhNi4wNyA2LjA3IDAgMCAwIDMgMC42OGMxMi41OCAwIDE5LjM0LTMuMjcgMjcuODktNy40MSAyLjQ4LTEuMiA1LTIuNDMgOC0zLjcgNS0yLjE3IDEwLjM4LTUuNjMgMTYuMDktOS4yOSA3LjQ3LTQuODcgMTUuMjgtOS44NyAyMi44Ni0xMi4yOGE2Mi4zIDYyLjMgMCAwIDEgMTkuMjMtMi43YzggMCAxNi40MiAxLjA3IDI0LjU0IDIuMTEgNi4wNSAwLjc4IDEyLjMyIDEuNTggMTguNDcgMS45NSAyLjM5IDAuMTQgNC42IDAuMjEgNi43NSAwLjIxYTc4LjIxIDc4LjIxIDAgMCAwIDguNjEtMC40NWwwLjY5LTAuMjRjNC4zMS0yLjY1IDYuMzMtOC4zNCA4LjI5LTEzLjg0IDEuMjYtMy41NCAyLjMyLTYuNzIgNC04Ljc0YTIuNTUgMi41NSAwIDAgMSAwLjMyLTAuMjcgMC40IDAuNCAwIDAgMSAwLjQ5IDAuMDh2MC4xNmMtMSAyMS41MS05LjY2IDM1LjE3LTE4LjQyIDQ3LjMxbC01Ljg1IDYuMjdzOC4xOSAwIDEyLjg1LTEuOGMxNy01LjA4IDI5LjgzLTE2LjI4IDM5LjE3LTM0LjE0YTE0NS43IDE0NS43IDAgMCAwIDYuMTctMTQuMDljMC4xNi0wLjQgMS42My0xLjE0IDEuNDkgMC45My0wLjA1IDAuNjEtMC4wOSAxLjI5LTAuMTQgMiAwIDAuNDIgMCAwLjg1LTAuMDggMS4yOC0wLjI0IDMtMC45NSA5LjM0LTAuOTUgOS4zNGw1LjI1LTIuODFjMTIuNjYtOCAyMi40Mi0yNC4xNCAyOS44Mi00OS4yNSAzLjA4LTEwLjQ2IDUuMzQtMjAuODUgNy4zMy0zMCAyLjM4LTExIDQuNDMtMjAuNDMgNi43OC0yNC4wOSAzLjY5LTUuNzQgOS4zMi05LjYyIDE0Ljc3LTEzLjM5IDAuNzQtMC41MSAxLjQ5LTEgMi4yMi0xLjU0IDYuODUtNC44MSAxMy42Ni0xMC4zNiAxNS4xNi0yMC43MXYtMC4yM2MxLjA5LTcuNzIgMC4xNy05LjY5LTAuODgtMTAuNTl6IgogICAgICAgIGZpbGw9IiM2ODY4NjgiIC8+Cjwvc3ZnPg=="
+    catalog.cluster.local/maintainer: ""
+    catalog.cluster.local/url: "https://mariadb.org/"
+    catalog.cluster.local/tags: "database,unmanaged,helm"
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v1
+    kind: MariaDBComposite
+
+  writeConnectionSecretsToNamespace: crossplane-system # this writes the connection secrets listed in the below resources connectionDetails sections to the specified namespace as a combined secret of all resources https://docs.crossplane.io/knowledge-base/guides/connection-details/#connection-secrets-in-compositions
+  # Be aware that you can't patch this field (it's in the composition, not in a resource or the composite)
+  # The namespace where the user can get his combined secret (the same as this one) is specified implicitly by the claim's namespace if you set the writeConnectionSecretToRef.name in the claim (one could think that this field here is therefore not needed, but it is, without it, there is also no combined secret written to the claim's namespace)
+
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: crossplane-contrib-function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        environment: null
+        kind: Resources
+        patchSets: []
+        resources:
+          - name: helm-release # definition: https://doc.crds.dev/github.com/crossplane-contrib/provider-helm/helm.crossplane.io/Release/v1beta1@v0.15.0
+            base:
+              apiVersion: helm.crossplane.io/v1beta1
+              kind: Release # full example, see: https://github.com/crossplane-contrib/provider-helm/blob/master/examples/sample/release.yaml
+              metadata:
+                annotations:
+                  crossplane.io/external-name: tbd
+              spec:
+                providerConfigRef:
+                  name: provider-helm
+                forProvider:
+                  chart:
+                    name: mariadb
+                    repository: oci://registry-1.docker.io/bitnamicharts
+                    version: 18.0.1 # also update the version in the map transform below!
+                  namespace: tbd # patch taken from composite spec.claimRef.namespace
+                  values:
+                    commonLabels:
+                      catalog.cluster.local/kind: tbd # patch taken from composite spec.claimRef.kind
+                      catalog.cluster.local/name: tbd # patch taken from composite spec.claimRef.name
+                    fullnameOverride: tbd # patch taken from composite metadata.name (needed because the chart creates a secret with an unpredictable name otherwise)
+                    architecture: standalone
+                    auth:
+                      database: db
+                    primary:
+                      persistence:
+                        size: 8Gi # patch taken from composite spec.size
+                      persistentVolumeClaimRetentionPolicy:
+                        enabled: true
+                        whenDeleted: Delete
+                    metrics:
+                      enabled: true
+                      serviceMonitor:
+                        enabled: true
+
+                # the connection details of this resource
+                connectionDetails: # list the "secrets" created by this managed resources (further down, they are used to create the connection details for the whole composite)
+                  - apiVersion: v1
+                    kind: Secret
+                    name: # patch taken from spec.claimRef.name
+                    namespace: # patch taken from composite spec.claimRef.namespace
+                    fieldPath: data.mariadb-root-password
+                    toConnectionSecretKey: password
+
+                  - apiVersion: v1
+                    kind: Service
+                    name: # patch taken from spec.claimRef.name
+                    namespace: # patch taken from composite spec.claimRef.namespace
+                    fieldPath: spec.ports[0].port
+                    toConnectionSecretKey: port
+
+                writeConnectionSecretToRef: # this will write the above connection details from this resource to a secret with this name to the specified namespace (we actually need to write this so that we can reference this connection details in the combined connection details)
+                  # name: tbd # patch taken from composite spec.resourceRefs[0].name + "-connection" # not entirely sure what is going on here, it writes two secrets (two ending in -connection), if uncommented only one with -connection but one that is called tbd
+                  namespace: tbd # patch taken from composite spec.claimRef.namespace
+
+            # connection secrets mentioned here will be added to the "combined connection details" (combination of all the resources connection details)
+            # Attention: add the items listed here as allowed ones in the definition
+            connectionDetails:
+              - name: username
+                type: FromValue
+                value: root
+
+              - name: password
+                type: FromConnectionSecretKey
+                fromConnectionSecretKey: password
+
+              - name: port
+                type: FromConnectionSecretKey
+                fromConnectionSecretKey: port
+
+              - name: database
+                type: FromFieldPath
+                fromFieldPath: "spec.forProvider.values.auth.database"
+
+              - name: host
+                type: FromFieldPath
+                fromFieldPath: "metadata.annotations['host']"
+
+            # copy stuff from claim/composite to resource (Release) and the other way around
+            patches:
+              # get the values for the chart from the claim
+              - type: FromCompositeFieldPath # from composite (MySQLComposite) to managed resource (Release)
+                fromFieldPath: "spec.size"
+                toFieldPath: "spec.forProvider.values.primary.persistence.size"
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "spec.forProvider.values.fullnameOverride"
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/name']"
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.kind"
+                toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.version"
+                toFieldPath: "spec.forProvider.chart.version"
+                transforms:
+                  - type: map
+                    map:
+                      "11": "18.0.1"
+                      
+              - type: ToCompositeFieldPath
+                fromFieldPath: "spec.forProvider.chart.version"
+                toFieldPath: "spec.version"
+                transforms:
+                  - type: map
+                    map:
+                      "18.0.1": "11"
+
+              # give resources (service, secrets, ...) the name and namespace of the claim
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "metadata.annotations[crossplane.io/external-name]"
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.namespace"
+                toFieldPath: "spec.forProvider.namespace"
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "spec.connectionDetails[0].name"
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.namespace"
+                toFieldPath: "spec.connectionDetails[0].namespace"
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "spec.connectionDetails[1].name"
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.namespace"
+                toFieldPath: "spec.connectionDetails[1].namespace"
+
+              # set name and namespace to where we write the resource connection details
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.namespace"
+                toFieldPath: "spec.writeConnectionSecretToRef.namespace"
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.resourceRefs[0].name" # "spec.claimRef.name"
+                toFieldPath: "spec.writeConnectionSecretToRef.name"
+                transforms: # not sure why two secrets are created :(
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: "%s-connection" # renaming is needed in order not to overwrite the secret created by the chart (from where we take the db password)
+
+              # copy stuff from resource to claim status and back to resource annotations from where it is copied to the connection details # this must be the wrong way but I don't know how to do the string manipulations otherwise
+              # Attention: newly introduced claim fields must be specified in the definition
+              - type: CombineToComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.forProvider.values.fullnameOverride
+                    - fromFieldPath: spec.forProvider.namespace
+                  strategy: string
+                  string:
+                    fmt: "%s.%s"
+                toFieldPath: status.credentials.host
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "status.credentials.host"
+                toFieldPath: "metadata.annotations['host']"

@@ -1,0 +1,191 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: rabbitmqs.catalog.cluster.local
+  annotations:
+    catalog.cluster.local/title: "RabbitMQ"
+    catalog.cluster.local/description: "RabbitMQ is a powerful and flexible open-source message broker that enables efficient communication between distributed systems. It provides reliable message queuing, delivery acknowledgments, flexible routing, and support for multiple messaging protocols. RabbitMQ is widely used in modern software architectures to build scalable and resilient applications."
+    catalog.cluster.local/icon: "PHN2ZyB3aWR0aD0iMjM2MiIgaGVpZ2h0PSIyNTAwIiB2aWV3Qm94PSIwIDAgMjU2IDI3MSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJ4TWlkWU1pZCI+PHBhdGggZD0iTTI0NS40NCAxMDguMzA4aC04NS4wOWE3LjczOCA3LjczOCAwIDAgMS03LjczNS03LjczNHYtODguNjhDMTUyLjYxNSA1LjMyNyAxNDcuMjkgMCAxNDAuNzI2IDBoLTMwLjM3NWMtNi41NjggMC0xMS44OSA1LjMyNy0xMS44OSAxMS44OTR2ODguMTQzYzAgNC41NzMtMy42OTcgOC4yOS04LjI3IDguMzFsLTI3Ljg4NS4xMzNjLTQuNjEyLjAyNS04LjM1OS0zLjcxNy04LjM1LTguMzI1bC4xNzMtODguMjQxQzU0LjE0NCA1LjMzNyA0OC44MTcgMCA0Mi4yNCAwSDExLjg5QzUuMzIxIDAgMCA1LjMyNyAwIDExLjg5NFYyNjAuMjFjMCA1LjgzNCA0LjcyNiAxMC41NiAxMC41NTUgMTAuNTZIMjQ1LjQ0YzUuODM0IDAgMTAuNTYtNC43MjYgMTAuNTYtMTAuNTZWMTE4Ljg2OGMwLTUuODM0LTQuNzI2LTEwLjU2LTEwLjU2LTEwLjU2em0tMzkuOTAyIDkzLjIzM2MwIDcuNjQ1LTYuMTk4IDEzLjg0NC0xMy44NDMgMTMuODQ0SDE2Ny42OWMtNy42NDYgMC0xMy44NDQtNi4xOTktMTMuODQ0LTEzLjg0NHYtMjQuMDA1YzAtNy42NDYgNi4xOTgtMTMuODQ0IDEzLjg0NC0xMy44NDRoMjQuMDA1YzcuNjQ1IDAgMTMuODQzIDYuMTk4IDEzLjg0MyAxMy44NDR2MjQuMDA1eiIgZmlsbD0iI0Y2MCIvPjwvc3ZnPg=="
+    catalog.cluster.local/maintainer: ""
+    catalog.cluster.local/url: "https://www.rabbitmq.com"
+    catalog.cluster.local/tags: "mq,unmanaged,helm"
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v1
+    kind: RabbitMQComposite
+
+  writeConnectionSecretsToNamespace: crossplane-system
+
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: crossplane-contrib-function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        environment: null
+        kind: Resources
+        patchSets: []
+        resources:
+          - name: helm-release
+            base:
+              apiVersion: helm.crossplane.io/v1beta1
+              kind: Release
+              metadata:
+                annotations:
+                  crossplane.io/external-name: tbd
+              spec:
+                providerConfigRef:
+                  name: provider-helm
+                forProvider:
+                  chart:
+                    name: rabbitmq
+                    repository: oci://registry-1.docker.io/bitnamicharts
+                    version: 14.0.0 # also update the version in the map transform below!
+                  namespace: tbd
+                  values:
+                    commonLabels:
+                      catalog.cluster.local/kind: tbd
+                      catalog.cluster.local/name: tbd
+                    podLabels:
+                      catalog.cluster.local/kind: tbd
+                      catalog.cluster.local/name: tbd
+                    fullnameOverride: tbd
+                    auth:
+                      username: platform
+                    persistence:
+                      size: 8Gi
+                    persistentVolumeClaimRetentionPolicy:
+                      enabled: true
+                      whenDeleted: Delete
+                    metrics:
+                      enabled: true
+                      serviceMonitor:
+                        enabled: true                
+
+                connectionDetails:
+                  - apiVersion: v1
+                    kind: Secret
+                    name: # patch taken from spec.claimRef.name
+                    namespace: # patch taken from composite spec.claimRef.namespace
+                    fieldPath: data.rabbitmq-password
+                    toConnectionSecretKey: password
+
+                  - apiVersion: v1
+                    kind: Service
+                    name: # patch taken from spec.claimRef.name
+                    namespace: # patch taken from composite spec.claimRef.namespace
+                    fieldPath: spec.ports[0].port
+                    toConnectionSecretKey: port
+
+                writeConnectionSecretToRef:
+                  namespace: tbd
+
+            connectionDetails:
+              - name: username
+                type: FromFieldPath
+                fromFieldPath: "spec.forProvider.values.auth.username"
+
+              - name: password
+                type: FromConnectionSecretKey
+                fromConnectionSecretKey: password
+
+              - name: port
+                type: FromConnectionSecretKey
+                fromConnectionSecretKey: port
+
+              - name: host
+                type: FromFieldPath
+                fromFieldPath: "metadata.annotations['host']"
+
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.size"
+                toFieldPath: "spec.forProvider.values.persistence.size"        
+                
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "spec.forProvider.values.fullnameOverride"
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/name']"
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.kind"
+                toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.version"
+                toFieldPath: "spec.forProvider.chart.version"
+                transforms:
+                  - type: map
+                    map:
+                      "3": "14.0.0"
+                      
+              - type: ToCompositeFieldPath
+                fromFieldPath: "spec.forProvider.chart.version"
+                toFieldPath: "spec.version"
+                transforms:
+                  - type: map
+                    map:
+                      "14.0.0": "3"
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "metadata.annotations[crossplane.io/external-name]"
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "spec.forProvider.values.podLabels['catalog.cluster.local/name']"
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.kind"
+                toFieldPath: "spec.forProvider.values.podLabels['catalog.cluster.local/kind']"          
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.namespace"
+                toFieldPath: "spec.forProvider.namespace"
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "spec.connectionDetails[0].name"
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.namespace"
+                toFieldPath: "spec.connectionDetails[0].namespace"
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "spec.connectionDetails[1].name"
+              
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.namespace"
+                toFieldPath: "spec.connectionDetails[1].namespace"
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.namespace"
+                toFieldPath: "spec.writeConnectionSecretToRef.namespace"
+
+              - type: FromCompositeFieldPath
+                fromFieldPath: "spec.claimRef.name"
+                toFieldPath: "spec.writeConnectionSecretToRef.name"
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: "%s-connection"
+                      
+              - type: CombineToComposite
+                combine:
+                  variables:
+                    - fromFieldPath: spec.forProvider.values.fullnameOverride
+                    - fromFieldPath: spec.forProvider.namespace
+                  strategy: string
+                  string:
+                    fmt: "%s.%s"
+                toFieldPath: status.credentials.host
+                
+              - type: FromCompositeFieldPath
+                fromFieldPath: "status.credentials.host"
+                toFieldPath: "metadata.annotations['host']"

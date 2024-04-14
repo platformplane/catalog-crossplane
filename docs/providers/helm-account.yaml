@@ -21,12 +21,12 @@ roleRef:
 # apiVersion: rbac.authorization.k8s.io/v1
 # kind: ClusterRole
 # metadata:
-#   name: postgresqlservercomposites-access
+#   name: postgresqlcomposites-access
 # rules:
 # - apiGroups:
 #   - catalog.cluster.local
 #   # resources:
-#   # - postgresqlservercomposites
+#   # - postgresqlcomposites
 #   verbs:
 #   - get
 #   - list
@@ -35,11 +35,11 @@ roleRef:
 # apiVersion: rbac.authorization.k8s.io/v1
 # kind: ClusterRoleBinding
 # metadata:
-#   name: crossplane-postgresqlservercomposites-access
+#   name: crossplane-postgresqlcomposites-access
 # roleRef:
 #   apiGroup: rbac.authorization.k8s.io
 #   kind: ClusterRole
-#   name: postgresqlservercomposites-access
+#   name: postgresqlcomposites-access
 # subjects:
 #   - kind: ServiceAccount
 #     name: crossplane

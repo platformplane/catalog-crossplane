@@ -7,7 +7,7 @@ vars:
 
 tasks:
   publish:
-    dir: postgres/postgresqlserver
+    dir: package
     cmds:
       - crossplane xpkg build -o platform-catalog.xpkg
       - crossplane xpkg push -f platform-catalog.xpkg {{.REPOSITORY}}

@@ -1,0 +1,7 @@
+apiVersion: catalog.cluster.local/v1
+kind: MongoDB
+metadata:
+  name: mongodb-sample
+spec:
+  size: 4Gi
+  version: "7"
