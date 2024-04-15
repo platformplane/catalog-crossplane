@@ -277,6 +277,8 @@ kubectl run -n test -it --rm --image=postgres:latest postgres-client -- psql -h 
 
 ### Work with functions
 
+Read the article about [Composition Funcitons](https://docs.crossplane.io/latest/concepts/composition-functions/) and the [function-go-tempalting Readme](https://github.com/crossplane-contrib/function-go-templating).
+
 ```bash	
 crossplane beta render examples/mssql-2022.yaml package/mssql/composition.yaml docs/functions.yaml > out.yaml
 ```
@@ -286,7 +288,4 @@ crossplane beta render examples/mssql-2022.yaml package/mssql/composition.yaml d
 - add OracleDB catalog item
 - add dependabot to the repo
 - try out what happens when the platformplane does not install providers but instead let crossplane install them based on the dependencies in the configurations (the provider configs etc. will probably be needed anyways, with some default name references)
-- test what happens when we install a new platform-catalog version that does not include an XRD anymore that was previously installed (will the resources be deleted?)
-- use secret generator (e.g. in mssql) to generate the password secret
-  - convert the patching to a crossplane function step in a pipeline (for the idea, see [here](https://github.com/23technologies/xp-fn-rndstr))
-  - add another step to create the secret (but instead of what is done in the above example, use [this](https://github.com/crossplane-contrib/function-go-templating/tree/main) with [this improvement](https://github.com/crossplane/crossplane/issues/1895#issuecomment-1969733598)) or just use the go-template function and use [sprig](https://masterminds.github.io/sprig/crypto.html)
+This could help making updating providers easier (just update the version number in the configuration.yaml and crossplane will install them automatically?)
