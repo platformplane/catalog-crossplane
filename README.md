@@ -278,7 +278,7 @@ kubectl run -n test -it --rm --image=postgres:latest postgres-client -- psql -h 
 ### Work with functions
 
 ```bash	
-crossplane beta render docs/composite.yaml package/microsoftsqlserver/composition.yaml docs/functions.yaml > out.yaml
+crossplane beta render examples/mssql-2022.yaml package/mssql/composition.yaml docs/functions.yaml > out.yaml
 ```
 
 ## Further improvements
