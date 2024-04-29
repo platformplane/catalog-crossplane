@@ -58,10 +58,10 @@ spec:
                     persistentVolumeClaimRetentionPolicy:
                       enabled: true
                       whenDeleted: Delete
-                    metrics:
-                      enabled: true
-                      serviceMonitor:
-                        enabled: true                
+                    # metrics:
+                    #   enabled: true
+                    #   serviceMonitor:
+                    #     enabled: true                
 
                 connectionDetails:
                   - apiVersion: v1
