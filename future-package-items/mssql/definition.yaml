@@ -4,6 +4,9 @@ metadata:
   name: mssqlcomposites.catalog.cluster.local
 spec:
   group: catalog.cluster.local
+  metadata:
+    labels:
+      catalog.cluster.local/kind: MsSQL
   names:
     kind: MsSQLComposite
     plural: mssqlcomposites

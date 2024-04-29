@@ -4,6 +4,9 @@ metadata:
   name: mariadbcomposites.catalog.cluster.local
 spec:
   group: catalog.cluster.local
+  metadata:
+    labels:
+      catalog.cluster.local/kind: MariaDB
   names:
     kind: MariaDBComposite
     plural: mariadbcomposites

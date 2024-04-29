@@ -4,6 +4,9 @@ metadata:
   name: mysqlcomposites.catalog.cluster.local
 spec:
   group: catalog.cluster.local
+  metadata:
+    labels:
+      catalog.cluster.local/kind: MySQL
   names:
     kind: MySQLComposite
     plural: mysqlcomposites

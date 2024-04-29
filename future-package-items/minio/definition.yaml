@@ -4,12 +4,9 @@ metadata:
   name: miniocomposites.catalog.cluster.local
 spec:
   group: catalog.cluster.local
-  connectionSecretKeys:
-    - username
-    - password
-    - host
-    - port
-    - database
+  metadata:
+    labels:
+      catalog.cluster.local/kind: MinIO
   names:
     kind: MinIOComposite
     plural: miniocomposites

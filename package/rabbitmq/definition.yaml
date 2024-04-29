@@ -4,6 +4,9 @@ metadata:
   name: rabbitmqcomposites.catalog.cluster.local
 spec:
   group: catalog.cluster.local
+  metadata:
+    labels:
+      catalog.cluster.local/kind: RabbitMQ
   names:
     kind: RabbitMQComposite
     plural: rabbitmqcomposites

@@ -4,6 +4,9 @@ metadata:
   name: mongodbcomposites.catalog.cluster.local
 spec:
   group: catalog.cluster.local
+  metadata:
+    labels:
+      catalog.cluster.local/kind: MongoDB
   names:
     kind: MongoDBComposite
     plural: mongodbcomposites

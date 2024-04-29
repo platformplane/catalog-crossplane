@@ -4,6 +4,9 @@ metadata:
   name: kafkacomposites.catalog.cluster.local
 spec:
   group: catalog.cluster.local
+  metadata:
+    labels:
+      catalog.cluster.local/kind: Kafka
   names:
     kind: KafkaComposite
     plural: kafkacomposites

@@ -4,6 +4,9 @@ metadata:
   name: rediscomposites.catalog.cluster.local
 spec:
   group: catalog.cluster.local
+  metadata:
+    labels:
+      catalog.cluster.local/kind: Redis
   names:
     kind: RedisComposite
     plural: rediscomposites

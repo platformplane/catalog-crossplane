@@ -4,6 +4,9 @@ metadata:
   name: elasticsearchcomposites.catalog.cluster.local
 spec:
   group: catalog.cluster.local
+  metadata:
+    labels:
+      catalog.cluster.local/kind: Elasticsearch
   names:
     kind: ElasticsearchComposite
     plural: elasticsearchcomposites
