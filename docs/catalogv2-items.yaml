@@ -1,0 +1,13 @@
+apiVersion: pkg.crossplane.io/v1
+kind: Configuration
+metadata:
+  name: lgtdev-custom-catalog-items
+spec:
+  package: registry.lgtdev.com/common/lgt/platform/catalog-items:0.1.0-rc.5
+---
+apiVersion: pkg.crossplane.io/v1
+kind: Configuration
+metadata:
+  name: common-catalog-items
+spec:
+  package: index.docker.io/platformplane/platform-catalog:0.1.0-rc.23

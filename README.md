@@ -2,6 +2,8 @@
 
 The items shown in the catalog v2 are developed here.
 
+Reference to old catalog v1 controllers: [here](https://github.com/platformplane/catalog-operator/blob/95a60704fe4cb6d6781cbc869fd331c023ea9722/internal/controller)
+
 ![catalogv1ui](catalogv1ui.png)
 
 ## Repo Overview
@@ -11,6 +13,10 @@ The items shown in the catalog v2 are developed here.
   - [<catalog-item>](./package/redisserver/) For every catalog item, there is a subfolder containing the Crossplane composition and definition files.
 - [Dockerfile](Dockerfile) The Dockerfile uses the Crossplane CLI to build and push the Crossplane configuration package (OCI image) to a registry (may be useful for local testing).
 - [.github/workflows](./.github/workflows/build-publish-images.yaml) The GitHub pipeline calculates a version number and builds the Crossplane package on every commit.
+
+## Update Strategy of Catalog Items
+
+We assume that minor versions can be updated without breaking changes. This means that the `spec.forProvider.chart.version` field in the Crossplane configuration can be updated within the same minor version (anyways, read the release notes to be sure). Note that this field only specifies the default version (if no version is specified in the claim, there is a patch in every configuration with a map transformation) and is sometimes outdated in order not to break existing installations (from catalog v1). Most of the times, therefore, you need to update the versions in the map patch in the composition file. Applying the latest Crossplane configuration will replace the Helm release with the new version and therefore cause downtime and potentially issues for the customers!
 
 ## Create the Crossplane package locally
 
@@ -47,6 +53,8 @@ data:
     - name: catalog-items-nimbus
       package: registry.nimbusplane.io/common/lgt/platform/catalog-items:0.1.0-rc.2
 ```
+
+Please note that removing an entry from this list will not remove the Crossplane definitions (along with the CRDs and CRs). In case you want to remove all resources of a specific package (inlcuding all instances!), you need to delete the configuration package from `configurations.pkg.crossplane.io`.
 
 If the packages are to be fetched from private registries, Crossplane needs package pull secrets (similar to ImagePullSecrets) to be able to pull the packages. This is done by the platform (gitlab-operator). It creates the secret `default-registry` in the `crossplane-system` namespace similar to:
 
@@ -99,27 +107,185 @@ In order that the catalog actually shows your items, you need to make sure the C
 - iterate until you are happy
 - if everything works, create a merge request, assign it to a Nimbus team member and ask for a review
 - merge the merge request after it got approved
-- if wanted tag the merge commit with a version number (e.g. `0.0.1`)
+- if wanted, tag the merge commit with a version number (e.g. `0.0.1`)
 - coordinate the release with the Nimbus team who has to update the `crossplane` ConfigMap in the `platformplane` namespace on Nimbus so that other developers can use it
 
 ## How to debug e.g. a new helm-based catalog item
+
 - does the claim exist and what is its state? Describe it to see the status.
-  `k get dclconstellations`
+  ```yaml
+  kubectl get dclconstellations
+  kubectl describe dclconstellations sample-dclconstellation
+  ```
 - what is the state of the corresponding composite?
-  `k get dclconstellationcomposite`
-  `k get dclconstellationcomposite dclconstellation-sample-hx5hk -o jsonpath='{.status.conditions}'`
-- what is the state of the helm release?
-  `k get releases`
-  `k get release dclconstellation-sample-hx5hk-n5r6r -o jsonpath='{.status.conditions}'`
+  ```yaml
+  kubectl get dclconstellationcomposite
+  kubectl get dclconstellationcomposite dclconstellation-sample-hx5hk -o jsonpath='{.status.conditions}'
+  ```
+- what is the state of the managed resource (in this case the helm release)?
+  ```yaml
+  kubectl get releases
+  kubectl get release dclconstellation-sample-hx5hk-n5r6r -o jsonpath='{.status.conditions}'
+  ```
 - what is the status of the pkg.crossplane.io configurations?
-  `k get configurations`
-  `k get configuration catalog-items-lgtdev -o jsonpath='{.status.conditions}'`
+  ```yaml
+  kubectl get configurations
+  kubectl get configuration catalog-items-lgtdev -o jsonpath='{.status.conditions}'
+  ```
+- what is the status of the pkg.crossplane.io providers?
+  ```yaml
+  kubectl get providers
+  kubectl get providers provider-helm -o jsonpath='{.status.conditions}'
+  ```
+
+## Useful commands to test items
+
+### Elasticsearch
+
+```bash
+curl http://elasticsearchserver-sample:9200/_cluster/health?pretty
+```
+
+### Kafka
+
+```bash
+code client.properties
+# paste the following content
+security.protocol=SASL_PLAINTEXT
+sasl.mechanism=SCRAM-SHA-256
+sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required \
+    username="user" \
+    password="$(kubectl get secret kafka-user-passwords --namespace test -o jsonpath='{.data.client-passwords}' | base64 -d | cut -d , -f 1)";
+# save the file and run the following commands
+kubectl run kafka-kafka-client --restart='Never' --image docker.io/bitnami/kafka:3.7.0-debian-12-r0 --namespace test --command -- sleep infinity
+kubectl cp --namespace test ./client.properties kafka-kafka-client:/tmp/client.properties
+kubectl exec --tty -i kafka-kafka-client --namespace test -- bash
+kafka-console-producer.sh \
+            --producer.config /tmp/client.properties \
+            --broker-list kafkaserver-sample-controller-0.kafkaserver-sample-controller-headless.test.svc.cluster.local:9092 \
+            --topic test
+kafka-console-consumer.sh \
+            --consumer.config /tmp/client.properties \
+            --bootstrap-server kafkaserver-sample-controller-0.kafkaserver-sample-controller-headless.test.svc.cluster.local:9092 \
+            --topic test --from-beginning
+```
+
+### MariaDB
+
+```bash
+kubectl exec -it maria-0 -n test -- mysql -u root -p db
+```
+
+### MinIO
+
+```bash
+mc alias set myminio http://minioserver-sample:9000 admin kPUMn2JZTc
+mc mb myminio/bucket
+mc ls myminio
+```
+
+### MsSql
+
+```bash
+kubectl run -n test -it --rm --image=mcr.microsoft.com/mssql-tools bash
+sqlcmd -S mssqlserver-sample -U sa
+```
+
+### Redis
+
+```bash
+redis-cli -h redis-master -p 6379 -a bLaesXrA1V
+```
+
+### PostgreSQL
+
+```bash
+kubectl run -n test -it --rm --image=postgres:latest postgres-client -- psql -h 10.96.193.248 -U postgres -d postgres --password
+```
+
+## Known issues
+
+- console intregration does not offer all options shown in UI and sometimes does not seem to show all connection information
+- Several charts (elastic, kafka, mariadb, MsSql which is plain yaml) do not provide the `persistentVolumeClaimRetentionPolicy` parameter which is needed to remove the PVCs when the Helm release is deleted. Therefore, the crossplane operator removes them manually after the catalog item removal. Alternatively, we could create our own PCV with Crossplane as part of the composition and reference that as existingClaim in the Helm release:
+
+```yaml
+  resources:
+    - name: pvc
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: provider-kubernetes
+          forProvider:
+            manifest:
+              apiVersion: v1
+              kind: PersistentVolumeClaim
+              metadata:
+                name: tbd-name
+                namespace: tbd-namespace
+                labels:
+                  catalog.cluster.local/kind: tbd-kind
+                  catalog.cluster.local/name: tbd-name
+              spec:
+                accessModes:
+                  - ReadWriteOnce
+                resources:
+                  requests:
+                    storage: 8Gi
+
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.name"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.namespace"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.kind"
+          toFieldPath: "spec.forProvider.manifest.metadata.labels['catalog.cluster.local/kind']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.manifest.metadata.labels['catalog.cluster.local/name']"
+
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.size"
+          toFieldPath: "spec.forProvider.manifest.spec.resources.requests.storage"
+
+    - name: helm-release
+      base:
+      ...
+        spec:
+          forProvider:
+            values:
+              master:
+                persistence:
+                  existingClaim: tbd
+      ...            
+      patches:
+        - type: FromCompositeFieldPath
+          fromFieldPath: "spec.claimRef.name"
+          toFieldPath: "spec.forProvider.values.master.persistence.existingClaim"
+```
+
+### Redis
+
+- `consoel redis client` is not authenticating correctly, see error message when calling e.g. `INFO` command
+
+### Work with functions
+
+Read the article about [Composition Funcitons](https://docs.crossplane.io/latest/concepts/composition-functions/) and the [function-go-tempalting Readme](https://github.com/crossplane-contrib/function-go-templating).
+
+```bash	
+crossplane beta render examples/mssql-2022.yaml package/mssql/composition.yaml docs/functions.yaml > out.yaml
+```
 
 ## Further improvements
 
+- add OracleDB catalog item
 - add dependabot to the repo
 - try out what happens when the platformplane does not install providers but instead let crossplane install them based on the dependencies in the configurations (the provider configs etc. will probably be needed anyways, with some default name references)
-- test what happens when we install a new platform-catalog version that does not include an XRD anymore that was previously installed (will the resources be deleted?)
-- use secret generator (e.g. in mssql) to generate the password secret
-  - convert the patching to a crossplane function step in a pipeline (for the idea, see [here](https://github.com/23technologies/xp-fn-rndstr))
-  - add another step to create the secret (but instead of what is done in the above example, use [this](https://github.com/crossplane-contrib/function-go-templating/tree/main) with [this improvement](https://github.com/crossplane/crossplane/issues/1895#issuecomment-1969733598)) or just use the go-template function and use [sprig](https://masterminds.github.io/sprig/crypto.html)
+This could help making updating providers easier (just update the version number in the configuration.yaml and crossplane will install them automatically?)

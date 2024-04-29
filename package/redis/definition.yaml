@@ -1,0 +1,42 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: rediscomposites.catalog.cluster.local
+spec:
+  group: catalog.cluster.local
+  names:
+    kind: RedisComposite
+    plural: rediscomposites
+  claimNames:
+    kind: Redis
+    plural: rediss
+  versions:
+    - name: v1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: The open-source, in-memory data store used by millions of developers as a cache, vector database, document database, streaming engine, and message broker.
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                size:
+                  type: string
+                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                version:
+                  type: string
+                  enum:
+                    - "7"
+            status:
+              type: object
+              properties: 
+                credentials:
+                  type: object
+                  description: "Misuse composite status as temporary storage."
+                  properties:
+                    host:
+                      type: string
+
+                  

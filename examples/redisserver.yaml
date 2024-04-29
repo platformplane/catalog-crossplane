@@ -1,6 +1,0 @@
-apiVersion: catalog.cluster.local/v1
-kind: RedisServer
-metadata:
-  name: redisserver-sample
-spec:
-  size: 1Gi

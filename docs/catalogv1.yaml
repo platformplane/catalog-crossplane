@@ -1,0 +1,76 @@
+# apiVersion: v1
+# kind: Namespace
+# metadata:  
+#   name: platform
+# ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: catalog
+  name: catalog
+  namespace: platform
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app: catalog
+  name: catalog
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: catalog
+  namespace: platform
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: catalog
+  name: catalog
+  namespace: platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: catalog
+  template:
+    metadata:
+      labels:
+        app: catalog
+    spec:
+      initContainers:
+      - name: init
+        image: platformplane/catalog-operator:0.3.0
+        imagePullPolicy: Always
+        command: ["/install"]
+      containers:
+      - name: operator
+        image: platformplane/catalog-operator:0.3.0
+        imagePullPolicy: Always
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20        
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+      securityContext:
+        runAsNonRoot: true
+      serviceAccountName: catalog
+---

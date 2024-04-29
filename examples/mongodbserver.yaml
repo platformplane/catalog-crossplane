@@ -1,6 +1,0 @@
-apiVersion: catalog.cluster.local/v1
-kind: MongoDBServer
-metadata:
-  name: mongodbserver-sample
-spec:
-  size: 4Gi

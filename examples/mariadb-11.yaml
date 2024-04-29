@@ -1,0 +1,7 @@
+apiVersion: catalog.cluster.local/v1
+kind: MariaDB
+metadata:
+  name: mariadb-sample
+spec:
+  size: 1Gi
+  version: "11"

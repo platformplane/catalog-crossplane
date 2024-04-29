@@ -1,6 +1,0 @@
-apiVersion: catalog.cluster.local/v1
-kind: ElasticsearchServer
-metadata:
-  name: elasticsearchserver-sample
-spec:
-  size: 1Gi

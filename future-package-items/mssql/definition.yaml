@@ -1,0 +1,48 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: mssqlcomposites.catalog.cluster.local
+spec:
+  group: catalog.cluster.local
+  names:
+    kind: MsSQLComposite
+    plural: mssqlcomposites
+  claimNames:
+    kind: MsSQL
+    plural: mssqls
+  versions:
+    - name: v1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: MsSQL is the Schema for the mssqls API
+          type: object
+          properties:
+            spec:
+              description: MsSQLSpec defines the desired state of MsSQL
+              type: object
+              properties:
+                size:
+                  type: string
+                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                version:
+                  type: string
+                  enum:
+                    - "2019"
+                    - "2022"
+            status:
+              description: MsSQLStatus defines the observed state of MsSQL
+              type: object
+              properties:
+                binding:
+                  properties:
+                    name:
+                      type: string
+                  type: object
+                credentials:
+                  type: object
+                  description: "Misuse composite status as temporary storage."
+                  properties:
+                    host:
+                      type: string
