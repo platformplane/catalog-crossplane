@@ -41,7 +41,7 @@ spec:
                   chart:
                     name: minio
                     repository: oci://registry-1.docker.io/bitnamicharts
-                    version: 14.1.7 # also update the version in the map transform below!
+                    version: 14.3.0 # also update the version in the map transform below!
                   namespace: tbd
                   values:
                     commonLabels:
@@ -121,8 +121,8 @@ spec:
                 transforms:
                   - type: map
                     map:
-                      "2024.4": "14.1.7"
-                      "2023.7": "12.6.12"
+                      "2024.4.18": "14.3.0"
+                      "2023.7.18": "12.6.12"
                       
               - type: ToCompositeFieldPath
                 fromFieldPath: "spec.forProvider.chart.version"
@@ -130,8 +130,8 @@ spec:
                 transforms:
                   - type: map
                     map:
-                      "14.1.7": "2024.4"
-                      "12.6.12": "2023.7"
+                      "14.3.0": "2024.4.18"
+                      "12.6.12": "2023.7.18"
 
               - type: FromCompositeFieldPath
                 fromFieldPath: "spec.claimRef.name"
