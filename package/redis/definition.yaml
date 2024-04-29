@@ -9,7 +9,7 @@ spec:
     plural: rediscomposites
   claimNames:
     kind: Redis
-    plural: rediss
+    plural: redises
   versions:
     - name: v1
       served: true

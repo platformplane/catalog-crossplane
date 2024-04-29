@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: rediss.catalog.cluster.local
+  name: redises.catalog.cluster.local
   annotations:
     catalog.cluster.local/title: "Redis"
     catalog.cluster.local/description: "Redis is a fast and efficient in-memory data structure store. It provides a flexible key-value store with support for various data structures such as strings, hashes, lists, sets, and more. Redis is widely used for caching, session management, real-time analytics, pub/sub messaging, and other use cases that require high-performance data storage and retrieval."

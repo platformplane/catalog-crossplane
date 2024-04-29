@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: elasticsearchs.catalog.cluster.local
+  name: elasticsearches.catalog.cluster.local
   annotations:
     catalog.cluster.local/title: "ElasticSearch"
     catalog.cluster.local/description: "Elasticsearch is a highly scalable open-source search and analytics engine. It allows you to store, search, and analyze large volumes of data quickly and in near real-time. With its distributed architecture and powerful querying capabilities, Elasticsearch is the perfect choice for building robust search and analytics applications."

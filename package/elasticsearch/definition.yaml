@@ -9,14 +9,14 @@ spec:
     plural: elasticsearchcomposites
   claimNames:
     kind: Elasticsearch
-    plural: elasticsearchs
+    plural: elasticsearches
   versions:
     - name: v1
       served: true
       referenceable: true
       schema:
         openAPIV3Schema:
-          description: Elasticsearch is the Schema for the elasticsearchs API
+          description: Elasticsearch is the Schema for the elasticsearches API
           type: object
           properties:
             spec:
