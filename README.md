@@ -10,7 +10,7 @@ Reference to old catalog v1 controllers: [here](https://github.com/platformplane
 
 - [package](./package/) This is the "root" folder for the Crossplane package that we build here, it consists of:
   - [configuration.yaml](./package/configuration.yaml) This yaml file (kind: Configuration) specifies that this is a Crossplane package, on which version of Crossplane it depends and which CRDs it provides.
-  - [<catalog-item>](./package/redisserver/) For every catalog item, there is a subfolder containing the Crossplane composition and definition files.
+  - [<catalog-item>](./package/redis/) For every catalog item, there is a subfolder containing the Crossplane composition and definition files.
 - [Dockerfile](Dockerfile) The Dockerfile uses the Crossplane CLI to build and push the Crossplane configuration package (OCI image) to a registry (may be useful for local testing).
 - [.github/workflows](./.github/workflows/build-publish-images.yaml) The GitHub pipeline calculates a version number and builds the Crossplane package on every commit.
 
@@ -143,7 +143,7 @@ In order that the catalog actually shows your items, you need to make sure the C
 ### Elasticsearch
 
 ```bash
-curl http://elasticsearchserver-sample:9200/_cluster/health?pretty
+curl http://elasticsearch-sample:9200/_cluster/health?pretty
 ```
 
 ### Kafka
@@ -162,11 +162,11 @@ kubectl cp --namespace test ./client.properties kafka-kafka-client:/tmp/client.p
 kubectl exec --tty -i kafka-kafka-client --namespace test -- bash
 kafka-console-producer.sh \
             --producer.config /tmp/client.properties \
-            --broker-list kafkaserver-sample-controller-0.kafkaserver-sample-controller-headless.test.svc.cluster.local:9092 \
+            --broker-list kafka-sample-controller-0.kafka-sample-controller-headless.test.svc.cluster.local:9092 \
             --topic test
 kafka-console-consumer.sh \
             --consumer.config /tmp/client.properties \
-            --bootstrap-server kafkaserver-sample-controller-0.kafkaserver-sample-controller-headless.test.svc.cluster.local:9092 \
+            --bootstrap-server kafka-sample-controller-0.kafka-sample-controller-headless.test.svc.cluster.local:9092 \
             --topic test --from-beginning
 ```
 
@@ -179,7 +179,7 @@ kubectl exec -it maria-0 -n test -- mysql -u root -p db
 ### MinIO
 
 ```bash
-mc alias set myminio http://minioserver-sample:9000 admin kPUMn2JZTc
+mc alias set myminio http://minio-sample:9000 admin kPUMn2JZTc
 mc mb myminio/bucket
 mc ls myminio
 ```
@@ -188,7 +188,7 @@ mc ls myminio
 
 ```bash
 kubectl run -n test -it --rm --image=mcr.microsoft.com/mssql-tools bash
-sqlcmd -S mssqlserver-sample -U sa
+sqlcmd -S mssql-sample -U sa
 ```
 
 ### Redis
