@@ -18,6 +18,8 @@ Reference to old catalog v1 controllers: [here](https://github.com/platformplane
 
 We assume that minor versions can be updated without breaking changes. This means that the `spec.forProvider.chart.version` field in the Crossplane configuration can be updated within the same minor version (anyways, read the release notes to be sure). Note that this field only specifies the default version (if no version is specified in the claim, there is a patch in every configuration with a map transformation) and is sometimes outdated in order not to break existing installations (from catalog v1). Most of the times, therefore, you need to update the versions in the map patch in the composition file. Applying the latest Crossplane configuration will replace the Helm release with the new version and therefore cause downtime and potentially issues for the customers!
 
+For more thoughts, see [here](https://teams.microsoft.com/l/message/19:8bb1df955bf04679b4f55fe9a1609cb8@thread.tacv2/1712520692322?tenantId=ccce7f5e-a35f-4bc3-8e63-b2215e7d14f9&groupId=8c054c7f-925b-4071-9dd2-adfdc9fa7fe0&parentMessageId=1712520692322&teamName=Platform%20Plane&channelName=Platform&createdTime=1712520692322).
+
 ## Create the Crossplane package locally
 
 ### Via Dockerfile (no need to install Crossplane CLI)
@@ -277,15 +279,82 @@ kubectl run -n test -it --rm --image=postgres:latest postgres-client -- psql -h 
 
 ### Work with functions
 
-Read the article about [Composition Funcitons](https://docs.crossplane.io/latest/concepts/composition-functions/) and the [function-go-tempalting Readme](https://github.com/crossplane-contrib/function-go-templating).
+Read the article about [Composition Funcitons](https://docs.crossplane.io/latest/concepts/composition-functions/) and the [function-go-tempalting Readme](https://github.com/crossplane-contrib/function-go-templating). Sometimes, also the [Composition Functions design doc](https://github.com/stevendborrelli/crossplane/blob/master/design/design-doc-composition-functions.md) is useful. Regarding the templating syntax, use the [Go Helm template functions doc](https://helm.sh/docs/chart_template_guide/function_list).
 
 ```bash	
 crossplane beta render examples/mssql-2022.yaml package/mssql/composition.yaml docs/functions.yaml > out.yaml
 ```
 
+Debugging to see which keys are available: print this stuff you look for as connectiondetails:
+  
+  ```yaml
+  resources1: {{- range $key, $value := .observed.resources.info.resource.status.atProvider.manifest.data.resourcegroup -}}{{- if $value -}}{{- printf "%s," $key -}}{{- end -}}{{- end -}}
+  ```
+
+  Then an error including the keys is shown in the managed resource status.
+
 ## Further improvements
 
-- add OracleDB catalog item
+- add Azure Storage account catalog item, this needs the following configmap in the clusters: 
+  - kubectl create configmap cluster-info --from-literal=resourcegroup=i-li-rgr-platformplane-crossplane-test -n crossplane-system (where the resource group name must match)
+  I don't think I could do something like `kubectl get nodes -o jsonpath='{.items[0].metadata.labels.kubernetes\.azure\.com/network-resourcegroup}'` in Crossplane.
+  - azure service principal with rights to create resources in this resource group. The service principal must be integrated into the Azure Crossplane Provider either via secret or managed identity.
+
+    Secret:
+    ```yaml
+    apiVersion: azure.upbound.io/v1beta1
+    kind: ProviderConfig
+    metadata:
+      annotations:
+      name: default
+    spec:
+      credentials:
+        secretRef:
+          key: creds
+          name: azure-secret
+          namespace: crossplane-system
+        source: Secret
+    ```	
+
+    The data.creds (or whatever name it will be) section must look like:
+
+    ```yaml
+    {
+      "clientId": "35...",
+      "clientSecret": "7DM...",
+      "subscriptionId": "c99...",
+      "tenantId": "8f1...",
+      "activeDirectoryEndpointUrl": "https://login.microsoftonline.com",
+      "resourceManagerEndpointUrl": "https://management.azure.com/",
+      "activeDirectoryGraphResourceId": "https://graph.windows.net/",
+      "sqlManagementEndpointUrl": "https://management.core.windows.net:8443/",
+      "galleryEndpointUrl": "https://gallery.azure.com/",
+      "managementEndpointUrl": "https://management.core.windows.net/"
+    }
+
+    ```
+
+    Managed Identity:
+
+    ```yaml
+    apiVersion: azure.upbound.io/v1beta1
+    kind: ProviderConfig
+    metadata:
+      name: default
+    spec:
+      subscriptionID: c99b..
+      tenantID: 8f...
+      clientID: f9d...
+    credentials:
+      source: UserAssignedManagedIdentity
+    ```
+
+- add OracleDB and SQLServer catalog item
+- Parameter configurable via UI (enums are already in CRDs)
+  - Show "dager" emoji at spec.version saying that this will break the application and migration has to be done potentially
+  - can we have nice display names for the parameters? e.g. setting x-kubernetes-display-name in the CRD
+- Make the crossplane operator watching the `crossplane` ConfigMap in the `platformplane` namespace (not copying the file on startup using that value until the pod is killed)
+- delete bindings when deleting the claim
 - add dependabot to the repo
 - try out what happens when the platformplane does not install providers but instead let crossplane install them based on the dependencies in the configurations (the provider configs etc. will probably be needed anyways, with some default name references)
 This could help making updating providers easier (just update the version number in the configuration.yaml and crossplane will install them automatically?)

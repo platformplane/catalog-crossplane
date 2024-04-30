@@ -1,0 +1,24 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: azurestorageaccountcomposites.catalog.cluster.local
+spec:
+  group: catalog.cluster.local
+  metadata:
+    labels:
+      catalog.cluster.local/kind: AzureStorageAccount
+  names:
+    kind: AzureStorageAccountComposite
+    plural: azurestorageaccountcomposites
+  claimNames:
+    kind: AzureStorageAccount
+    plural: azurestorageaccount
+  versions:
+    - name: v1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: AzureStorageAccount is the Schema for the azurestorageaccount API
+          type: object
+                  

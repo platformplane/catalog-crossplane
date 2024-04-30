@@ -1,0 +1,89 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: azurestorageaccounts.catalog.cluster.local
+  annotations:
+    catalog.cluster.local/title: "Storage Account"
+    catalog.cluster.local/description: "An Azure storage account contains all of your Azure Storage data objects: blobs, files, queues, and tables. The storage account provides a unique namespace for your Azure Storage data that's accessible from anywhere in the world over HTTP or HTTPS. Data in your storage account is durable and highly available, secure, and massively scalable."
+    catalog.cluster.local/icon: "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOCAxOCI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImEiIHgxPSI5IiB5MT0iMTUuODMiIHgyPSI5IiB5Mj0iNS43OSIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNiM2IzYjMiPjwvc3RvcD4KICAgICAgPHN0b3Agb2Zmc2V0PSIuMjYiIHN0b3AtY29sb3I9IiNjMWMxYzEiPjwvc3RvcD4KICAgICAgPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjZTZlNmU2Ij48L3N0b3A+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cGF0aCBkPSJNLjUgNS43OWgxN3Y5LjQ4YS41Ny41NyAwIDAxLS41Ny41N0gxLjA3YS41Ny41NyAwIDAxLS41Ny0uNTdWNS43OXoiIGZpbGw9InVybCgjYSkiPjwvcGF0aD4KICA8cGF0aCBkPSJNMS4wNyAyLjE3aDE1Ljg2YS41Ny41NyAwIDAxLjU3LjU3djMuMDVILjVWMi43M2EuNTcuNTcgMCAwMS41Ny0uNTZ6IiBmaWxsPSIjMzdjMmIxIj48L3BhdGg+CiAgPHBhdGggZD0iTTIuODEgNi44OWgxMi4zN2EuMjcuMjcgMCAwMS4yNi4yN3YxLjRhLjI3LjI3IDAgMDEtLjI2LjI3SDIuODFhLjI3LjI3IDAgMDEtLjI2LS4yN3YtMS40YS4yNy4yNyAwIDAxLjI2LS4yN3oiIGZpbGw9IiNmZmYiPjwvcGF0aD4KICA8cGF0aCBkPSJNMi44MiA5LjY4aDEyLjM3YS4yNy4yNyAwIDAxLjI2LjI3djEuNDFhLjI3LjI3IDAgMDEtLjI2LjI3SDIuODJhLjI3LjI3IDAgMDEtLjI2LS4yN1YxMGEuMjcuMjcgMCAwMS4yNi0uMzJ6IiBmaWxsPSIjMzdjMmIxIj48L3BhdGg+CiAgPHBhdGggZD0iTTIuODIgMTIuNWgxMi4zN2EuMjcuMjcgMCAwMS4yNi4yN3YxLjQxYS4yNy4yNyAwIDAxLS4yNi4yN0gyLjgyYS4yNy4yNyAwIDAxLS4yNi0uMjd2LTEuNDFhLjI3LjI3IDAgMDEuMjYtLjI3eiIgZmlsbD0iIzI1ODI3NyI+PC9wYXRoPgo8L3N2Zz4="
+    catalog.cluster.local/maintainer: ""
+    catalog.cluster.local/url: "https://learn.microsoft.com/azure/storage/common/storage-account-overview"
+    catalog.cluster.local/tags: "storage,unmanaged"
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v1
+    kind: AzureStorageAccountComposite
+
+  writeConnectionSecretsToNamespace: crossplane-system
+
+  mode: Pipeline
+  pipeline:
+    - step: storage-account
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "info" # this name is referenced later on again
+            spec:
+              providerConfigRef:
+                name: provider-kubernetes
+              forProvider:
+                manifest: # kubectl create configmap cluster-info --from-literal=resourcegroup=i-li-rgr-platformplane-crossplane-test -n crossplane-system
+                  apiVersion: v1
+                  kind: ConfigMap
+                  metadata:
+                    name: cluster-info
+                    namespace: crossplane-system
+              managementPolicies: ["Observe"]
+            ---
+            apiVersion: storage.azure.upbound.io/v1beta1
+            kind: Account # https://marketplace.upbound.io/providers/upbound/provider-azure-storage/v1.0.1/resources/storage.azure.upbound.io/Account/v1beta1
+            metadata:
+            {{ if eq $.observed.composite.resource.spec.claimRef nil }}
+              name: {} # "Account name taken from Composite claimRef is not yet available."
+            {{ else }}
+              name: {{ .observed.composite.resource.spec.claimRef.name }}
+            {{ end }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "account"
+            {{ if eq $.observed.composite.resource.spec.claimRef nil }}
+                crossplane.io/external-name: {}
+            {{ else }}
+                crossplane.io/external-name: {{ regexReplaceAll "[^a-z0-9]" (printf "%s" .observed.composite.resource.metadata.uid | lower) ""  | trunc 24 }}
+            {{ end }}
+            spec:
+              forProvider:
+            {{ if eq $.observed.resources.info nil }}
+                resourceGroupName: {} # "ConfigMap info not (yet) available."
+            {{ else }}
+                resourceGroupName: {{ .observed.resources.info.resource.status.atProvider.manifest.data.resourcegroup }}
+            {{ end }}
+                accountTier: Standard
+                accountReplicationType: LRS
+                location: Switzerland North
+              writeConnectionSecretToRef:
+                namespace: {{ .observed.composite.resource.spec.claimRef.namespace }}
+                name: {{ .observed.composite.resource.spec.claimRef.name }}-connection
+            ---
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: CompositeConnectionDetails
+            {{ if eq $.observed.resources nil }}
+            data: {}
+            {{ else }}
+            data:
+              attribute.primary_access_key: {{ dig "resources" "account" "connectionDetails" "attribute.primary_access_key" "" .observed }}
+              attribute.primary_blob_connection_string: {{ dig "resources" "account" "connectionDetails" "attribute.primary_blob_connection_string" "" .observed }}
+              attribute.primary_connection_string: {{ dig "resources" "account" "connectionDetails" "attribute.primary_connection_string" "" .observed }}
+            {{ end }}
+
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready
