@@ -7,6 +7,13 @@ spec:
   metadata:
     labels:
       catalog.cluster.local/kind: RabbitMQ
+    annotations:
+      catalog.cluster.local/title: "RabbitMQ"
+      catalog.cluster.local/description: "RabbitMQ is a powerful and flexible open-source message broker that enables efficient communication between distributed systems. It provides reliable message queuing, delivery acknowledgments, flexible routing, and support for multiple messaging protocols. RabbitMQ is widely used in modern software architectures to build scalable and resilient applications."
+      catalog.cluster.local/icon: "PHN2ZyB3aWR0aD0iMjM2MiIgaGVpZ2h0PSIyNTAwIiB2aWV3Qm94PSIwIDAgMjU2IDI3MSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJ4TWlkWU1pZCI+PHBhdGggZD0iTTI0NS40NCAxMDguMzA4aC04NS4wOWE3LjczOCA3LjczOCAwIDAgMS03LjczNS03LjczNHYtODguNjhDMTUyLjYxNSA1LjMyNyAxNDcuMjkgMCAxNDAuNzI2IDBoLTMwLjM3NWMtNi41NjggMC0xMS44OSA1LjMyNy0xMS44OSAxMS44OTR2ODguMTQzYzAgNC41NzMtMy42OTcgOC4yOS04LjI3IDguMzFsLTI3Ljg4NS4xMzNjLTQuNjEyLjAyNS04LjM1OS0zLjcxNy04LjM1LTguMzI1bC4xNzMtODguMjQxQzU0LjE0NCA1LjMzNyA0OC44MTcgMCA0Mi4yNCAwSDExLjg5QzUuMzIxIDAgMCA1LjMyNyAwIDExLjg5NFYyNjAuMjFjMCA1LjgzNCA0LjcyNiAxMC41NiAxMC41NTUgMTAuNTZIMjQ1LjQ0YzUuODM0IDAgMTAuNTYtNC43MjYgMTAuNTYtMTAuNTZWMTE4Ljg2OGMwLTUuODM0LTQuNzI2LTEwLjU2LTEwLjU2LTEwLjU2em0tMzkuOTAyIDkzLjIzM2MwIDcuNjQ1LTYuMTk4IDEzLjg0NC0xMy44NDMgMTMuODQ0SDE2Ny42OWMtNy42NDYgMC0xMy44NDQtNi4xOTktMTMuODQ0LTEzLjg0NHYtMjQuMDA1YzAtNy42NDYgNi4xOTgtMTMuODQ0IDEzLjg0NC0xMy44NDRoMjQuMDA1YzcuNjQ1IDAgMTMuODQzIDYuMTk4IDEzLjg0MyAxMy44NDR2MjQuMDA1eiIgZmlsbD0iI0Y2MCIvPjwvc3ZnPg=="
+      catalog.cluster.local/maintainer: ""
+      catalog.cluster.local/url: "https://www.rabbitmq.com"
+      catalog.cluster.local/tags: "mq,unmanaged,helm"
   names:
     kind: RabbitMQComposite
     plural: rabbitmqcomposites
