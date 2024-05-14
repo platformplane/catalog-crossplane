@@ -1,0 +1,116 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: filestorages.catalog.cluster.local
+  annotations:
+    catalog.cluster.local/title: "File Storage"
+    catalog.cluster.local/description: "File Storage is a scalable and secure cloud-based solution for storing and managing files."
+    catalog.cluster.local/icon: "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB2aWV3Qm94PSIwIDAgOTEgODEiIGZpbGw9IiNmZmYiIGZpbGwtcnVsZT0iZXZlbm9kZCIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjx1c2UgeGxpbms6aHJlZj0iI0EiIHg9Ii41IiB5PSIuNSIvPjxzeW1ib2wgaWQ9IkEiIG92ZXJmbG93PSJ2aXNpYmxlIj48cGF0aCBkPSJNNTYuMjg0IDE5LjUxOUgyOC4yNzZjLTEuNDI3IDAtMi4zNjQgMS4yMzctMi4zNjQgMi40Mjh2MzUuODNjMCAxLjQ2NiAxLjIwNCAyLjcwMyAyLjM2NCAyLjcwM2gzMy4wMDNjMS40MjcgMCAyLjM2My0xLjIzNyAyLjM2My0yLjcwM3YtMzAuMjRINTYuMDZ2LTguMDY0bC4yMjMuMDQ2aDB6bS0uOTM3IDMwLjk3NGgtMjEuMTR2LTQuMTI0aDIxLjE0djQuMTI0em0wLTcuNTZoLTIxLjE0di00LjEyNGgyMS4xNHY0LjEyNHptMC03Ljc4OWgtMjEuMTRWMzEuMDJoMjEuMTR2NC4xMjR6TTY3LjQzMyAwSDIyLjU2N0wwIDQwbDIyLjU2NyA0MGg0NC44NjdMOTAgNDAgNjcuNDMzIDB6bS01LjkzMiA2NC4zNzZIMjguNDk4Yy0zLjU2OCAwLTYuNDIyLTIuOTMyLTYuNDIyLTYuNTk4di0zNS44M2MwLTMuNjY2IDIuODU0LTYuNTk4IDYuNDIyLTYuNTk4aDI5LjkyNmw5LjUgOS43NnYzMi42NjljMCAzLjY2Ni0yLjg1NCA2LjU5OC02LjQyMiA2LjU5OHoiIGZpbGw9IiMwMDc4ZDciIHN0cm9rZT0ibm9uZSIvPjwvc3ltYm9sPjwvc3ZnPg=="
+    catalog.cluster.local/maintainer: ""
+    catalog.cluster.local/url: "https://azure.microsoft.com/products/storage/files"
+    catalog.cluster.local/tags: "file,storage,unmanaged"
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v1
+    kind: FileStorageComposite
+
+  writeConnectionSecretsToNamespace: crossplane-system
+
+  mode: Pipeline
+  pipeline:
+    - step: get-environment-configs
+      functionRef:
+        name: crossplane-contrib-function-environment-configs
+      input:
+        apiVersion: environmentconfigs.fn.crossplane.io/v1beta1
+        kind: Input
+        spec:
+          environmentConfigs:
+            - type: Reference
+              ref:
+                name: azure-environment
+
+    - step: file-storage
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            apiVersion: storage.azure.upbound.io/v1beta1
+            kind: Account
+            metadata:
+              name: {{ $.observed.composite.resource.spec.claimRef.name }}-account
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: account
+            {{ if eq $.observed.composite.resource.spec.claimRef nil }}
+                crossplane.io/external-name: {}
+            {{ else }}
+                crossplane.io/external-name: {{ regexReplaceAll "[^a-z0-9]" (printf "%s" $.observed.composite.resource.metadata.uid | lower) ""  | trunc 24 }}
+            {{ end }}
+            spec:
+              forProvider:
+                resourceGroupName: {{ index $.context "apiextensions.crossplane.io/environment" "resourcegroup" }}
+                location: {{ default "Switzerland North" $.observed.composite.resource.spec.location }}               # called Region in Azure UI
+                accountReplicationType: {{ default "LRS" $.observed.composite.resource.spec.accountReplicationType }} # called Replication in Azure UI
+                accountTier: {{ default "Standard" $.observed.composite.resource.spec.accountTier }}                  # called Performance in Azure UI
+                publicNetworkAccessEnabled: false
+                allowNestedItemsToBePublic: false
+              writeConnectionSecretToRef:
+                namespace: {{ $.observed.composite.resource.spec.claimRef.namespace }}
+                name: {{ $.observed.composite.resource.spec.claimRef.name }}-connection
+
+            ---
+            apiVersion: network.azure.upbound.io/v1beta1
+            kind: PrivateEndpoint
+            metadata:
+              name: {{ $.observed.composite.resource.spec.claimRef.name }}-endpoint
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: endpoint
+                crossplane.io/external-name: {{ $.observed.composite.resource.spec.claimRef.name }}-endpoint
+            spec:
+              forProvider:
+                resourceGroupName: {{ index $.context "apiextensions.crossplane.io/environment" "resourcegroup" }}
+                subnetId: "/subscriptions/{{ index $.context "apiextensions.crossplane.io/environment" "network-subscription" }}/resourceGroups/{{ index $.context "apiextensions.crossplane.io/environment" "network-resourcegroup" }}/providers/Microsoft.Network/virtualNetworks/{{ index $.context "apiextensions.crossplane.io/environment" "network-name" }}/subnets/default"
+                location: "Switzerland North"
+                customNetworkInterfaceName: {{ $.observed.composite.resource.spec.claimRef.name }}-endpoint-nic
+                privateServiceConnection:
+                  - isManualConnection: false
+                    name: {{ $.observed.composite.resource.spec.claimRef.name }}-endpoint
+                    privateConnectionResourceId: {{ $.observed.resources.account.resource.status.atProvider.id }}
+                    subresourceNames:
+                      - file
+                privateDnsZoneGroup:
+                  - name: default
+                    privateDnsZoneIds:
+                      - "/subscriptions/{{ index $.context "apiextensions.crossplane.io/environment" "network-subscription" }}/resourceGroups/{{ index $.context "apiextensions.crossplane.io/environment" "network-resourcegroup" }}/providers/Microsoft.Network/privateDnsZones/privatelink.file.core.windows.net"
+
+            ---
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: CompositeConnectionDetails
+            {{ if eq $.observed.resources nil }}
+            data: {}
+            {{ else }}
+            data:
+              {{- $accountName := index $.observed.resources.account.resource.metadata.annotations "crossplane.io/external-name" }}
+              host: {{ printf "%s.file.core.windows.net" $accountName | b64enc }}
+              username: {{ $accountName | b64enc }}
+              password: {{ index $.observed.resources.account.connectionDetails "attribute.primary_access_key" }}
+            {{ end }}
+
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready
+
+    - step: enforce-creation-sequence
+      functionRef:
+        name: crossplane-contrib-function-sequencer
+      input:
+        apiVersion: sequencer.fn.crossplane.io/v1beta1
+        kind: Input
+        rules:
+          - sequence:
+            - "account"
+            - "endpoint"
