@@ -1,0 +1,10 @@
+# platform space, namespace platformplane
+# if no verison is specified, the latest(?) version of the configuration packages will be taken
+apiVersion: v1
+kind: ConfigMap
+data:
+  packages.yaml: |
+    - name: platform-catalog
+      package: index.docker.io/platformplane/platform-catalog:0.1.0-rc.9
+    - name: catalog-items-nimbus
+      package: registry.nimbusplane.io/common/lgt/platform/catalog-items:0.1.0-rc.2

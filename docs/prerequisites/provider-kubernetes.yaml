@@ -1,5 +1,5 @@
-# Check ./provider-in-cluster.yaml to see how to grant permissions to the Provider
-
+# in every space, cluster-wide / non-namespaced
+# todo: analyze whether this could be simplified
 apiVersion: pkg.crossplane.io/v1
 kind: Provider
 metadata:

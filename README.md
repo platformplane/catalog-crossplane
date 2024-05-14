@@ -114,6 +114,8 @@ In order that the catalog actually shows your items, you need to make sure the C
 
 ## How to debug e.g. a new helm-based catalog item
 
+See [here](https://docs.crossplane.io/latest/guides/troubleshoot-crossplane/)
+
 - does the claim exist and what is its state? Describe it to see the status.
   ```yaml
   kubectl get dclconstellations
@@ -277,7 +279,7 @@ kubectl run -n test -it --rm --image=postgres:latest postgres-client -- psql -h 
 
 - `consoel redis client` is not authenticating correctly, see error message when calling e.g. `INFO` command
 
-### Work with functions
+## Work with functions
 
 Read the article about [Composition Funcitons](https://docs.crossplane.io/latest/concepts/composition-functions/) and the [function-go-tempalting Readme](https://github.com/crossplane-contrib/function-go-templating). Sometimes, also the [Composition Functions design doc](https://github.com/stevendborrelli/crossplane/blob/master/design/design-doc-composition-functions.md) is useful. Regarding the templating syntax, use the [Go Helm template functions doc](https://helm.sh/docs/chart_template_guide/function_list).
 
@@ -293,68 +295,20 @@ Debugging to see which keys are available: print this stuff you look for as conn
 
   Then an error including the keys is shown in the managed resource status.
 
+## Azure Storage Account Items (e.g. BlobStorage)
+
+IF you want to add e.g. queue storage, copy paste blob storage and adjust it slightly, see table [here](https://learn.microsoft.com/en-us/azure/private-link/availability#storage)
+
+In order not to expose the storage accoutns publicly, public access is disabled and they are exposed via private endpoint, see [here](https://learn.microsoft.com/en-us/azure/private-link/tutorial-private-endpoint-storage-portal?tabs=dynamic-ip)
+
 ## Further improvements
 
-- add Azure Storage account catalog item, this needs the following configmap in the clusters: 
-  - kubectl create configmap cluster-info --from-literal=resourcegroup=i-li-rgr-platformplane-crossplane-test -n crossplane-system (where the resource group name must match)
-  I don't think I could do something like `kubectl get nodes -o jsonpath='{.items[0].metadata.labels.kubernetes\.azure\.com/network-resourcegroup}'` in Crossplane.
-  - azure service principal with rights to create resources in this resource group. The service principal must be integrated into the Azure Crossplane Provider either via secret or managed identity.
-
-    Secret:
-    ```yaml
-    apiVersion: azure.upbound.io/v1beta1
-    kind: ProviderConfig
-    metadata:
-      annotations:
-      name: default
-    spec:
-      credentials:
-        secretRef:
-          key: creds
-          name: azure-secret
-          namespace: crossplane-system
-        source: Secret
-    ```	
-
-    The data.creds (or whatever name it will be) section must look like:
-
-    ```yaml
-    {
-      "clientId": "35...",
-      "clientSecret": "7DM...",
-      "subscriptionId": "c99...",
-      "tenantId": "8f1...",
-      "activeDirectoryEndpointUrl": "https://login.microsoftonline.com",
-      "resourceManagerEndpointUrl": "https://management.azure.com/",
-      "activeDirectoryGraphResourceId": "https://graph.windows.net/",
-      "sqlManagementEndpointUrl": "https://management.core.windows.net:8443/",
-      "galleryEndpointUrl": "https://gallery.azure.com/",
-      "managementEndpointUrl": "https://management.core.windows.net/"
-    }
-
-    ```
-
-    Managed Identity:
-
-    ```yaml
-    apiVersion: azure.upbound.io/v1beta1
-    kind: ProviderConfig
-    metadata:
-      name: default
-    spec:
-      subscriptionID: c99b..
-      tenantID: 8f...
-      clientID: f9d...
-    credentials:
-      source: UserAssignedManagedIdentity
-    ```
-
+- delete bindings when deleting the claim
 - add OracleDB and SQLServer catalog item
 - Parameter configurable via UI (enums are already in CRDs)
-  - Show "dager" emoji at spec.version saying that this will break the application and migration has to be done potentially
-  - can we have nice display names for the parameters? e.g. setting x-kubernetes-display-name in the CRD
+  - Show "danger" emoji at spec.version saying that this will break the application and migration has to be done potentially
+  - can we have nice display names for the parameters? 
 - Make the crossplane operator watching the `crossplane` ConfigMap in the `platformplane` namespace (not copying the file on startup using that value until the pod is killed)
-- delete bindings when deleting the claim
 - add dependabot to the repo
 - try out what happens when the platformplane does not install providers but instead let crossplane install them based on the dependencies in the configurations (the provider configs etc. will probably be needed anyways, with some default name references)
 This could help making updating providers easier (just update the version number in the configuration.yaml and crossplane will install them automatically?)

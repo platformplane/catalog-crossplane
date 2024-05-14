@@ -1,0 +1,15 @@
+# in every space, cluster-wide / non-namespaced
+# information about the environment usable by Crossplane e.g. for the Azure storage account items
+apiVersion: apiextensions.crossplane.io/v1alpha1
+kind: EnvironmentConfig
+metadata:
+  name: azure-environment
+data:
+  location: switzerlandnorth
+  network-location: switzerlandnorth
+  network-name: p-ch-vne-playground
+  network-resourcegroup: p-ch-rgr-platformplane-playground
+  network-subnet: default
+  network-subscription: 518...
+  resourcegroup: p-ch-rgr-platformplane-playground
+  subscription: 518...

@@ -1,0 +1,51 @@
+# in every space, cluster-wide / non-namespaced
+# todo: analyze whether this could be simplified
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-helm
+spec:
+  package: xpkg.upbound.io/crossplane-contrib/provider-helm:v0.16.0
+  runtimeConfigRef:
+    apiVersion: pkg.crossplane.io/v1beta1
+    kind: DeploymentRuntimeConfig
+    name: provider-helm
+---
+apiVersion: pkg.crossplane.io/v1beta1
+kind: DeploymentRuntimeConfig
+metadata:
+  name: provider-helm
+spec:
+  serviceAccountTemplate:
+    metadata:
+      name: provider-helm
+---
+apiVersion: helm.crossplane.io/v1beta1
+kind: ProviderConfig
+metadata:
+  name: provider-helm
+  namespace: crossplane-system
+spec:
+  credentials:
+    source: InjectedIdentity
+---
+# unsure whether this was automatically created upon provider installation
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: provider-helm
+  namespace: crossplane-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: provider-helm-cluster-admin
+  namespace: crossplane-system
+subjects:
+  - kind: ServiceAccount
+    name: provider-helm
+    namespace: crossplane-system
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io

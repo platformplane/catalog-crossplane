@@ -1,0 +1,12 @@
+# provider is installed implicitely via configuration dependencies
+# however, the config can only be installed after the provider is installed -> add azure dependency to package in the same release as this config will be release
+apiVersion: azure.upbound.io/v1beta1
+kind: ProviderConfig
+metadata:
+  name: default # because of this default name there is no need to mention this config explicitly in the provider
+spec:
+  clientID: 22eb...
+  credentials:
+    source: UserAssignedManagedIdentity
+  subscriptionID: 518...
+  tenantID: da6...
