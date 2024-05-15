@@ -1,0 +1,6 @@
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: upbound-provider-azure-cognitiveservices
+spec:
+  package: xpkg.upbound.io/upbound/provider-azure-cognitiveservices:v1.1.0

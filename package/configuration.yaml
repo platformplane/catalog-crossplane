@@ -14,6 +14,8 @@ spec:
       version: ">=v1.1.0"
     - provider: xpkg.upbound.io/upbound/provider-azure-network
       version: ">=v1.1.0"
+    - provider: xpkg.upbound.io/upbound/provider-azure-cognitiveservices
+      version: ">=v1.1.0"
     - function: xpkg.upbound.io/crossplane-contrib/function-patch-and-transform
       version: ">=v0.4.0"
     - function: xpkg.upbound.io/crossplane-contrib/function-go-templating

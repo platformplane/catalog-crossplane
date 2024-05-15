@@ -74,7 +74,7 @@ spec:
               forProvider:
                 resourceGroupName: {{ index $.context "apiextensions.crossplane.io/environment" "resourcegroup" }}
                 subnetId: "/subscriptions/{{ index $.context "apiextensions.crossplane.io/environment" "network-subscription" }}/resourceGroups/{{ index $.context "apiextensions.crossplane.io/environment" "network-resourcegroup" }}/providers/Microsoft.Network/virtualNetworks/{{ index $.context "apiextensions.crossplane.io/environment" "network-name" }}/subnets/default"
-                location: "Switzerland North"
+                location: {{ default "Switzerland North" $.observed.composite.resource.spec.location }}
                 customNetworkInterfaceName: {{ $.observed.composite.resource.spec.claimRef.name }}-endpoint-nic
                 privateServiceConnection:
                   - isManualConnection: false
