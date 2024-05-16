@@ -1,0 +1,55 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: azurestoragecomposites.catalog.cluster.local
+spec:
+  group: catalog.cluster.local
+  metadata:
+    labels:
+      catalog.cluster.local/kind: AzureStorage
+    annotations:
+      catalog.cluster.local/title: "Azure Storage"
+      catalog.cluster.local/description: "Azure Storage Accounts provide a scalable, secure, and reliable storage solution for blobs, files, queues, and tables."
+      catalog.cluster.local/icon: "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB2ZXJzaW9uPSIxLjEiIGlkPSJmMmYwNDM0OS04YWVlLTQ0MTMtODRjOS1hOTA1MzYxMWIzMTkiIHg9IjBweCIgeT0iMHB4IiB2aWV3Qm94PSIwIDAgMTgwIDE4MCIgc3R5bGU9ImVuYWJsZS1iYWNrZ3JvdW5kOm5ldyAwIDAgMTgwIDE4MDsiIHhtbDpzcGFjZT0icHJlc2VydmUiPgo8c3R5bGUgdHlwZT0idGV4dC9jc3MiPgoJLnN0MHtmaWxsOnVybCgjU1ZHSURfMV8pO30KCS5zdDF7ZmlsbDojMzdDMkIxO30KCS5zdDJ7ZmlsbDojRkZGRkZGO30KCS5zdDN7ZmlsbDojMjU4Mjc3O30KPC9zdHlsZT4KPGc+CgkKCQk8bGluZWFyR3JhZGllbnQgaWQ9IlNWR0lEXzFfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjkwIiB5MT0iMzYzLjE2NjEiIHgyPSI5MCIgeTI9IjI1Ni43ODg3IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KDEgMCAwIDEgMCAtMjAwLjgxODkpIj4KCQk8c3RvcCBvZmZzZXQ9IjAiIHN0eWxlPSJzdG9wLWNvbG9yOiNCM0IzQjMiPjwvc3RvcD4KCQk8c3RvcCBvZmZzZXQ9IjAuMjYiIHN0eWxlPSJzdG9wLWNvbG9yOiNDMUMxQzEiPjwvc3RvcD4KCQk8c3RvcCBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiNFNkU2RTYiPjwvc3RvcD4KCTwvbGluZWFyR3JhZGllbnQ+Cgk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMCw1NS45aDE4MGwwLDB2MTAwLjRjMCwzLjUtMi42LDYuMS02LjEsNi4xSDYuMWMtMy41LDAtNi4xLTIuNi02LjEtNi4xVjU1Ljl6Ij48L3BhdGg+Cgk8cGF0aCBjbGFzcz0ic3QxIiBkPSJNNi4xLDE3LjdoMTY3LjhjMy41LDAsNi4xLDIuNiw2LjEsNi4xdjMyLjRsMCwwSDBsMCwwVjIzLjRDMCwyMC4zLDIuNiwxNy43LDYuMSwxNy43eiI+PC9wYXRoPgoJPHBhdGggY2xhc3M9InN0MiIgZD0iTTI0LjMsNjcuN2gxMzAuOGMxLjQsMCwyLjksMS40LDIuOSwyLjl2MTQuOGMwLDEuNC0xLjIsMi45LTIuOSwyLjlIMjQuM2MtMS40LDAtMi45LTEuNC0yLjktMi45VjcwLjYgICBDMjEuNyw2OC45LDIyLjksNjcuNywyNC4zLDY3Ljd6Ij48L3BhdGg+Cgk8cGF0aCBjbGFzcz0ic3QxIiBkPSJNMjQuNiw5Ny4yaDEzMC44YzEuNCwwLDIuOSwxLjQsMi45LDIuOXYxNWMwLDEuNC0xLjIsMi45LTIuOSwyLjlIMjQuNmMtMS40LDAtMi45LTEuNC0yLjktMi45di0xNC41ICAgYy0wLjMtMS40LDAuOS0zLjIsMi4zLTMuNUMyNC4zLDk3LjIsMjQuMyw5Ny4yLDI0LjYsOTcuMnoiPjwvcGF0aD4KCTxwYXRoIGNsYXNzPSJzdDMiIGQ9Ik0yNC42LDEyN2gxMzAuOGMxLjQsMCwyLjksMS40LDIuOSwyLjl2MTVjMCwxLjQtMS4yLDIuOS0yLjksMi45SDI0LjZjLTEuNCwwLTIuOS0xLjQtMi45LTIuOXYtMTUgICBDMjEuNywxMjguMiwyMy4yLDEyNywyNC42LDEyN3oiPjwvcGF0aD4KPC9nPgo8L3N2Zz4K"
+      catalog.cluster.local/maintainer: ""
+      catalog.cluster.local/url: "https://learn.microsoft.com/azure/storage/common/storage-account-overview"
+      catalog.cluster.local/tags: "blob,storage,unmanaged"
+  names:
+    kind: AzureStorageComposite
+    plural: azurestoragecomposites
+  claimNames:
+    kind: AzureStorage
+    plural: azurestorages
+  versions:
+    - name: v1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: AzureStorage is the Schema for the azurestorage API
+          type: object
+          properties:
+            spec:
+              description: AzureStorageSpec defines the desired state of AzureStorage
+              type: object
+              properties:
+                location:
+                  type: string
+                  description: "Azure location for the storage account"
+                  display-name: "Location"
+                  enum:
+                    - "Switzerland North"
+                    - "Southeast Asia"
+                  default: "Switzerland North"
+                accountReplicationType:
+                  type: string
+                  description: "Replication type for the storage account"
+                  display-name: "Account Replication Type"
+                  enum:
+                    - "LRS"
+                    - "GRS"
+                    - "RAGRS"
+                    - "ZRS"
+                    - "GZRS"
+                    - "RAZRS"
+                  default: "LRS"
