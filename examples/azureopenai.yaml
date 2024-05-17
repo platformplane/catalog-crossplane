@@ -1,6 +1,0 @@
-apiVersion: catalog.cluster.local/v1
-kind: AzureOpenAI
-metadata:
-  name: azureopenai-sample
-spec:
-  location: Switzerland North
