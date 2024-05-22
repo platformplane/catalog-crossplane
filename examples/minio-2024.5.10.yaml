@@ -4,4 +4,4 @@ metadata:
   name: minio-sample
 spec:
   size: 1Gi
-  version: "2024.4.18"
+  version: "2024.5.10"

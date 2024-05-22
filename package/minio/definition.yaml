@@ -39,7 +39,7 @@ spec:
                 version:
                   type: string
                   enum:
-                    - "2024.4.18"
+                    - "2024.5.10"
                     - "2023.7.18"
 
                   
