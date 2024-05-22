@@ -318,6 +318,10 @@ IF you want to add e.g. queue storage, copy paste blob storage and adjust it sli
 
 In order not to expose the storage accoutns publicly, public access is disabled and they are exposed via private endpoint, see [here](https://learn.microsoft.com/en-us/azure/private-link/tutorial-private-endpoint-storage-portal?tabs=dynamic-ip)
 
+## GitHub Action Prerequisites
+
+Add REGISTRY_URL index.docker.io to the variables section and DOCKERHUB_TOKEN and DOCKERHUB_USERNAME to the secrets section of the GitHub repository settings.
+
 ## Further improvements
 
 - delete bindings when deleting the claim
