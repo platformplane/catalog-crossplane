@@ -124,8 +124,8 @@ spec:
               blob-host: {{ printf "%s.blob.core.windows.net" $accountName | b64enc }}
               file-host: {{ printf "%s.file.core.windows.net" $accountName | b64enc }}
               username: {{ $accountName | b64enc }}
-              password: {{ index $.observed.resources.account.connectionDetails "attribute.primary_access_key" }}
               {{ if ne $.observed.resources.account.connectionDetails nil }}
+              password: {{ index $.observed.resources.account.connectionDetails "attribute.primary_access_key" }}
               uri: {{ trimPrefix "DefaultEndpointsProtocol=https;BlobEndpoint=" (index $.observed.resources.account.connectionDetails "attribute.primary_blob_connection_string" | b64dec) | b64enc }}
               {{ end }}
             {{ end }}
