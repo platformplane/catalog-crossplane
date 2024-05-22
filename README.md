@@ -171,7 +171,7 @@ curl -X GET "http://elasticsearch-sample:9200/_cat/indices?v"
 code client.properties
 # paste the following content
 security.protocol=SASL_PLAINTEXT
-sasl.mechanism=SCRAM-SHA-256
+sasl.mechanism=PLAIN
 sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required \
     username="user" \
     password="$(kubectl get secret kafka-user-passwords --namespace test -o jsonpath='{.data.client-passwords}' | base64 -d | cut -d , -f 1)";
@@ -181,12 +181,14 @@ kubectl cp --namespace test ./client.properties kafka-kafka-client:/tmp/client.p
 kubectl exec --tty -i kafka-kafka-client --namespace test -- bash
 kafka-console-producer.sh \
             --producer.config /tmp/client.properties \
-            --broker-list kafka-sample-controller-0.kafka-sample-controller-headless.test.svc.cluster.local:9092 \
+            --broker-list kafka-sample:9092 \
             --topic test
+# write some stuff to topic
 kafka-console-consumer.sh \
             --consumer.config /tmp/client.properties \
-            --bootstrap-server kafka-sample-controller-0.kafka-sample-controller-headless.test.svc.cluster.local:9092 \
+            --bootstrap-server kafka-sample:9092 \
             --topic test --from-beginning
+# wait until topic content is shown
 ```
 
 ### MariaDB

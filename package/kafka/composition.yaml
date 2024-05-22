@@ -41,10 +41,10 @@ spec:
                 providerConfigRef:
                   name: provider-helm
                 forProvider:
-                  chart:
+                  chart: # https://artifacthub.io/packages/helm/bitnami/kafka
                     name: kafka
                     repository: oci://registry-1.docker.io/bitnamicharts
-                    version: 28.0.3 # also update the version in the map transform below!
+                    version: 28.3.0 # also update the version in the map transform below!
                   namespace: tbd # patch taken from composite spec.claimRef.namespace
                   values:
                     commonLabels:
@@ -148,7 +148,7 @@ spec:
                 transforms:
                   - type: map
                     map:
-                      "3": "28.0.3"
+                      "3": "28.3.0"
 
               - type: ToCompositeFieldPath
                 fromFieldPath: "spec.forProvider.chart.version"
@@ -156,7 +156,7 @@ spec:
                 transforms:
                   - type: map
                     map:
-                      "28.0.3": "3"
+                      "28.3.0": "3"
 
               # give resources (service, secrets, ...) the name and namespace of the claim
               - type: FromCompositeFieldPath
