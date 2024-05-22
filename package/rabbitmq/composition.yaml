@@ -38,10 +38,10 @@ spec:
                 providerConfigRef:
                   name: provider-helm
                 forProvider:
-                  chart:
+                  chart: # https://artifacthub.io/packages/helm/bitnami/rabbitmq
                     name: rabbitmq
                     repository: oci://registry-1.docker.io/bitnamicharts
-                    version: 14.0.0 # also update the version in the map transform below!
+                    version: 14.3.0 # also update the version in the map transform below!
                   namespace: tbd
                   values:
                     commonLabels:
@@ -121,7 +121,7 @@ spec:
                 transforms:
                   - type: map
                     map:
-                      "3": "14.0.0"
+                      "3": "14.3.0"
                       
               - type: ToCompositeFieldPath
                 fromFieldPath: "spec.forProvider.chart.version"
@@ -129,7 +129,7 @@ spec:
                 transforms:
                   - type: map
                     map:
-                      "14.0.0": "3"
+                      "14.3.0": "3"
 
               - type: FromCompositeFieldPath
                 fromFieldPath: "spec.claimRef.name"

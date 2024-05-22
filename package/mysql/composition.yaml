@@ -39,10 +39,10 @@ spec:
                 providerConfigRef:
                   name: provider-helm
                 forProvider:
-                  chart:
+                  chart: # https://artifacthub.io/packages/helm/bitnami/mysql
                     name: mysql
                     repository: oci://registry-1.docker.io/bitnamicharts
-                    version: 10.1.1 # also update the version in the map transform below!
+                    version: 10.3.0 # also update the version in the map transform below!
                   namespace: tbd # patch taken from composite spec.claimRef.namespace
                   values:
                     commonLabels:
@@ -128,7 +128,7 @@ spec:
                 transforms:
                   - type: map
                     map:
-                      "8": "10.1.1"
+                      "8": "10.3.0"
                       
               - type: ToCompositeFieldPath
                 fromFieldPath: "spec.forProvider.chart.version"
@@ -136,7 +136,7 @@ spec:
                 transforms:
                   - type: map
                     map:
-                      "10.1.1": "8"
+                      "10.3.0": "8"
 
               # give resources (service, secrets, ...) the name and namespace of the claim
               - type: FromCompositeFieldPath
