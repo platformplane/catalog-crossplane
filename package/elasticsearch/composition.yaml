@@ -38,10 +38,10 @@ spec:
                 providerConfigRef:
                   name: provider-helm
                 forProvider:
-                  chart:
+                  chart: # https://artifacthub.io/packages/helm/bitnami/elasticsearch
                     name: elasticsearch
                     repository: oci://registry-1.docker.io/bitnamicharts
-                    version: 20.0.4
+                    version: 21.1.0
                   namespace: tbd
                   values:
                     commonLabels:
@@ -59,7 +59,7 @@ spec:
                       replicaCount: 0
                     ingest:
                       replicaCount: 0
-                    # metrics: # this is disabled because the metrics deployment is not deleted when the release is deleted (version 20.0.4)
+                    # metrics: # before enabling, check whehter the metrics deployment will be cleaned up when the helm release is deleted
                     #   enabled: true
                     #   serviceMonitor:
                     #     enabled: true
@@ -77,21 +77,9 @@ spec:
                   namespace: tbd
 
             connectionDetails:
-              - name: username
-                type: FromFieldPath
-                fromFieldPath: "spec.forProvider.values.rootUser"
-
-              - name: password
-                type: FromConnectionSecretKey
-                fromConnectionSecretKey: password
-
               - name: port
                 type: FromConnectionSecretKey
                 fromConnectionSecretKey: port
-
-              - name: database
-                type: FromFieldPath
-                fromFieldPath: "spec.forProvider.values.auth.database"
 
               - name: host
                 type: FromFieldPath
@@ -120,7 +108,7 @@ spec:
                 transforms:
                   - type: map
                     map:
-                      "8": "20.0.4"
+                      "8": "21.1.0"
 
               - type: ToCompositeFieldPath
                 fromFieldPath: "spec.forProvider.chart.version"
@@ -128,7 +116,7 @@ spec:
                 transforms:
                   - type: map
                     map:
-                      "20.0.4": "8"
+                      "21.1.0": "8"
 
               - type: FromCompositeFieldPath
                 fromFieldPath: "spec.claimRef.name"

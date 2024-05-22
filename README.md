@@ -20,6 +20,19 @@ We assume that minor versions can be updated without breaking changes. This mean
 
 For more thoughts, see [here](https://teams.microsoft.com/l/message/19:8bb1df955bf04679b4f55fe9a1609cb8@thread.tacv2/1712520692322?tenantId=ccce7f5e-a35f-4bc3-8e63-b2215e7d14f9&groupId=8c054c7f-925b-4071-9dd2-adfdc9fa7fe0&parentMessageId=1712520692322&teamName=Platform%20Plane&channelName=Platform&createdTime=1712520692322).
 
+Updating a minor version may be a two-step process where you do not update the version in all (three) places but instead first add the new version in the second map:
+  
+  ```yaml
+              - type: ToCompositeFieldPath
+                fromFieldPath: "spec.forProvider.chart.version"
+                toFieldPath: "spec.version"
+                transforms:
+                  - type: map
+                    map:
+                      "21.1.0": "8" # add this as new version
+                      "20.0.4": "8" # keep this line so you do not get an error saying it can't find this version in the map until all charts are updated to 21.1.0
+  ```
+
 ## Create the Crossplane package locally
 
 ### Via Dockerfile (no need to install Crossplane CLI)
@@ -148,6 +161,8 @@ See [here](https://docs.crossplane.io/latest/guides/troubleshoot-crossplane/)
 
 ```bash
 curl http://elasticsearch-sample:9200/_cluster/health?pretty
+curl -X PUT "http://elasticsearch-sample:9200/my-index"
+curl -X GET "http://elasticsearch-sample:9200/_cat/indices?v"
 ```
 
 ### Kafka
