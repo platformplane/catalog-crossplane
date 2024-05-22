@@ -41,14 +41,5 @@ spec:
                   enum:
                     - "2024.4.18"
                     - "2023.7.18"
-            status:
-              type: object
-              properties:
-                credentials:
-                  type: object
-                  description: "Misuse composite status as temporary storage."
-                  properties:
-                    host:
-                      type: string
 
                   

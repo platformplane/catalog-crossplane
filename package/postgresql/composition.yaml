@@ -182,7 +182,7 @@ spec:
 
               # copy stuff from resource to claim status and back to resource annotations from where it is copied to the connection details # this must be the wrong way but I don't know how to do the string manipulations otherwise
               # Attention: newly introduced claim fields must be specified in the definition
-              - type: CombineToComposite
+              - type: CombineToEnvironment
                 combine:
                   variables:
                     - fromFieldPath: spec.forProvider.values.fullnameOverride
@@ -190,8 +190,8 @@ spec:
                   strategy: string
                   string:
                     fmt: "%s.%s"
-                toFieldPath: status.credentials.host
+                toFieldPath: host
                 
-              - type: FromCompositeFieldPath
-                fromFieldPath: "status.credentials.host"
+              - type: FromEnvironmentFieldPath
+                fromFieldPath: host
                 toFieldPath: "metadata.annotations['host']"

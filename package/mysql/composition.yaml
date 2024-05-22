@@ -15,9 +15,7 @@ spec:
     apiVersion: catalog.cluster.local/v1
     kind: MySQLComposite
 
-  writeConnectionSecretsToNamespace: crossplane-system # this writes the connection secrets listed in the below resources connectionDetails sections to the specified namespace as a combined secret of all resources https://docs.crossplane.io/knowledge-base/guides/connection-details/#connection-secrets-in-compositions
-  # Be aware that you can't patch this field (it's in the composition, not in a resource or the composite)
-  # The namespace where the user can get his combined secret (the same as this one) is specified implicitly by the claim's namespace if you set the writeConnectionSecretToRef.name in the claim (one could think that this field here is therefore not needed, but it is, without it, there is also no combined secret written to the claim's namespace)
+  writeConnectionSecretsToNamespace: crossplane-system
 
   mode: Pipeline
   pipeline:
@@ -65,8 +63,7 @@ spec:
                     #   serviceMonitor:
                     #     enabled: true
 
-                # the connection details of this resource
-                connectionDetails: # list the "secrets" created by this managed resources (further down, they are used to create the connection details for the whole composite)
+                connectionDetails:
                   - apiVersion: v1
                     kind: Secret
                     name: # patch taken from spec.claimRef.name
@@ -81,12 +78,10 @@ spec:
                     fieldPath: spec.ports[0].port
                     toConnectionSecretKey: port
 
-                writeConnectionSecretToRef: # this will write the above connection details from this resource to a secret with this name to the specified namespace (we actually need to write this so that we can reference this connection details in the combined connection details)
-                  # name: tbd # patch taken from composite spec.resourceRefs[0].name + "-connection" # not entirely sure what is going on here, it writes two secrets (two ending in -connection), if uncommented only one with -connection but one that is called tbd
+                writeConnectionSecretToRef:
+                  # name: tbd # patch taken from composite spec.resourceRefs[0].name + "-connection"
                   namespace: tbd # patch taken from composite spec.claimRef.namespace
 
-            # connection secrets mentioned here will be added to the "combined connection details" (combination of all the resources connection details)
-            # Attention: add the items listed here as allowed ones in the definition
             connectionDetails:
               - name: username
                 type: FromValue
@@ -108,10 +103,9 @@ spec:
                 type: FromFieldPath
                 fromFieldPath: "metadata.annotations['host']"
 
-            # copy stuff from claim/composite to resource (Release) and the other way around
             patches:
               # get the values for the chart from the claim
-              - type: FromCompositeFieldPath # from composite (MySQLComposite) to managed resource (Release)
+              - type: FromCompositeFieldPath
                 fromFieldPath: "spec.size"
                 toFieldPath: "spec.forProvider.values.primary.persistence.size"
 
@@ -175,17 +169,15 @@ spec:
                 toFieldPath: "spec.writeConnectionSecretToRef.namespace"
 
               - type: FromCompositeFieldPath
-                fromFieldPath: "spec.resourceRefs[0].name" # "spec.claimRef.name"
+                fromFieldPath: "spec.claimRef.name"
                 toFieldPath: "spec.writeConnectionSecretToRef.name"
-                transforms: # not sure why two secrets are created :(
+                transforms:
                   - type: string
                     string:
                       type: Format
-                      fmt: "%s-connection" # renaming is needed in order not to overwrite the secret created by the chart (from where we take the db password)
+                      fmt: "%s-connection"
 
-              # copy stuff from resource to claim status and back to resource annotations from where it is copied to the connection details # this must be the wrong way but I don't know how to do the string manipulations otherwise
-              # Attention: newly introduced claim fields must be specified in the definition
-              - type: CombineToComposite
+              - type: CombineToEnvironment
                 combine:
                   variables:
                     - fromFieldPath: spec.forProvider.values.fullnameOverride
@@ -193,8 +185,8 @@ spec:
                   strategy: string
                   string:
                     fmt: "%s.%s"
-                toFieldPath: status.credentials.host
+                toFieldPath: host
 
-              - type: FromCompositeFieldPath
-                fromFieldPath: "status.credentials.host"
+              - type: FromEnvironmentFieldPath
+                fromFieldPath: host
                 toFieldPath: "metadata.annotations['host']"

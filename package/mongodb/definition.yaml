@@ -41,12 +41,3 @@ spec:
                   enum:
                     - "6"
                     - "7"
-            status:
-              type: object
-              properties:
-                credentials:
-                  type: object
-                  description: "Missuse composite status as temporary storage."
-                  properties:
-                    host:
-                      type: string

@@ -40,13 +40,3 @@ spec:
                   type: string
                   enum:
                     - "8"
-            status:
-              description: ElasticsearchStatus defines the observed state of Elasticsearch
-              type: object
-              properties:
-                credentials:
-                  type: object
-                  description: "Misuse composite status as temporary storage."
-                  properties:
-                    host:
-                      type: string

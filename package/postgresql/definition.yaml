@@ -40,14 +40,5 @@ spec:
                   enum:
                     - "15"
                     - "16"
-            status:
-              type: object
-              properties:
-                credentials:
-                  type: object
-                  description: "Misuse composite status as temporary storage."
-                  properties:
-                    host:
-                      type: string
 
                   

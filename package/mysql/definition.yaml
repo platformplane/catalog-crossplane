@@ -39,12 +39,3 @@ spec:
                   type: string
                   enum:
                     - "8"
-            status:
-              type: object
-              properties:
-                credentials:
-                  type: object
-                  description: "Misuse composite status as temporary storage."
-                  properties:
-                    host:
-                      type: string
