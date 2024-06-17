@@ -35,6 +35,7 @@ spec:
               properties:
                 ingress:
                   type: object
+                  default: {}
                   properties:
                     public: 
                       type: boolean
