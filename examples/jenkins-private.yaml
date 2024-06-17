@@ -1,0 +1,7 @@
+apiVersion: catalog.cluster.local/v1
+kind: Jenkins
+metadata:
+  name: jenkins-private-sample
+spec:
+  ingress:
+    public: false
