@@ -288,7 +288,7 @@ spec:
                     annotations:
                       kubernetes.io/tls-acme: "true"
                   spec:
-                    {{- if $.observed.composite.resource.spec.ingress.public }}
+                    {{- if or ($.observed.composite.resource.spec.ingress.public) (eq $.observed.composite.resource.spec.ingress nil) }}
                     ingressClassName: nginx
                     {{- else }}
                     ingressClassName: nginx-internal
