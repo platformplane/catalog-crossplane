@@ -1,0 +1,244 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: cassettes.catalog.cluster.local
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v1
+    kind: CassetteComposite
+
+  writeConnectionSecretsToNamespace: crossplane-system
+
+  mode: Pipeline
+  pipeline:
+    - step: get-environment-configs
+      functionRef:
+        name: crossplane-contrib-function-environment-configs
+      input:
+        apiVersion: environmentconfigs.fn.crossplane.io/v1beta1
+        kind: Input
+        spec:
+          environmentConfigs:
+            - type: Reference
+              ref:
+                name: environment
+
+    - step: cassette
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "secret"
+            spec:
+              providerConfigRef:
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: Secret
+                  metadata:
+                    name: {{ .observed.composite.resource.spec.claimRef.name }}
+                    namespace: {{ .observed.composite.resource.spec.claimRef.namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ .observed.composite.resource.spec.claimRef.kind }}
+                      catalog.cluster.local/name: {{ .observed.composite.resource.spec.claimRef.name }}
+                      app.kubernetes.io/name: cassette
+                      app.kubernetes.io/instance: {{ .observed.composite.resource.spec.claimRef.name }}
+                  stringData:
+                    username: admin
+                    password: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" (randAlphaNum 12) .observed }}
+            ---
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "deployment"
+            spec:
+              providerConfigRef:
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: apps/v1
+                  kind: Deployment
+                  metadata:
+                    name: {{ .observed.composite.resource.spec.claimRef.name }}
+                    namespace: {{ .observed.composite.resource.spec.claimRef.namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ .observed.composite.resource.spec.claimRef.kind }}
+                      catalog.cluster.local/name: {{ .observed.composite.resource.spec.claimRef.name }}
+                      app.kubernetes.io/name: cassette
+                      app.kubernetes.io/instance: {{ .observed.composite.resource.spec.claimRef.name }}
+                  spec:
+                    selector:
+                      matchLabels:
+                        catalog.cluster.local/kind: {{ .observed.composite.resource.spec.claimRef.kind }}
+                        catalog.cluster.local/name: {{ .observed.composite.resource.spec.claimRef.name }}
+                        app.kubernetes.io/name: cassette
+                        app.kubernetes.io/instance: {{ .observed.composite.resource.spec.claimRef.name }}
+                    template:
+                      metadata:
+                        labels:
+                          catalog.cluster.local/kind: {{ .observed.composite.resource.spec.claimRef.kind }}
+                          catalog.cluster.local/name: {{ .observed.composite.resource.spec.claimRef.name }}
+                          app.kubernetes.io/name: cassette
+                          app.kubernetes.io/instance: {{ .observed.composite.resource.spec.claimRef.name }}
+                      spec:
+                        # serviceAccountName: {{ .observed.composite.resource.spec.claimRef.name }}
+                        containers:
+                          - name: cassette
+                            image: ghcr.io/adrianliechti/cassette
+                            imagePullPolicy: Always
+                            env:
+                              - name: BASE_URL
+                                value: https://{{ regexReplaceAll "[^a-z0-9-]" (.observed.composite.resource.spec.claimRef.name | lower) "" }}.{{ index $.context "apiextensions.crossplane.io/environment" "zone" }}
+                              - name: USERNAME
+                                valueFrom:
+                                  secretKeyRef:
+                                    name: {{ .observed.composite.resource.spec.claimRef.name }}
+                                    key: username
+                              - name: PASSWORD
+                                valueFrom:
+                                  secretKeyRef:
+                                    name: {{ .observed.composite.resource.spec.claimRef.name }}
+                                    key: password
+                              - name: DATA_PATH
+                                value: /var/data
+                            ports:
+                              - containerPort: 3000
+                            volumeMounts:
+                              - name: data
+                                mountPath: /var/data
+                            resources: {}
+                        volumes:
+                          - name: data
+                            persistentVolumeClaim:
+                              claimName: {{ .observed.composite.resource.spec.claimRef.name }}
+            ---
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "service"
+            spec:
+              providerConfigRef:
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: Service
+                  metadata:
+                    name: {{ .observed.composite.resource.spec.claimRef.name }}
+                    namespace: {{ .observed.composite.resource.spec.claimRef.namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ .observed.composite.resource.spec.claimRef.kind }}
+                      catalog.cluster.local/name: {{ .observed.composite.resource.spec.claimRef.name }}
+                      app.kubernetes.io/name: cassette
+                      app.kubernetes.io/instance: {{ .observed.composite.resource.spec.claimRef.name }}
+                  spec:
+                    type: ClusterIP
+                    selector:
+                      catalog.cluster.local/kind: {{ .observed.composite.resource.spec.claimRef.kind }}
+                      catalog.cluster.local/name: {{ .observed.composite.resource.spec.claimRef.name }}
+                      app.kubernetes.io/name: cassette
+                      app.kubernetes.io/instance: {{ .observed.composite.resource.spec.claimRef.name }}
+                    ports:
+                      - name: http
+                        port: 80
+                        targetPort: 3000
+            ---
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "persistentvolumeclaim"
+            spec:
+              providerConfigRef:
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  kind: PersistentVolumeClaim
+                  apiVersion: v1
+                  metadata:
+                    name: {{ .observed.composite.resource.spec.claimRef.name }}
+                    namespace: {{ .observed.composite.resource.spec.claimRef.namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ .observed.composite.resource.spec.claimRef.kind }}
+                      catalog.cluster.local/name: {{ .observed.composite.resource.spec.claimRef.name }}
+                      app.kubernetes.io/name: cassette
+                      app.kubernetes.io/instance: {{ .observed.composite.resource.spec.claimRef.name }}
+                  spec:
+                    accessModes:
+                      - ReadWriteOnce
+                    resources:
+                      requests:
+                        storage: 8Gi
+            ---
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "ingress"
+            spec:
+              providerConfigRef:
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: networking.k8s.io/v1
+                  kind: Ingress
+                  metadata:
+                    name: {{ .observed.composite.resource.spec.claimRef.name }}
+                    namespace: {{ .observed.composite.resource.spec.claimRef.namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ .observed.composite.resource.spec.claimRef.kind }}
+                      catalog.cluster.local/name: {{ .observed.composite.resource.spec.claimRef.name }}
+                      app.kubernetes.io/name: cassette
+                      app.kubernetes.io/instance: {{ .observed.composite.resource.spec.claimRef.name }}
+                    annotations:
+                      kubernetes.io/tls-acme: "true"
+                  spec:
+                    {{- if or ($.observed.composite.resource.spec.ingress.public) (eq $.observed.composite.resource.spec.ingress nil) }}
+                    ingressClassName: nginx
+                    {{- else }}
+                    ingressClassName: nginx-internal
+                    {{- end }}
+                    rules:
+                      - host: {{ regexReplaceAll "[^a-z0-9-]" (.observed.composite.resource.spec.claimRef.name | lower) "" }}.{{ index $.context "apiextensions.crossplane.io/environment" "zone" }}
+                        http:
+                          paths:
+                            - backend:
+                                service:
+                                  name: {{ .observed.composite.resource.spec.claimRef.name }}
+                                  port:
+                                    number: 80
+                              path: /
+                              pathType: Prefix
+                    tls:
+                      - hosts:
+                          - {{ regexReplaceAll "[^a-z0-9-]" (.observed.composite.resource.spec.claimRef.name | lower) "" }}.{{ index $.context "apiextensions.crossplane.io/environment" "zone" }}
+                        secretName: {{ .observed.composite.resource.spec.claimRef.name }}-tls
+            ---
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: CompositeConnectionDetails
+            {{ if eq $.observed.resources nil }}
+            data: {}
+            {{ else }}
+            data:
+              {{ if ne $.observed.resources.ingress nil }}
+              host: {{ index .observed.resources.ingress.resource.spec.forProvider.manifest.spec.rules 0 "host" | b64enc }}
+              {{ end }}
+              username: {{ .observed.resources.secret.resource.spec.forProvider.manifest.stringData.username | b64enc }}
+              password: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" "no value yet" .observed | b64enc }}
+            {{ end }}
+
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready
