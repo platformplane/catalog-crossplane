@@ -1,0 +1,42 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: airflowcomposites.catalog.cluster.local
+spec:
+  group: catalog.cluster.local
+  metadata:
+    labels:
+      catalog.cluster.local/kind: Airflow
+    annotations:
+      catalog.cluster.local/title: "Airflow"
+      catalog.cluster.local/description: "Apache Airflow is an open-source platform for defining, scheduling, and monitoring workflows. Using Python, it manages task dependencies and integrates with various data sources, ideal for automating complex data pipelines."
+      catalog.cluster.local/icon: "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB2aWV3Qm94PSIwIDAgMTI4IDEyOCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0ibTIuNTQ0MSAxMjcgNjAuODA5LTYyLjMzMmExLjEyNCAxLjEyNCAwIDAgMCAwLjEzNTktMS40MzY4Yy0zLjY5NzctNS4xNjI1LTEwLjUyMS02LjA1NzgtMTMuMDUtOS41MjY4LTcuNDkwMy0xMC4yNzUtOS4zOTA5LTE2LjA5Mi0xMi42MS0xNS43MzFhMC45ODM3NCAwLjk4Mzc0IDAgMCAwLTAuNTg0NjQgMC4zMDg1bC0yMS45NjYgMjIuNTE4Yy0xMi42MzggMTIuOTQ0LTE0LjQ1NCA0MS40NzUtMTQuNzgyIDY1LjM2N2ExLjE5MDggMS4xOTA4IDAgMCAwIDIuMDQ3MyAwLjgzMjczeiIgZmlsbD0iIzAxN2NlZSIvPgo8cGF0aCBkPSJtMTI2Ljk5IDEyNS40Ni02Mi4zMzItNjAuODEzYTEuMTI0IDEuMTI0IDAgMCAwLTEuNDM4OS0wLjEzNTljLTUuMTYyNSAzLjY5OTgtNi4wNTc4IDEwLjUyMS05LjUyNjggMTMuMDUtMTAuMjc1IDcuNDkwMy0xNi4wOTIgOS4zOTA5LTE1LjczMSAxMi42MWEwLjk4Mzc0IDAuOTgzNzQgMCAwIDAgMC4zMDg1IDAuNTgyNDhsMjIuNTE4IDIxLjk2NmMxMi45NDQgMTIuNjM4IDQxLjQ3NSAxNC40NTQgNjUuMzY3IDE0Ljc4MmExLjE5MDggMS4xOTA4IDAgMCAwIDAuODM0ODktMi4wNDA4eiIgZmlsbD0iIzAwYWQ0NiIvPgo8cGF0aCBkPSJtNjAuNzkyIDExMi43MmMtNy4wNzYtNi45MDM1LTEwLjM1NS0yMC41NTkgMy4yMDU4LTQ4LjcxOS0yMi4wNDYgOS44NTI1LTI5Ljc3MSAyMi44MDMtMjUuOTcyIDI2LjUxMXoiIGZpbGw9IiMwNGQ2NTkiLz4KPHBhdGggZD0ibTEyNS40NSAxLjAxMTMtNjAuODA3IDYyLjMzMmExLjEyMTggMS4xMjE4IDAgMCAwLTAuMTM1OSAxLjQzNjhjMy42OTk4IDUuMTYyNSAxMC41MTkgNi4wNTc4IDEzLjA1IDkuNTI2OCA3LjQ5MDMgMTAuMjc1IDkuMzkzIDE2LjA5MiAxMi42MSAxNS43MzFhMC45Nzk0MyAwLjk3OTQzIDAgMCAwIDAuNTg0NjQtMC4zMDg1bDIxLjk2Ni0yMi41MThjMTIuNjM4LTEyLjk0NCAxNC40NTQtNDEuNDc1IDE0Ljc4Mi02NS4zNjdhMS4xOTMgMS4xOTMgMCAwIDAtMi4wNDk1LTAuODMyNzN6IiBmaWxsPSIjMDBjN2Q0Ii8+CjxwYXRoIGQ9Im0xMTIuNzMgNjcuMjExYy02LjkwMzUgNy4wNzYtMjAuNTU5IDEwLjM1NS00OC43MjEtMy4yMDU4IDkuODUyNSAyMi4wNDYgMjIuODAzIDI5Ljc3MSAyNi41MTEgMjUuOTcyeiIgZmlsbD0iIzExZTFlZSIvPgo8cGF0aCBkPSJtMS4wMDE3IDIuNTQ5NSA2Mi4zMzIgNjAuODA3YTEuMTI0IDEuMTI0IDAgMCAwIDEuNDM2OCAwLjEzNTljNS4xNjI1LTMuNjk5OCA2LjA1NzgtMTAuNTIxIDkuNTI2OC0xMy4wNSAxMC4yNzUtNy40OTAzIDE2LjA5Mi05LjM5MDkgMTUuNzMxLTEyLjYxYTAuOTkwMjIgMC45OTAyMiAwIDAgMC0wLjMwODUtMC41ODQ2M2wtMjIuNTE4LTIxLjk2NmMtMTIuOTQ0LTEyLjYzOC00MS40NzUtMTQuNDU0LTY1LjM2Ny0xNC43ODJhMS4xOTA4IDEuMTkwOCAwIDAgMC0wLjgzMjczIDIuMDQ5NXoiIGZpbGw9IiNlNDM5MjEiLz4KPHBhdGggZD0ibTY3LjIxMiAxNS4yODRjNy4wNzYgNi45MDM1IDEwLjM1NSAyMC41NTktMy4yMDU4IDQ4LjcyMSAyMi4wNDYtOS44NTI1IDI5Ljc3MS0yMi44MDUgMjUuOTcyLTI2LjUxMXoiIGZpbGw9IiNmZjc1NTciLz4KPHBhdGggZD0ibTE1LjI3OSA2MC44YzYuOTAzNS03LjA3NiAyMC41NTktMTAuMzU1IDQ4LjcyMSAzLjIwNTgtOS44NTI1LTIyLjA0Ni0yMi44MDMtMjkuNzcxLTI2LjUxMS0yNS45NzJ6IiBmaWxsPSIjMGNiNmZmIi8+CjxjaXJjbGUgY3g9IjY0LjAwOSIgY3k9IjYzLjk5NSIgcj0iMi43MTgyIiBmaWxsPSIjNGE0ODQ4Ii8+Cjwvc3ZnPg=="
+      catalog.cluster.local/maintainer: ""
+      catalog.cluster.local/url: "https://airflow.apache.org/"
+      catalog.cluster.local/tags: "data,unmanaged"
+  names:
+    kind: AirflowComposite
+    plural: airflowcomposites
+  claimNames:
+    kind: Airflow
+    plural: airflows
+  versions:
+    - name: v1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: Airflow is the Schema for the airflows API
+          type: object
+          properties:
+            spec:
+              description: AirflowSpec defines the desired state of Airflow
+              type: object
+              properties:
+                ingress:
+                  type: object
+                  default: {}
+                  properties:
+                    public:
+                      type: boolean
+                      default: true

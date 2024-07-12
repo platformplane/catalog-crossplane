@@ -1,0 +1,7 @@
+apiVersion: catalog.cluster.local/v1
+kind: JupyterHub
+metadata:
+  name: bubuasdf
+spec:
+  ingress:
+    public: true
