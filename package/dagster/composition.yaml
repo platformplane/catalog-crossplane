@@ -2,11 +2,11 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: jupyterhubs.catalog.cluster.local
+  name: dagsters.catalog.cluster.local
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v1
-    kind: JupyterHubComposite
+    kind: DagsterComposite
 
   writeConnectionSecretsToNamespace: crossplane-system
 
@@ -24,7 +24,7 @@ spec:
               ref:
                 name: environment
 
-    - step: jupyterhub
+    - step: dagster
       functionRef:
         name: crossplane-contrib-function-go-templating
       input:
@@ -49,26 +49,24 @@ spec:
                 name: provider-helm
               forProvider:
                 chart:
-                  name: jupyterhub
-                  repository: https://hub.jupyter.org/helm-chart
-                  version: 3.3.7 
+                  name: dagster
+                  repository: https://dagster-io.github.io/helm
+                  version: 1.7.13
                 namespace: {{ $claim.namespace }}
                 values:
                   fullnameOverride: {{ $claim.name }}
-                  hub:
+                  dagsterWebserver:
                     labels:
                       catalog.cluster.local/kind: {{ $claim.kind }}
                       catalog.cluster.local/name: {{ $claim.name }}
-                    config:
-                      Authenticator:
-                        admin_users:
-                        - admin
-                      DummyAuthenticator:
-                        password: {{ dig "resources" "release" "resource" "spec" "forProvider" "values" "hub" "config" "DummyAuthenticator" "password" (randAlphaNum 12) .observed }}
-                      JupyterHub:
-                        admin_access: true
-                        authenticator_class: dummy
+                  dagsterDaemon:
+                    labels:
+                      catalog.cluster.local/kind: {{ $claim.kind }}
+                      catalog.cluster.local/name: {{ $claim.name }}
                   ingress:
+                    labels:
+                      catalog.cluster.local/kind: {{ $claim.kind }}
+                      catalog.cluster.local/name: {{ $claim.name }}
                     enabled: true
                     {{- if or ($.observed.composite.resource.spec.ingress.public) (eq $.observed.composite.resource.spec.ingress nil) }}
                     ingressClassName: nginx
@@ -77,15 +75,45 @@ spec:
                     {{- end }}
                     annotations:
                       kubernetes.io/tls-acme: "true"
-                    hosts:
-                      - {{ $host }}.{{ $zone }}
-                    tls:
-                      - secretName: {{ $claim.name }}-tls
-                        hosts:
-                          - {{ $host }}.{{ $zone }}
-                  scheduling:
-                    userScheduler:
-                      enabled: false
+                      nginx.ingress.kubernetes.io/auth-type: basic
+                      nginx.ingress.kubernetes.io/auth-secret: {{ $claim.name }}-auth
+                      nginx.ingress.kubernetes.io/auth-realm: "Authentication Required"
+                    dagsterWebserver:
+                      host: {{ $host }}.{{ $zone }}
+                      path: /
+                      pathType: Prefix
+                      tls:
+                        enabled: true
+                        secretName: {{ $claim.name }}-tls
+                  telemetry:
+                    enabled: false
+            ---
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "secret"
+            spec:
+              providerConfigRef:
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: Secret
+                  metadata:
+                    name: {{ $claim.name }}-auth
+                    namespace: {{ $claim.namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $claim.kind }}
+                      catalog.cluster.local/name: {{ $claim.name }}
+                      app.kubernetes.io/name: dagster
+                      app.kubernetes.io/instance: {{ $claim.name }}
+                  stringData:
+                    {{ $password := dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" (randAlphaNum 12) .observed }}
+                    {{ $username := "admin" }}
+                    username: {{ $username  }}
+                    password: {{ $password  }}
+                    auth: {{ htpasswd $username $password}}
             ---
             {{ $values := .observed.resources.release.resource.spec.forProvider.values }}
 
@@ -96,10 +124,10 @@ spec:
             {{ else }}
             data:
               {{ if ne $values.ingress nil }}
-              host: {{ index $values.ingress.hosts 0 | b64enc }}
+              host: {{ $values.ingress.dagsterWebserver.host | b64enc }}
               {{ end }}
-              username: {{ index $values.hub.config.Authenticator.admin_users 0 | b64enc }}
-              password: {{ dig "resources" "release" "resource" "spec" "forProvider" "values" "hub" "config" "DummyAuthenticator" "password" "no value yet" .observed | b64enc }}
+              username: {{ .observed.resources.secret.resource.spec.forProvider.manifest.stringData.username | b64enc }}
+              password: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" "no value yet" .observed | b64enc }}
             {{ end }}
 
     - step: automatically-detect-ready-composed-resources
