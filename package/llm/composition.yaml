@@ -183,6 +183,8 @@ spec:
                                 value: 127.0.0.1:11434
                               - name: OLLAMA_FLASH_ATTENTION
                                 value: "1"
+                              - name: MODEL
+                                value: gemma2:9b,llama3:8b,mistral:7b,phi3:mini,phi3:medium,nomic-embed-text:v1.5
                             volumeMounts:
                               - name: data
                                 subPath: ollama
