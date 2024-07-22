@@ -67,8 +67,14 @@ spec:
                         - type: llama
                           url: http://localhost:8000
                           models:
-                            phi-3:
-                              id: phi-3-mini-4k-instruct
+                            phi-3-mini:
+                              id: default
+                        
+                        - type: llama
+                          url: http://localhost:9000
+                          models:
+                            nomic-embed-text-v1:
+                              id: default
             ---
             apiVersion: kubernetes.crossplane.io/v1alpha2
             kind: Object
@@ -114,6 +120,8 @@ spec:
                       app.kubernetes.io/name: llm
                       app.kubernetes.io/instance: {{ $claim.name }}
                   spec:
+                    strategy:
+                      type: Recreate
                     selector:
                       matchLabels:
                         catalog.cluster.local/kind: {{ $claim.kind }}
@@ -143,6 +151,8 @@ spec:
                               - name: config
                                 mountPath: /config.yaml
                                 subPath: config.yaml
+                              - name: data
+                                mountPath: /data
                           - name: ui
                             image: ghcr.io/adrianliechti/llama-streamlit
                             imagePullPolicy: Always
@@ -154,7 +164,7 @@ spec:
                                   secretKeyRef:
                                     name: {{ $claim.name }}
                                     key: token
-                          - name: llama-server
+                          - name: llama-server-llm
                             image: ghcr.io/ggerganov/llama.cpp:server
                             imagePullPolicy: Always
                             args:
@@ -164,7 +174,7 @@ spec:
                               - "8000"
                               - "--log-disable"
                               - "--model"
-                              - "/models/phi-3-mini-4k-instruct.gguf"
+                              - "/models/phi-3-mini-4k-instruct-q4.gguf"
                               - "--ctx-size"
                               - "4096"
                               - "--hf-repo"
@@ -174,7 +184,35 @@ spec:
                             volumeMounts:
                               - name: data
                                 subPath: models
-                                mountPath: "/models"
+                                mountPath: /models
+                          - name: llama-server-embed
+                            image: ghcr.io/ggerganov/llama.cpp:server
+                            imagePullPolicy: Always
+                            args:
+                              - "--host"
+                              - "127.0.0.1"
+                              - "--port"
+                              - "9000"
+                              - "--log-disable"
+                              - "--embedding"
+                              - "--model"
+                              - "/models/nomic-embed-text-v1.5.f16.gguf"
+                              - "--ctx-size"
+                              - "8192"
+                              - "--batch-size"
+                              - "8192"
+                              - "--rope-scaling"
+                              - "yarn"
+                              - "--rope-freq-scale"
+                              - ".75"
+                              - "--hf-repo"
+                              - "nomic-ai/nomic-embed-text-v1.5-GGUF"
+                              - "--hf-file"
+                              - "nomic-embed-text-v1.5.f16.gguf"
+                            volumeMounts:
+                              - name: data
+                                subPath: models
+                                mountPath: /models
                             resources: {}
                         volumes:
                           - name: config
