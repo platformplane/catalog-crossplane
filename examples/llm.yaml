@@ -1,7 +1,7 @@
 apiVersion: catalog.cluster.local/v1
 kind: LLM
 metadata:
-  name: llm-sample
+  name: llm
 spec:
   ingress:
     public: true
