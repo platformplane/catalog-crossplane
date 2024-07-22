@@ -169,7 +169,7 @@ spec:
                             imagePullPolicy: Always
                             env:
                               - name: OPENAI_BASE_URL
-                                value: http://localhost:8080/oai/v1
+                                value: http://localhost:8080/v1
                               - name: OPENAI_API_KEY
                                 valueFrom:
                                   secretKeyRef:
@@ -298,7 +298,7 @@ spec:
                       - host: {{ $host }}.{{ $zone }}
                         http:
                           paths:
-                            - path: /oai/
+                            - path: /v1/
                               pathType: Prefix
                               backend:
                                 service:
