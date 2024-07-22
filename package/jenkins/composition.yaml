@@ -33,6 +33,10 @@ spec:
         inline:
           template: |
 
+            {{ $host := regexReplaceAll "[^a-z0-9-]" (.observed.composite.resource.spec.claimRef.name | lower) "" }}
+            {{ $zone := index $.context "apiextensions.crossplane.io/environment" "zone" }}
+            {{ $claim := .observed.composite.resource.spec.claimRef }}
+
             apiVersion: kubernetes.crossplane.io/v1alpha2
             kind: Object
             metadata:
@@ -46,13 +50,13 @@ spec:
                   apiVersion: v1
                   kind: Secret
                   metadata:
-                    name: {{ .observed.composite.resource.spec.claimRef.name }}
-                    namespace: {{ .observed.composite.resource.spec.claimRef.namespace }}
+                    name: {{ $claim.name }}
+                    namespace: {{ $claim.namespace }}
                     labels:
-                      catalog.cluster.local/kind: {{ .observed.composite.resource.spec.claimRef.kind }}
-                      catalog.cluster.local/name: {{ .observed.composite.resource.spec.claimRef.name }}
+                      catalog.cluster.local/kind: {{ $claim.kind }}
+                      catalog.cluster.local/name: {{ $claim.name }}
                       app.kubernetes.io/name: jenkins
-                      app.kubernetes.io/instance: {{ .observed.composite.resource.spec.claimRef.name }}
+                      app.kubernetes.io/instance: {{ $claim.name }}
                   stringData:
                     username: admin
                     password: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" (randAlphaNum 12) .observed }}
@@ -70,13 +74,13 @@ spec:
                   apiVersion: v1
                   kind: ServiceAccount
                   metadata:
-                    name: {{ .observed.composite.resource.spec.claimRef.name }}
-                    namespace: {{ .observed.composite.resource.spec.claimRef.namespace }}
+                    name: {{ $claim.name }}
+                    namespace: {{ $claim.namespace }}
                     labels:
-                      catalog.cluster.local/kind: {{ .observed.composite.resource.spec.claimRef.kind }}
-                      catalog.cluster.local/name: {{ .observed.composite.resource.spec.claimRef.name }}
+                      catalog.cluster.local/kind: {{ $claim.kind }}
+                      catalog.cluster.local/name: {{ $claim.name }}
                       app.kubernetes.io/name: jenkins
-                      app.kubernetes.io/instance: {{ .observed.composite.resource.spec.claimRef.name }}
+                      app.kubernetes.io/instance: {{ $claim.name }}
             ---
             apiVersion: kubernetes.crossplane.io/v1alpha2
             kind: Object
@@ -91,20 +95,20 @@ spec:
                   apiVersion: rbac.authorization.k8s.io/v1
                   kind: ClusterRoleBinding
                   metadata:
-                    name: {{ .observed.composite.resource.spec.claimRef.name }}
+                    name: {{ $claim.name }}
                     labels:
-                      catalog.cluster.local/kind: {{ .observed.composite.resource.spec.claimRef.kind }}
-                      catalog.cluster.local/name: {{ .observed.composite.resource.spec.claimRef.name }}
+                      catalog.cluster.local/kind: {{ $claim.kind }}
+                      catalog.cluster.local/name: {{ $claim.name }}
                       app.kubernetes.io/name: jenkins
-                      app.kubernetes.io/instance: {{ .observed.composite.resource.spec.claimRef.name }}
+                      app.kubernetes.io/instance: {{ $claim.name }}
                   roleRef:
                     apiGroup: rbac.authorization.k8s.io
                     kind: ClusterRole
                     name: cluster-admin
                   subjects:
                     - kind: ServiceAccount
-                      name: {{ .observed.composite.resource.spec.claimRef.name }}
-                      namespace: {{ .observed.composite.resource.spec.claimRef.namespace }}
+                      name: {{ $claim.name }}
+                      namespace: {{ $claim.namespace }}
             ---
             apiVersion: kubernetes.crossplane.io/v1alpha2
             kind: Object
@@ -119,45 +123,45 @@ spec:
                   apiVersion: apps/v1
                   kind: Deployment
                   metadata:
-                    name: {{ .observed.composite.resource.spec.claimRef.name }}
-                    namespace: {{ .observed.composite.resource.spec.claimRef.namespace }}
+                    name: {{ $claim.name }}
+                    namespace: {{ $claim.namespace }}
                     labels:
-                      catalog.cluster.local/kind: {{ .observed.composite.resource.spec.claimRef.kind }}
-                      catalog.cluster.local/name: {{ .observed.composite.resource.spec.claimRef.name }}
+                      catalog.cluster.local/kind: {{ $claim.kind }}
+                      catalog.cluster.local/name: {{ $claim.name }}
                       app.kubernetes.io/name: jenkins
-                      app.kubernetes.io/instance: {{ .observed.composite.resource.spec.claimRef.name }}
+                      app.kubernetes.io/instance: {{ $claim.name }}
                   spec:
                     selector:
                       matchLabels:
-                        catalog.cluster.local/kind: {{ .observed.composite.resource.spec.claimRef.kind }}
-                        catalog.cluster.local/name: {{ .observed.composite.resource.spec.claimRef.name }}
+                        catalog.cluster.local/kind: {{ $claim.kind }}
+                        catalog.cluster.local/name: {{ $claim.name }}
                         app.kubernetes.io/name: jenkins
-                        app.kubernetes.io/instance: {{ .observed.composite.resource.spec.claimRef.name }}
+                        app.kubernetes.io/instance: {{ $claim.name }}
                     template:
                       metadata:
                         labels:
-                          catalog.cluster.local/kind: {{ .observed.composite.resource.spec.claimRef.kind }}
-                          catalog.cluster.local/name: {{ .observed.composite.resource.spec.claimRef.name }}
+                          catalog.cluster.local/kind: {{ $claim.kind }}
+                          catalog.cluster.local/name: {{ $claim.name }}
                           app.kubernetes.io/name: jenkins
-                          app.kubernetes.io/instance: {{ .observed.composite.resource.spec.claimRef.name }}
+                          app.kubernetes.io/instance: {{ $claim.name }}
                       spec:
-                        serviceAccountName: {{ .observed.composite.resource.spec.claimRef.name }}
+                        serviceAccountName: {{ $claim.name }}
                         containers:
                           - name: jenkins
                             image: adrianliechti/loop-jenkins
                             imagePullPolicy: Always
                             env:
                               - name: BASE_URL
-                                value: https://{{ regexReplaceAll "[^a-z0-9-]" (.observed.composite.resource.spec.claimRef.name | lower) "" }}.{{ index $.context "apiextensions.crossplane.io/environment" "zone" }}
+                                value: https://{{ $host }}.{{ $zone }}
                               - name: ADMIN_USERNAME
                                 valueFrom:
                                   secretKeyRef:
-                                    name: {{ .observed.composite.resource.spec.claimRef.name }}
+                                    name: {{ $claim.name }}
                                     key: username
                               - name: ADMIN_PASSWORD
                                 valueFrom:
                                   secretKeyRef:
-                                    name: {{ .observed.composite.resource.spec.claimRef.name }}
+                                    name: {{ $claim.name }}
                                     key: password
                               - name: DOCKER_HOST
                                 value: "unix:///var/run/dind/docker.sock"
@@ -202,7 +206,7 @@ spec:
                         volumes:
                           - name: data
                             persistentVolumeClaim:
-                              claimName: {{ .observed.composite.resource.spec.claimRef.name }}
+                              claimName: {{ $claim.name }}
                           - name: dind
                             emptyDir: {}
             ---
@@ -219,20 +223,20 @@ spec:
                   apiVersion: v1
                   kind: Service
                   metadata:
-                    name: {{ .observed.composite.resource.spec.claimRef.name }}
-                    namespace: {{ .observed.composite.resource.spec.claimRef.namespace }}
+                    name: {{ $claim.name }}
+                    namespace: {{ $claim.namespace }}
                     labels:
-                      catalog.cluster.local/kind: {{ .observed.composite.resource.spec.claimRef.kind }}
-                      catalog.cluster.local/name: {{ .observed.composite.resource.spec.claimRef.name }}
+                      catalog.cluster.local/kind: {{ $claim.kind }}
+                      catalog.cluster.local/name: {{ $claim.name }}
                       app.kubernetes.io/name: jenkins
-                      app.kubernetes.io/instance: {{ .observed.composite.resource.spec.claimRef.name }}
+                      app.kubernetes.io/instance: {{ $claim.name }}
                   spec:
                     type: ClusterIP
                     selector:
-                      catalog.cluster.local/kind: {{ .observed.composite.resource.spec.claimRef.kind }}
-                      catalog.cluster.local/name: {{ .observed.composite.resource.spec.claimRef.name }}
+                      catalog.cluster.local/kind: {{ $claim.kind }}
+                      catalog.cluster.local/name: {{ $claim.name }}
                       app.kubernetes.io/name: jenkins
-                      app.kubernetes.io/instance: {{ .observed.composite.resource.spec.claimRef.name }}
+                      app.kubernetes.io/instance: {{ $claim.name }}
                     ports:
                       - name: http
                         port: 80
@@ -251,13 +255,13 @@ spec:
                   kind: PersistentVolumeClaim
                   apiVersion: v1
                   metadata:
-                    name: {{ .observed.composite.resource.spec.claimRef.name }}
-                    namespace: {{ .observed.composite.resource.spec.claimRef.namespace }}
+                    name: {{ $claim.name }}
+                    namespace: {{ $claim.namespace }}
                     labels:
-                      catalog.cluster.local/kind: {{ .observed.composite.resource.spec.claimRef.kind }}
-                      catalog.cluster.local/name: {{ .observed.composite.resource.spec.claimRef.name }}
+                      catalog.cluster.local/kind: {{ $claim.kind }}
+                      catalog.cluster.local/name: {{ $claim.name }}
                       app.kubernetes.io/name: jenkins
-                      app.kubernetes.io/instance: {{ .observed.composite.resource.spec.claimRef.name }}
+                      app.kubernetes.io/instance: {{ $claim.name }}
                   spec:
                     accessModes:
                       - ReadWriteOnce
@@ -278,13 +282,13 @@ spec:
                   apiVersion: networking.k8s.io/v1
                   kind: Ingress
                   metadata:
-                    name: {{ .observed.composite.resource.spec.claimRef.name }}
-                    namespace: {{ .observed.composite.resource.spec.claimRef.namespace }}
+                    name: {{ $claim.name }}
+                    namespace: {{ $claim.namespace }}
                     labels:
-                      catalog.cluster.local/kind: {{ .observed.composite.resource.spec.claimRef.kind }}
-                      catalog.cluster.local/name: {{ .observed.composite.resource.spec.claimRef.name }}
+                      catalog.cluster.local/kind: {{ $claim.kind }}
+                      catalog.cluster.local/name: {{ $claim.name }}
                       app.kubernetes.io/name: jenkins
-                      app.kubernetes.io/instance: {{ .observed.composite.resource.spec.claimRef.name }}
+                      app.kubernetes.io/instance: {{ $claim.name }}
                     annotations:
                       kubernetes.io/tls-acme: "true"
                   spec:
@@ -294,20 +298,20 @@ spec:
                     ingressClassName: nginx-internal
                     {{- end }}
                     rules:
-                      - host: {{ regexReplaceAll "[^a-z0-9-]" (.observed.composite.resource.spec.claimRef.name | lower) "" }}.{{ index $.context "apiextensions.crossplane.io/environment" "zone" }}
+                      - host: {{ $host }}.{{ $zone }}
                         http:
                           paths:
                             - backend:
                                 service:
-                                  name: {{ .observed.composite.resource.spec.claimRef.name }}
+                                  name: {{ $claim.name }}
                                   port:
                                     number: 80
                               path: /
                               pathType: Prefix
                     tls:
                       - hosts:
-                          - {{ regexReplaceAll "[^a-z0-9-]" (.observed.composite.resource.spec.claimRef.name | lower) "" }}.{{ index $.context "apiextensions.crossplane.io/environment" "zone" }}
-                        secretName: {{ .observed.composite.resource.spec.claimRef.name }}-tls
+                          - {{ $host }}.{{ $zone }}
+                        secretName: {{ $claim.name }}-tls
             ---
             apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
             kind: CompositeConnectionDetails
