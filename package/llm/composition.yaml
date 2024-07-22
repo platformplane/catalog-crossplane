@@ -107,6 +107,7 @@ spec:
                       app.kubernetes.io/instance: {{ $claim.name }}
                   stringData:
                     token: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "token" (printf "sk-%s" (randAlphaNum 48)) .observed }}
+                    password: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" (randAlphaNum 12) .observed }}
             ---
             apiVersion: kubernetes.crossplane.io/v1alpha2
             kind: Object
@@ -174,6 +175,11 @@ spec:
                                   secretKeyRef:
                                     name: {{ $claim.name }}
                                     key: token
+                              - name: PASSWORD
+                                valueFrom:
+                                  secretKeyRef:
+                                    name: {{ $claim.name }}
+                                    key: password
                             resources: {}
                           - name: ollama
                             image: ghcr.io/adrianliechti/ollama
@@ -321,6 +327,7 @@ spec:
               host: {{ index .observed.resources.ingress.resource.spec.forProvider.manifest.spec.rules 0 "host" | b64enc }}
               {{ end }}
               token: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "token" "no value yet" .observed | b64enc }}
+              password: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" "no value yet" .observed | b64enc }}
             {{ end }}
 
     - step: automatically-detect-ready-composed-resources
