@@ -1,0 +1,7 @@
+apiVersion: catalog.cluster.local/v1
+kind: LLM
+metadata:
+  name: phi-3
+spec:
+  ingress:
+    public: true
