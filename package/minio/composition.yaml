@@ -18,168 +18,86 @@ spec:
 
   mode: Pipeline
   pipeline:
-    - step: patch-and-transform
+    - step: minio
       functionRef:
-        name: crossplane-contrib-function-patch-and-transform
+        name: crossplane-contrib-function-go-templating
       input:
-        apiVersion: pt.fn.crossplane.io/v1beta1
-        environment: null
-        kind: Resources
-        patchSets: []
-        resources:
-          - name: helm-release
-            base:
-              apiVersion: helm.crossplane.io/v1beta1
-              kind: Release
-              metadata:
-                annotations:
-                  crossplane.io/external-name: tbd
-              spec:
-                providerConfigRef:
-                  name: provider-helm
-                forProvider:
-                  chart: # https://artifacthub.io/packages/helm/bitnami/minio
-                    name: minio
-                    repository: oci://registry-1.docker.io/bitnamicharts
-                    version: 14.6.0 # also update the version in the map transform below!
-                  namespace: tbd
-                  values:
-                    commonLabels:
-                      catalog.cluster.local/kind: tbd
-                      catalog.cluster.local/name: tbd
-                    fullnameOverride: tbd
-                    extraEnvVars:
-                      - name: MINIO_BROWSER_LOGIN_ANIMATION
-                        value: "off"
-                    rootUser: admin
-                    persistence:
-                      size: 8Gi
-                    metrics:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+
+            {{ $claim := .observed.composite.resource.spec.claimRef }}
+
+            {{ $versionMapping := dict "2023.7.18" "12.6.12" "2024.7.16" "14.6.26" }}
+            {{ $version := index $versionMapping .observed.composite.resource.spec.version }}
+
+            apiVersion: helm.crossplane.io/v1beta1
+            kind: Release
+            metadata:
+              annotations:
+                crossplane.io/external-name: {{ $claim.name }}
+                gotemplating.fn.crossplane.io/composition-resource-name: "release"
+            spec:
+              providerConfigRef:
+                name: provider-helm
+              forProvider:
+                chart: # https://artifacthub.io/packages/helm/bitnami/minio
+                  name: minio
+                  repository: oci://registry-1.docker.io/bitnamicharts
+                  version: {{ $version }}
+                namespace: {{ $claim.namespace }}
+                values:
+                  fullnameOverride: {{ $claim.name }}
+                  commonLabels:
+                    catalog.cluster.local/kind: {{ $claim.kind }}
+                    catalog.cluster.local/name: {{ $claim.name }}
+                  extraEnvVars:
+                    - name: MINIO_BROWSER_LOGIN_ANIMATION
+                      value: "off"
+                  rootUser: admin
+                  persistence:
+                    size: {{ $.observed.composite.resource.spec.size}}
+                  metrics:
+                    enabled: true
+                    serviceMonitor:
                       enabled: true
-                      serviceMonitor:
-                        enabled: true
 
-                connectionDetails:
-                  - apiVersion: v1
-                    kind: Secret
-                    name:
-                    namespace:
-                    fieldPath: data.root-password
-                    toConnectionSecretKey: password
+              connectionDetails:
+                - apiVersion: v1
+                  kind: Secret
+                  name: {{ $claim.name }}
+                  namespace: {{ $claim.namespace }}
+                  fieldPath: data.root-password
+                  toConnectionSecretKey: password
 
-                  - apiVersion: v1
-                    kind: Service
-                    name:
-                    namespace:
-                    fieldPath: spec.ports[0].port
-                    toConnectionSecretKey: port
+                - apiVersion: v1
+                  kind: Service
+                  name: {{ $claim.name }}
+                  namespace: {{ $claim.namespace }}
+                  fieldPath: spec.ports[0].port
+                  toConnectionSecretKey: port
 
-                writeConnectionSecretToRef:
-                  namespace: tbd
+              writeConnectionSecretToRef:
+                name: {{ $claim.name }}-connection
+                namespace: {{ $claim.namespace }}
+            ---
+            {{ $values := .observed.resources.release.resource.spec.forProvider.values }}
+            {{ $connectionDetails := .observed.resources.release.connectionDetails }}
 
-            connectionDetails:
-              - name: username
-                type: FromFieldPath
-                fromFieldPath: "spec.forProvider.values.rootUser"
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: CompositeConnectionDetails
+            {{ if eq $.observed.resources nil }}
+            data: {}
+            {{ else }}
+            data:
+              host: {{ printf "%s.%s" $claim.name $claim.namespace | b64enc }}
+              username: {{ $values.rootUser | b64enc }}
+              password: {{ $connectionDetails.password }}
+              port: {{ $connectionDetails.port }}
+            {{ end }}
 
-              - name: password
-                type: FromConnectionSecretKey
-                fromConnectionSecretKey: password
-
-              - name: port
-                type: FromConnectionSecretKey
-                fromConnectionSecretKey: port
-
-              - name: database
-                type: FromFieldPath
-                fromFieldPath: "spec.forProvider.values.auth.database"
-
-              - name: host
-                type: FromFieldPath
-                fromFieldPath: "metadata.annotations['host']"
-
-            patches:
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.size"
-                toFieldPath: "spec.forProvider.values.persistence.size"
-                
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "spec.forProvider.values.fullnameOverride"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/name']"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.kind"
-                toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.version"
-                toFieldPath: "spec.forProvider.chart.version"
-                transforms:
-                  - type: map
-                    map:
-                      "2024.5.10": "14.6.0"
-                      "2023.7.18": "12.6.12"
-                      
-              - type: ToCompositeFieldPath
-                fromFieldPath: "spec.forProvider.chart.version"
-                toFieldPath: "spec.version"
-                transforms:
-                  - type: map
-                    map:
-                      "14.6.0": "2024.5.10"
-                      "12.6.12": "2023.7.18"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "metadata.annotations[crossplane.io/external-name]"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.namespace"
-                toFieldPath: "spec.forProvider.namespace"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "spec.connectionDetails[0].name"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.namespace"
-                toFieldPath: "spec.connectionDetails[0].namespace"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "spec.connectionDetails[1].name"
-              
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.namespace"
-                toFieldPath: "spec.connectionDetails[1].namespace"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.namespace"
-                toFieldPath: "spec.writeConnectionSecretToRef.namespace"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "spec.writeConnectionSecretToRef.name"
-                transforms:
-                  - type: string
-                    string:
-                      type: Format
-                      fmt: "%s-connection"
-
-              - type: CombineToEnvironment
-                combine:
-                  variables:
-                    - fromFieldPath: spec.forProvider.values.fullnameOverride
-                    - fromFieldPath: spec.forProvider.namespace
-                  strategy: string
-                  string:
-                    fmt: "%s.%s"
-                toFieldPath: host
-                
-              - type: FromEnvironmentFieldPath
-                fromFieldPath: host
-                toFieldPath: "metadata.annotations['host']"
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready
