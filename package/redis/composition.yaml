@@ -64,7 +64,7 @@ spec:
 
                 - apiVersion: v1
                   kind: Service
-                  name: {{ $claim.name }}
+                  name: {{ $claim.name }}-master
                   namespace: {{ $claim.namespace }}
                   fieldPath: spec.ports[0].port
                   toConnectionSecretKey: port
