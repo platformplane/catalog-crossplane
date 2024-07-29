@@ -11,18 +11,6 @@ spec:
 
   mode: Pipeline
   pipeline:
-    - step: get-environment-configs
-      functionRef:
-        name: crossplane-contrib-function-environment-configs
-      input:
-        apiVersion: environmentconfigs.fn.crossplane.io/v1beta1
-        kind: Input
-        spec:
-          environmentConfigs:
-            - type: Reference
-              ref:
-                name: environment
-
     - step: redis
       functionRef:
         name: crossplane-contrib-function-go-templating
@@ -32,14 +20,12 @@ spec:
         source: Inline
         inline:
           template: |
-            
-            {{ $host := regexReplaceAll "[^a-z0-9-]" (.observed.composite.resource.spec.claimRef.name | lower) "" }}
-            {{ $zone := index $.context "apiextensions.crossplane.io/environment" "zone" }}
+
             {{ $claim := .observed.composite.resource.spec.claimRef }}
-            
+
             {{ $versionMapping := dict "7" "19.6.4" }}
             {{ $version := index $versionMapping .observed.composite.resource.spec.version }}
-            
+
             apiVersion: helm.crossplane.io/v1beta1
             kind: Release
             metadata:
@@ -56,19 +42,19 @@ spec:
                   version: {{ $version }}
                 namespace: {{ $claim.namespace }}
                 values:
+                  fullnameOverride: {{ $claim.name }}
                   commonLabels:
                     catalog.cluster.local/kind: {{ $claim.kind }}
                     catalog.cluster.local/name: {{ $claim.name }}
-                  fullnameOverride: {{ $claim.name }}
                   architecture: standalone
                   master:
-                    persistence:
-                      size: 8Gi
-                    persistentVolumeClaimRetentionPolicy:
+                    persistence: true
+                    size: 8Gi
+                  persistentVolumeClaimRetentionPolicy:
                       enabled: true
                       whenDeleted: Delete
-            
-               connectionDetails:
+
+              connectionDetails:
                 - apiVersion: v1
                   kind: Secret
                   name: {{ $claim.name }}
