@@ -3,13 +3,6 @@ apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
   name: mariadbs.catalog.cluster.local
-  annotations:
-    catalog.cluster.local/title: "MariaDB"
-    catalog.cluster.local/description: "Unmanaged MariaDB instance running within the cluster."
-    catalog.cluster.local/icon: "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBkYXRhLW5hbWU9IkxheWVyIDEiIHZlcnNpb249IjEuMSIgdmlld0JveD0iMCAwIDI5My4zMSAxOTAuODgiCiAgICB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogICAgPHBhdGgKICAgICAgICBkPSJtMjkxLjk0IDAuOTUzOTZhNC4xOCA0LjE4IDAgMCAwLTIuODQtMC45NWMtMi44MyAwLTYuNDkgMS45Mi04LjQ2IDIuOTVsLTAuNzggMC40YTI2Ljg2IDI2Ljg2IDAgMCAxLTEwLjU3IDIuNjZjLTMuNzYgMC4xMi03IDAuMzQtMTEuMjIgMC43OC0yNSAyLjU3LTM2LjE1IDIxLjczLTQ2Ljg5IDQwLjI2LTUuODUgMTAuMDgtMTEuODkgMjAuNTUtMjAuMTcgMjguNTVhNTQuNCA1NC40IDAgMCAxLTUuNDUgNC42M2MtOC41NyA2LjM3LTE5LjMzIDEwLjkyLTI3LjcgMTQuMTQtOC4wNiAzLjA4LTE2Ljg2IDUuODUtMjUuMzYgOC41My03Ljc5IDIuNDUtMTUuMTQgNC43Ny0yMS45IDcuMjgtMy4wNSAxLjEzLTUuNjQgMi03LjkzIDIuNzYtNi4xNiAyLTEwLjYgMy41My0xNy4wOSA4LTIuNTMgMS43My01LjA3IDMuNi02Ljc5IDVhNzEuNjIgNzEuNjIgMCAwIDAtMTMuNTUgMTQuMjcgODQuMjUgODQuMjUgMCAwIDEtMTEuMzggMTMuNjZjLTEuMzcgMS4zNC0zLjggMi03LjQ0IDItNC4yNiAwLTkuNDMtMC44OC0xNC45LTEuODEtNS42NC0xLTExLjQ3LTEuOTUtMTYuNDctMS45NS00LjA2IDAtNy4xNyAwLjY2LTkuNDkgMiAwIDAtMy45MSAyLjI4LTUuNTYgNS4yM2wxLjYyIDAuNzNhMzMuMjEgMzMuMjEgMCAwIDEgNi45MiA1IDM0LjcyIDM0LjcyIDAgMCAwIDcuMiA1LjEyIDYuMTggNi4xOCAwIDAgMSAyLjIyIDEuNDFjLTAuNjggMS0xLjY4IDIuMjktMi43MyAzLjY3LTUuNzcgNy41NS05LjE0IDEyLjMyLTcuMjEgMTQuOTJhNi4wNyA2LjA3IDAgMCAwIDMgMC42OGMxMi41OCAwIDE5LjM0LTMuMjcgMjcuODktNy40MSAyLjQ4LTEuMiA1LTIuNDMgOC0zLjcgNS0yLjE3IDEwLjM4LTUuNjMgMTYuMDktOS4yOSA3LjQ3LTQuODcgMTUuMjgtOS44NyAyMi44Ni0xMi4yOGE2Mi4zIDYyLjMgMCAwIDEgMTkuMjMtMi43YzggMCAxNi40MiAxLjA3IDI0LjU0IDIuMTEgNi4wNSAwLjc4IDEyLjMyIDEuNTggMTguNDcgMS45NSAyLjM5IDAuMTQgNC42IDAuMjEgNi43NSAwLjIxYTc4LjIxIDc4LjIxIDAgMCAwIDguNjEtMC40NWwwLjY5LTAuMjRjNC4zMS0yLjY1IDYuMzMtOC4zNCA4LjI5LTEzLjg0IDEuMjYtMy41NCAyLjMyLTYuNzIgNC04Ljc0YTIuNTUgMi41NSAwIDAgMSAwLjMyLTAuMjcgMC40IDAuNCAwIDAgMSAwLjQ5IDAuMDh2MC4xNmMtMSAyMS41MS05LjY2IDM1LjE3LTE4LjQyIDQ3LjMxbC01Ljg1IDYuMjdzOC4xOSAwIDEyLjg1LTEuOGMxNy01LjA4IDI5LjgzLTE2LjI4IDM5LjE3LTM0LjE0YTE0NS43IDE0NS43IDAgMCAwIDYuMTctMTQuMDljMC4xNi0wLjQgMS42My0xLjE0IDEuNDkgMC45My0wLjA1IDAuNjEtMC4wOSAxLjI5LTAuMTQgMiAwIDAuNDIgMCAwLjg1LTAuMDggMS4yOC0wLjI0IDMtMC45NSA5LjM0LTAuOTUgOS4zNGw1LjI1LTIuODFjMTIuNjYtOCAyMi40Mi0yNC4xNCAyOS44Mi00OS4yNSAzLjA4LTEwLjQ2IDUuMzQtMjAuODUgNy4zMy0zMCAyLjM4LTExIDQuNDMtMjAuNDMgNi43OC0yNC4wOSAzLjY5LTUuNzQgOS4zMi05LjYyIDE0Ljc3LTEzLjM5IDAuNzQtMC41MSAxLjQ5LTEgMi4yMi0xLjU0IDYuODUtNC44MSAxMy42Ni0xMC4zNiAxNS4xNi0yMC43MXYtMC4yM2MxLjA5LTcuNzIgMC4xNy05LjY5LTAuODgtMTAuNTl6IgogICAgICAgIGZpbGw9IiM2ODY4NjgiIC8+Cjwvc3ZnPg=="
-    catalog.cluster.local/maintainer: ""
-    catalog.cluster.local/url: "https://mariadb.org/"
-    catalog.cluster.local/tags: "database,unmanaged,helm"
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v1
@@ -19,173 +12,87 @@ spec:
 
   mode: Pipeline
   pipeline:
-    - step: patch-and-transform
+    - step: mariadb
       functionRef:
-        name: crossplane-contrib-function-patch-and-transform
+        name: crossplane-contrib-function-go-templating
       input:
-        apiVersion: pt.fn.crossplane.io/v1beta1
-        environment: null
-        kind: Resources
-        patchSets: []
-        resources:
-          - name: helm-release # definition: https://doc.crds.dev/github.com/crossplane-contrib/provider-helm/helm.crossplane.io/Release/v1beta1@v0.15.0
-            base:
-              apiVersion: helm.crossplane.io/v1beta1
-              kind: Release # full example, see: https://github.com/crossplane-contrib/provider-helm/blob/master/examples/sample/release.yaml
-              metadata:
-                annotations:
-                  crossplane.io/external-name: tbd
-              spec:
-                providerConfigRef:
-                  name: provider-helm
-                forProvider:
-                  chart: # https://artifacthub.io/packages/helm/bitnami/mariadb
-                    name: mariadb
-                    repository: oci://registry-1.docker.io/bitnamicharts
-                    version: 18.1.0 # also update the version in the map transform below!
-                  namespace: tbd # patch taken from composite spec.claimRef.namespace
-                  values:
-                    commonLabels:
-                      catalog.cluster.local/kind: tbd # patch taken from composite spec.claimRef.kind
-                      catalog.cluster.local/name: tbd # patch taken from composite spec.claimRef.name
-                    fullnameOverride: tbd # patch taken from composite metadata.name (needed because the chart creates a secret with an unpredictable name otherwise)
-                    architecture: standalone
-                    auth:
-                      database: db
-                    primary:
-                      persistence:
-                        size: 8Gi # patch taken from composite spec.size
-                      persistentVolumeClaimRetentionPolicy:
-                        enabled: true
-                        whenDeleted: Delete
-                    # metrics:
-                    #   enabled: true
-                    #   serviceMonitor:
-                    #     enabled: true
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
 
-                connectionDetails:
-                  - apiVersion: v1
-                    kind: Secret
-                    name: # patch taken from spec.claimRef.name
-                    namespace: # patch taken from composite spec.claimRef.namespace
-                    fieldPath: data.mariadb-root-password
-                    toConnectionSecretKey: password
+            {{ $claim := .observed.composite.resource.spec.claimRef }}
 
-                  - apiVersion: v1
-                    kind: Service
-                    name: # patch taken from spec.claimRef.name
-                    namespace: # patch taken from composite spec.claimRef.namespace
-                    fieldPath: spec.ports[0].port
-                    toConnectionSecretKey: port
+            apiVersion: helm.crossplane.io/v1beta1
+            kind: Release
+            metadata:
+              annotations:
+                crossplane.io/external-name: {{ $claim.name }}
+                gotemplating.fn.crossplane.io/composition-resource-name: "release"
+            spec:
+              providerConfigRef:
+                name: provider-helm
+              forProvider:
+                chart: # https://artifacthub.io/packages/helm/bitnami/mariadb
+                  name: mariadb
+                  repository: oci://registry-1.docker.io/bitnamicharts
+                  version: 19.0.3
+                namespace: {{ $claim.namespace }} 
+                values:
+                  commonLabels:
+                    catalog.cluster.local/kind: {{ $claim.kind }}
+                    catalog.cluster.local/name: {{ $claim.name }} 
+                  fullnameOverride:  {{ $claim.name }}
+                  architecture: standalone
+                  auth:
+                    database: db
+                  primary:
+                    persistence:
+                      size: 8Gi 
+                    persistentVolumeClaimRetentionPolicy:
+                      enabled: true
+                      whenDeleted: Delete
+                  metrics:
+                    enabled: true
+                    serviceMonitor:
+                      enabled: true
 
-                writeConnectionSecretToRef:
-                  # name: tbd # patch taken from composite spec.resourceRefs[0].name + "-connection"
-                  namespace: tbd # patch taken from composite spec.claimRef.namespace
+              connectionDetails:
+                - apiVersion: v1
+                  kind: Secret
+                  name: {{ $claim.name }}
+                  namespace: {{ $claim.namespace }}
+                  fieldPath: data.mariadb-root-password
+                  toConnectionSecretKey: password
 
-            connectionDetails:
-              - name: username
-                type: FromValue
-                value: root
+                - apiVersion: v1
+                  kind: Service
+                  name: {{ $claim.name }}
+                  namespace: {{ $claim.namespace }}
+                  fieldPath: spec.ports[0].port
+                  toConnectionSecretKey: port
 
-              - name: password
-                type: FromConnectionSecretKey
-                fromConnectionSecretKey: password
+              writeConnectionSecretToRef:
+                name: {{ $claim.name }}-connection
+                namespace: {{ $claim.namespace }}
 
-              - name: port
-                type: FromConnectionSecretKey
-                fromConnectionSecretKey: port
+            ---
+            {{ $values := .observed.resources.release.resource.spec.forProvider.values }}
+            {{ $connectionDetails := .observed.resources.release.connectionDetails }}
 
-              - name: database
-                type: FromFieldPath
-                fromFieldPath: "spec.forProvider.values.auth.database"
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: CompositeConnectionDetails
+            {{ if eq $.observed.resources nil }}
+            data: {}
+            {{ else }}
+            data:
+              host: {{ printf "%s.%s" $claim.name $claim.namespace | b64enc }}
+              username: {{ "root" | b64enc }}
+              password: {{ $connectionDetails.password }}
+              port: {{ $connectionDetails.port }}
+            {{ end }}
 
-              - name: host
-                type: FromFieldPath
-                fromFieldPath: "metadata.annotations['host']"
-
-            patches:
-              # get the values for the chart from the claim
-              - type: FromCompositeFieldPath # from composite (MySQLComposite) to managed resource (Release)
-                fromFieldPath: "spec.size"
-                toFieldPath: "spec.forProvider.values.primary.persistence.size"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "spec.forProvider.values.fullnameOverride"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/name']"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.kind"
-                toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.version"
-                toFieldPath: "spec.forProvider.chart.version"
-                transforms:
-                  - type: map
-                    map:
-                      "11": "18.1.0"
-                      
-              - type: ToCompositeFieldPath
-                fromFieldPath: "spec.forProvider.chart.version"
-                toFieldPath: "spec.version"
-                transforms:
-                  - type: map
-                    map:
-                      "18.1.0": "11"
-
-              # give resources (service, secrets, ...) the name and namespace of the claim
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "metadata.annotations[crossplane.io/external-name]"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.namespace"
-                toFieldPath: "spec.forProvider.namespace"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "spec.connectionDetails[0].name"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.namespace"
-                toFieldPath: "spec.connectionDetails[0].namespace"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "spec.connectionDetails[1].name"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.namespace"
-                toFieldPath: "spec.connectionDetails[1].namespace"
-
-              # set name and namespace to where we write the resource connection details
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.namespace"
-                toFieldPath: "spec.writeConnectionSecretToRef.namespace"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "spec.writeConnectionSecretToRef.name"
-                transforms:
-                  - type: string
-                    string:
-                      type: Format
-                      fmt: "%s-connection"
-
-              - type: CombineToEnvironment
-                combine:
-                  variables:
-                    - fromFieldPath: spec.forProvider.values.fullnameOverride
-                    - fromFieldPath: spec.forProvider.namespace
-                  strategy: string
-                  string:
-                    fmt: "%s.%s"
-                toFieldPath: host
-
-              - type: FromEnvironmentFieldPath
-                fromFieldPath: host
-                toFieldPath: "metadata.annotations['host']"
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready
