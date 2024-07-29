@@ -48,9 +48,9 @@ spec:
                     catalog.cluster.local/name: {{ $claim.name }}
                   architecture: standalone
                   master:
-                    persistence: true
-                    size: 8Gi
-                  persistentVolumeClaimRetentionPolicy:
+                    persistence:
+                      size: 8Gi
+                    persistentVolumeClaimRetentionPolicy:
                       enabled: true
                       whenDeleted: Delete
 
