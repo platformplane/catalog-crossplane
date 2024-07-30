@@ -24,6 +24,9 @@ spec:
 
             {{ $claim := .observed.composite.resource.spec.claimRef }}
 
+            {{ $versionMapping := dict "11" "18.1.0" }}
+            {{ $version := index $versionMapping .observed.composite.resource.spec.version }}
+
             apiVersion: helm.crossplane.io/v1beta1
             kind: Release
             metadata:
@@ -37,26 +40,26 @@ spec:
                 chart: # https://artifacthub.io/packages/helm/bitnami/mariadb
                   name: mariadb
                   repository: oci://registry-1.docker.io/bitnamicharts
-                  version: 19.0.3
-                namespace: {{ $claim.namespace }} 
+                  version: {{ $version }}
+                namespace: {{ $claim.namespace }}
                 values:
                   commonLabels:
                     catalog.cluster.local/kind: {{ $claim.kind }}
-                    catalog.cluster.local/name: {{ $claim.name }} 
+                    catalog.cluster.local/name: {{ $claim.name }}
                   fullnameOverride:  {{ $claim.name }}
                   architecture: standalone
                   auth:
                     database: db
                   primary:
                     persistence:
-                      size: 8Gi 
+                      size: {{ $.observed.composite.resource.spec.size}}
                     persistentVolumeClaimRetentionPolicy:
                       enabled: true
                       whenDeleted: Delete
-                  metrics:
-                    enabled: true
-                    serviceMonitor:
-                      enabled: true
+                  # metrics:
+                  #   enabled: true
+                  #   serviceMonitor:
+                  #     enabled: true
 
               connectionDetails:
                 - apiVersion: v1

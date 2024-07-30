@@ -34,9 +34,11 @@ spec:
               properties:
                 size:
                   type: string
-                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                  default: "8Gi"
+                  pattern: ^(?P<sizeingi>[1-9]\d*)Gi$
                 version:
                   type: string
+                  default: "16"
                   enum:
                     - "15"
                     - "16"

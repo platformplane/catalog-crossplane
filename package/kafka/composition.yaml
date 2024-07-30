@@ -3,217 +3,107 @@ apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
   name: kafkas.catalog.cluster.local
-  annotations:
-    catalog.cluster.local/title: "Kafka"
-    catalog.cluster.local/description: "Apache Kafka is a highly-scalable, distributed streaming platform that enables real-time data processing and messaging. It is designed to handle high-volume data streams from multiple sources, providing fault-tolerant storage and efficient data transfer. Kafka's publish-subscribe model supports both real-time and batch data processing, making it an indispensable tool for building complex data pipelines and distributed systems. Its durability, reliability, and extensibility make Kafka a favored choice for enterprises seeking to build event-driven architectures and applications that require efficient, real-time data integration and analytics."
-    catalog.cluster.local/icon: "PHN2ZyB3aWR0aD0iMTUzOCIgZmlsbD0iIzY4Njg2OCIgaGVpZ2h0PSIyNTAwIiB2aWV3Qm94PSIwIDAgMjU2IDQxNiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJ4TWlkWU1pZCI+PHBhdGggZD0iTTIwMS44MTYgMjMwLjIxNmMtMTYuMTg2IDAtMzAuNjk3IDcuMTcxLTQwLjYzNCAxOC40NjFsLTI1LjQ2My0xOC4wMjZjMi43MDMtNy40NDIgNC4yNTUtMTUuNDMzIDQuMjU1LTIzLjc5NyAwLTguMjE5LTEuNDk4LTE2LjA3Ni00LjExMi0yMy40MDhsMjUuNDA2LTE3LjgzNWM5LjkzNiAxMS4yMzMgMjQuNDA5IDE4LjM2NSA0MC41NDggMTguMzY1IDI5Ljg3NSAwIDU0LjE4NC0yNC4zMDUgNTQuMTg0LTU0LjE4NCAwLTI5Ljg3OS0yNC4zMDktNTQuMTg0LTU0LjE4NC01NC4xODQtMjkuODc1IDAtNTQuMTg0IDI0LjMwNS01NC4xODQgNTQuMTg0IDAgNS4zNDguODA4IDEwLjUwNSAyLjI1OCAxNS4zODlsLTI1LjQyMyAxNy44NDRjLTEwLjYyLTEzLjE3NS0yNS45MTEtMjIuMzc0LTQzLjMzMy0yNS4xODJ2LTMwLjY0YzI0LjU0NC01LjE1NSA0My4wMzctMjYuOTYyIDQzLjAzNy01My4wMTlDMTI0LjE3MSAyNC4zMDUgOTkuODYyIDAgNjkuOTg3IDAgNDAuMTEyIDAgMTUuODAzIDI0LjMwNSAxNS44MDMgNTQuMTg0YzAgMjUuNzA4IDE4LjAxNCA0Ny4yNDYgNDIuMDY3IDUyLjc2OXYzMS4wMzhDMjUuMDQ0IDE0My43NTMgMCAxNzIuNDAxIDAgMjA2Ljg1NGMwIDM0LjYyMSAyNS4yOTIgNjMuMzc0IDU4LjM1NSA2OC45NHYzMi43NzRjLTI0LjI5OSA1LjM0MS00Mi41NTIgMjcuMDExLTQyLjU1MiA1Mi44OTQgMCAyOS44NzkgMjQuMzA5IDU0LjE4NCA1NC4xODQgNTQuMTg0IDI5Ljg3NSAwIDU0LjE4NC0yNC4zMDUgNTQuMTg0LTU0LjE4NCAwLTI1Ljg4My0xOC4yNTMtNDcuNTUzLTQyLjU1Mi01Mi44OTR2LTMyLjc3NWE2OS45NjUgNjkuOTY1IDAgMCAwIDQyLjYtMjQuNzc2bDI1LjYzMyAxOC4xNDNjLTEuNDIzIDQuODQtMi4yMiA5Ljk0Ni0yLjIyIDE1LjI0IDAgMjkuODc5IDI0LjMwOSA1NC4xODQgNTQuMTg0IDU0LjE4NCAyOS44NzUgMCA1NC4xODQtMjQuMzA1IDU0LjE4NC01NC4xODQgMC0yOS44NzktMjQuMzA5LTU0LjE4NC01NC4xODQtNTQuMTg0em0wLTEyNi42OTVjMTQuNDg3IDAgMjYuMjcgMTEuNzg4IDI2LjI3IDI2LjI3MXMtMTEuNzgzIDI2LjI3LTI2LjI3IDI2LjI3LTI2LjI3LTExLjc4Ny0yNi4yNy0yNi4yN2MwLTE0LjQ4MyAxMS43ODMtMjYuMjcxIDI2LjI3LTI2LjI3MXptLTE1OC4xLTQ5LjMzN2MwLTE0LjQ4MyAxMS43ODQtMjYuMjcgMjYuMjcxLTI2LjI3czI2LjI3IDExLjc4NyAyNi4yNyAyNi4yN2MwIDE0LjQ4My0xMS43ODMgMjYuMjctMjYuMjcgMjYuMjdzLTI2LjI3MS0xMS43ODctMjYuMjcxLTI2LjI3em01Mi41NDEgMzA3LjI3OGMwIDE0LjQ4My0xMS43ODMgMjYuMjctMjYuMjcgMjYuMjdzLTI2LjI3MS0xMS43ODctMjYuMjcxLTI2LjI3YzAtMTQuNDgzIDExLjc4NC0yNi4yNyAyNi4yNzEtMjYuMjdzMjYuMjcgMTEuNzg3IDI2LjI3IDI2LjI3em0tMjYuMjcyLTExNy45N2MtMjAuMjA1IDAtMzYuNjQyLTE2LjQzNC0zNi42NDItMzYuNjM4IDAtMjAuMjA1IDE2LjQzNy0zNi42NDIgMzYuNjQyLTM2LjY0MiAyMC4yMDQgMCAzNi42NDEgMTYuNDM3IDM2LjY0MSAzNi42NDIgMCAyMC4yMDQtMTYuNDM3IDM2LjYzOC0zNi42NDEgMzYuNjM4em0xMzEuODMxIDY3LjE3OWMtMTQuNDg3IDAtMjYuMjctMTEuNzg4LTI2LjI3LTI2LjI3MXMxMS43ODMtMjYuMjcgMjYuMjctMjYuMjcgMjYuMjcgMTEuNzg3IDI2LjI3IDI2LjI3YzAgMTQuNDgzLTExLjc4MyAyNi4yNzEtMjYuMjcgMjYuMjcxeiIvPjwvc3ZnPg=="
-    catalog.cluster.local/maintainer: ""
-    catalog.cluster.local/url: "https://kafka.apache.org/"
-    catalog.cluster.local/tags: "unmanaged,helm"
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v1
     kind: KafkaComposite
 
-  writeConnectionSecretsToNamespace: crossplane-system # this writes the connection secrets listed in the below resources connectionDetails sections to the specified namespace as a combined secret of all resources https://docs.crossplane.io/knowledge-base/guides/connection-details/#connection-secrets-in-compositions
-  # Be aware that you can't patch this field (it's in the composition, not in a resource or the composite)
-  # The namespace where the user can get his combined secret (the same as this one) is specified implicitly by the claim's namespace if you set the writeConnectionSecretToRef.name in the claim (one could think that this field here is therefore not needed, but it is, without it, there is also no combined secret written to the claim's namespace)
+  writeConnectionSecretsToNamespace: crossplane-system
 
   mode: Pipeline
   pipeline:
-    - step: patch-and-transform
+    - step: kafka
       functionRef:
-        name: crossplane-contrib-function-patch-and-transform
+        name: crossplane-contrib-function-go-templating
       input:
-        apiVersion: pt.fn.crossplane.io/v1beta1
-        environment: null
-        kind: Resources
-        patchSets: []
-        resources:
-          - name: helm-release # definition: https://doc.crds.dev/github.com/crossplane-contrib/provider-helm/helm.crossplane.io/Release/v1beta1@v0.15.0
-            base:
-              apiVersion: helm.crossplane.io/v1beta1
-              kind: Release # full example, see: https://github.com/crossplane-contrib/provider-helm/blob/master/examples/sample/release.yaml
-              metadata:
-                annotations:
-                  crossplane.io/external-name: tbd
-              spec:
-                providerConfigRef:
-                  name: provider-helm
-                forProvider:
-                  chart: # https://artifacthub.io/packages/helm/bitnami/kafka
-                    name: kafka
-                    repository: oci://registry-1.docker.io/bitnamicharts
-                    version: 28.3.0 # also update the version in the map transform below!
-                  namespace: tbd # patch taken from composite spec.claimRef.namespace
-                  values:
-                    commonLabels:
-                      catalog.cluster.local/kind: tbd # patch taken from composite spec.claimRef.kind
-                      catalog.cluster.local/name: tbd # patch taken from composite spec.claimRef.name
-                    fullnameOverride: tbd # patch taken from composite metadata.name (needed because the chart creates a secret with an unpredictable name otherwise)
-                    sasl:
-                      client:
-                        users:
-                          - user
-                    controller:
-                      persistence:
-                        size: 8Gi # patch taken from composite spec.size
-                      replicaCount: 1
-                    broker:
-                      persistence:
-                        size: 8Gi # patch taken from composite spec.size
-                    # metrics:
-                    #   enabled: true
-                    #   kafka:
-                    #     enabled: true
-                    #   serviceMonitor:
-                    #     enabled: true
-                    extraConfig: |-
-                      offsets.topic.replication.factor=1
-                      transaction.state.log.replication.factor=1
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
 
-                # the connection details of this resource
-                connectionDetails: # list the "secrets" created by this managed resources (further down, they are used to create the connection details for the whole composite)
-                  - apiVersion: v1
-                    kind: Secret
-                    name: # patch taken from spec.claimRef.name
-                    namespace: # patch taken from composite spec.claimRef.namespace
-                    fieldPath: data.client-passwords
-                    toConnectionSecretKey: password
+            {{ $claim := .observed.composite.resource.spec.claimRef }}
 
-                  - apiVersion: v1
-                    kind: Service
-                    name: # patch taken from spec.claimRef.name
-                    namespace: # patch taken from composite spec.claimRef.namespace
-                    fieldPath: spec.ports[0].port
-                    toConnectionSecretKey: port
+            {{ $versionMapping := dict "3" "28.3.0" }}
+            {{ $version := index $versionMapping .observed.composite.resource.spec.version }}
 
-                writeConnectionSecretToRef: # this will write the above connection details from this resource to a secret with this name to the specified namespace (we actually need to write this so that we can reference this connection details in the combined connection details)
-                  # name: tbd # patch taken from composite spec.resourceRefs[0].name + "-connection" # not entirely sure what is going on here, it writes two secrets (two ending in -connection), if uncommented only one with -connection but one that is called tbd
-                  namespace: tbd # patch taken from composite spec.claimRef.namespace
+            apiVersion: helm.crossplane.io/v1beta1
+            kind: Release
+            metadata:
+              annotations:
+                crossplane.io/external-name: {{ $claim.name }}
+                gotemplating.fn.crossplane.io/composition-resource-name: "release"
+            spec:
+              providerConfigRef:
+                name: provider-helm
+              forProvider:
+                chart: # https://artifacthub.io/packages/helm/bitnami/kafka
+                  name: kafka
+                  repository: oci://registry-1.docker.io/bitnamicharts
+                  version: {{ $version }}
+                namespace: {{ $claim.namespace }}
+                values:
+                  fullnameOverride: {{ $claim.name }}
+                  commonLabels:
+                    catalog.cluster.local/kind: {{ $claim.kind }}
+                    catalog.cluster.local/name: {{ $claim.name }}
+                  sasl:
+                    client:
+                      users:
+                        - user
+                  controller:
+                    persistence:
+                      size: 8Gi
+                    replicaCount: 1
+                  broker:
+                    persistence:
+                      size: {{ $.observed.composite.resource.spec.size}}
+                  # metrics:
+                  #   enabled: true
+                  #   kafka:
+                  #     enabled: true
+                  #   serviceMonitor:
+                  #     enabled: true
+                  extraConfig: |-
+                    offsets.topic.replication.factor=1
+                    transaction.state.log.replication.factor=1
 
-            # connection secrets mentioned here will be added to the "combined connection details" (combination of all the resources connection details)
-            # Attention: add the items listed here as allowed ones in the definition
-            connectionDetails:
-              - name: password
-                type: FromConnectionSecretKey
-                fromConnectionSecretKey: password
+              connectionDetails:
+                - apiVersion: v1
+                  kind: Secret
+                  name: {{ $claim.name }}-user-passwords
+                  namespace: {{ $claim.namespace }}
+                  fieldPath: data.client-passwords
+                  toConnectionSecretKey: password
 
-              - name: port
-                type: FromConnectionSecretKey
-                fromConnectionSecretKey: port
+                - apiVersion: v1
+                  kind: Service
+                  name: {{ $claim.name }}
+                  namespace: {{ $claim.namespace }}
+                  fieldPath: spec.ports[0].port
+                  toConnectionSecretKey: port
 
-              - name: username
-                type: FromValue
-                value: user
+              writeConnectionSecretToRef:
+                name: {{ $claim.name }}-connection
+                namespace: {{ $claim.namespace }}
+            ---
+            {{ $values := .observed.resources.release.resource.spec.forProvider.values }}
+            {{ $connectionDetails := .observed.resources.release.connectionDetails }}
 
-              - name: saslmechanism
-                type: FromValue
-                value: PLAIN
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: CompositeConnectionDetails
+            {{ if eq $.observed.resources nil }}
+            data: {}
+            {{ else }}
+            data:
+              host: {{ printf "%s.%s" $claim.name $claim.namespace | b64enc }}
+              username: {{ index $values.sasl.client.users 0 | b64enc }}
+              password: {{ $connectionDetails.password }}
+              port: {{ $connectionDetails.port }}
+              saslmechanism: {{ "PLAIN" | b64enc }}
+              securityprotocol: {{ "SASL_PLAINTEXT" | b64enc }}
+            {{ end }}
 
-              - name: securityprotocol
-                type: FromValue
-                value: SASL_PLAINTEXT
-
-              - name: host
-                type: FromFieldPath
-                fromFieldPath: "metadata.annotations['host']"
-
-            # copy stuff from claim/composite to resource (Release) and the other way around
-            patches:
-              # get the values for the chart from the claim
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.size"
-                toFieldPath: "spec.forProvider.values.controller.persistence.size"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.size"
-                toFieldPath: "spec.forProvider.values.broker.persistence.size"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "spec.forProvider.values.fullnameOverride"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/name']"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.kind"
-                toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.version"
-                toFieldPath: "spec.forProvider.chart.version"
-                transforms:
-                  - type: map
-                    map:
-                      "3": "28.3.0"
-
-              - type: ToCompositeFieldPath
-                fromFieldPath: "spec.forProvider.chart.version"
-                toFieldPath: "spec.version"
-                transforms:
-                  - type: map
-                    map:
-                      "28.3.0": "3"
-
-              # give resources (service, secrets, ...) the name and namespace of the claim
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "metadata.annotations[crossplane.io/external-name]"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.namespace"
-                toFieldPath: "spec.forProvider.namespace"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "spec.connectionDetails[0].name"
-                transforms:
-                  - type: string
-                    string:
-                      type: Format
-                      fmt: "%s-user-passwords"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.namespace"
-                toFieldPath: "spec.connectionDetails[0].namespace"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "spec.connectionDetails[1].name"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.namespace"
-                toFieldPath: "spec.connectionDetails[1].namespace"
-
-              # set name and namespace to where we write the resource connection details
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.namespace"
-                toFieldPath: "spec.writeConnectionSecretToRef.namespace"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.resourceRefs[0].name" # "spec.claimRef.name"
-                toFieldPath: "spec.writeConnectionSecretToRef.name"
-                transforms: # not sure why two secrets are created :(
-                  - type: string
-                    string:
-                      type: Format
-                      fmt: "%s-connection" # renaming is needed in order not to overwrite the secret created by the chart (from where we take the db password)
-
-              # copy stuff from resource to claim status and back to resource annotations from where it is copied to the connection details # this must be the wrong way but I don't know how to do the string manipulations otherwise
-              # Attention: newly introduced claim fields must be specified in the definition
-              - type: CombineToEnvironment
-                combine:
-                  variables:
-                    - fromFieldPath: spec.forProvider.values.fullnameOverride
-                    - fromFieldPath: spec.forProvider.namespace
-                  strategy: string
-                  string:
-                    fmt: "%s.%s"
-                toFieldPath: host
-
-              - type: FromEnvironmentFieldPath
-                fromFieldPath: host
-                toFieldPath: "metadata.annotations['host']"
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready

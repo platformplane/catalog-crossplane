@@ -3,195 +3,94 @@ apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
   name: postgresqls.catalog.cluster.local
-  annotations:
-    catalog.cluster.local/title: "PostgreSQL"
-    catalog.cluster.local/description: "PostgreSQL is a powerful, open-source relational database management system. It provides robust data integrity, advanced features, and excellent performance, making it a popular choice for applications of all sizes."
-    catalog.cluster.local/icon: "PD94bWwgdmVyc2lvbj0iMS4wIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIKICAiaHR0cDovL3d3dy53My5vcmcvR3JhcGhpY3MvU1ZHLzEuMS9EVEQvc3ZnMTEuZHRkIj4KCjxzdmcgd2lkdGg9IjQzMi4wNzFwdCIgaGVpZ2h0PSI0NDUuMzgzcHQiIHZpZXdCb3g9IjAgMCA0MzIuMDcxIDQ0NS4zODMiIHhtbDpzcGFjZT0icHJlc2VydmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxnIGlkPSJvcmdpbmFsIiBzdHlsZT0iZmlsbC1ydWxlOm5vbnplcm87Y2xpcC1ydWxlOm5vbnplcm87c3Ryb2tlOiMwMDAwMDA7c3Ryb2tlLW1pdGVybGltaXQ6NDsiPgoJPC9nPgo8ZyBpZD0iTGF5ZXJfeDAwMjBfMyIgc3R5bGU9ImZpbGwtcnVsZTpub256ZXJvO2NsaXAtcnVsZTpub256ZXJvO2ZpbGw6bm9uZTtzdHJva2U6I0ZGRkZGRjtzdHJva2Utd2lkdGg6MTIuNDY1MTtzdHJva2UtbGluZWNhcDpyb3VuZDtzdHJva2UtbGluZWpvaW46cm91bmQ7c3Ryb2tlLW1pdGVybGltaXQ6NDsiPgo8cGF0aCBzdHlsZT0iZmlsbDojMDAwMDAwO3N0cm9rZTojMDAwMDAwO3N0cm9rZS13aWR0aDozNy4zOTUzO3N0cm9rZS1saW5lY2FwOmJ1dHQ7c3Ryb2tlLWxpbmVqb2luOm1pdGVyOyIgZD0iTTMyMy4yMDUsMzI0LjIyN2MyLjgzMy0yMy42MDEsMS45ODQtMjcuMDYyLDE5LjU2My0yMy4yMzlsNC40NjMsMC4zOTJjMTMuNTE3LDAuNjE1LDMxLjE5OS0yLjE3NCw0MS41ODctN2MyMi4zNjItMTAuMzc2LDM1LjYyMi0yNy43LDEzLjU3Mi0yMy4xNDhjLTUwLjI5NywxMC4zNzYtNTMuNzU1LTYuNjU1LTUzLjc1NS02LjY1NWM1My4xMTEtNzguODAzLDc1LjMxMy0xNzguODM2LDU2LjE0OS0yMDMuMzIyICAgIEMzNTIuNTE0LTUuNTM0LDI2Mi4wMzYsMjYuMDQ5LDI2MC41MjIsMjYuODY5bC0wLjQ4MiwwLjA4OWMtOS45MzgtMi4wNjItMjEuMDYtMy4yOTQtMzMuNTU0LTMuNDk2Yy0yMi43NjEtMC4zNzQtNDAuMDMyLDUuOTY3LTUzLjEzMywxNS45MDRjMCwwLTE2MS40MDgtNjYuNDk4LTE1My44OTksODMuNjI4YzEuNTk3LDMxLjkzNiw0NS43NzcsMjQxLjY1NSw5OC40NywxNzguMzEgICAgYzE5LjI1OS0yMy4xNjMsMzcuODcxLTQyLjc0OCwzNy44NzEtNDIuNzQ4YzkuMjQyLDYuMTQsMjAuMzA3LDkuMjcyLDMxLjkxMiw4LjE0N2wwLjg5Ny0wLjc2NWMtMC4yODEsMi44NzYtMC4xNTcsNS42ODksMC4zNTksOS4wMTljLTEzLjU3MiwxNS4xNjctOS41ODQsMTcuODMtMzYuNzIzLDIzLjQxNmMtMjcuNDU3LDUuNjU5LTExLjMyNiwxNS43MzQtMC43OTcsMTguMzY3YzEyLjc2OCwzLjE5Myw0Mi4zMDUsNy43MTYsNjIuMjY4LTIwLjIyNCAgICBsLTAuNzk1LDMuMTg4YzUuMzI1LDQuMjYsNC45NjUsMzAuNjE5LDUuNzIsNDkuNDUyYzAuNzU2LDE4LjgzNCwyLjAxNywzNi40MDksNS44NTYsNDYuNzcxYzMuODM5LDEwLjM2LDguMzY5LDM3LjA1LDQ0LjAzNiwyOS40MDZjMjkuODA5LTYuMzg4LDUyLjYtMTUuNTgyLDU0LjY3Ny0xMDEuMTA3Ii8+CjxwYXRoIHN0eWxlPSJmaWxsOiMzMzY3OTE7c3Ryb2tlOm5vbmU7IiBkPSJNNDAyLjM5NSwyNzEuMjNjLTUwLjMwMiwxMC4zNzYtNTMuNzYtNi42NTUtNTMuNzYtNi42NTVjNTMuMTExLTc4LjgwOCw3NS4zMTMtMTc4Ljg0Myw1Ni4xNTMtMjAzLjMyNmMtNTIuMjctNjYuNzg1LTE0Mi43NTItMzUuMi0xNDQuMjYyLTM0LjM4bC0wLjQ4NiwwLjA4N2MtOS45MzgtMi4wNjMtMjEuMDYtMy4yOTItMzMuNTYtMy40OTZjLTIyLjc2MS0wLjM3My00MC4wMjYsNS45NjctNTMuMTI3LDE1LjkwMiAgICBjMCwwLTE2MS40MTEtNjYuNDk1LTE1My45MDQsODMuNjNjMS41OTcsMzEuOTM4LDQ1Ljc3NiwyNDEuNjU3LDk4LjQ3MSwxNzguMzEyYzE5LjI2LTIzLjE2MywzNy44NjktNDIuNzQ4LDM3Ljg2OS00Mi43NDhjOS4yNDMsNi4xNCwyMC4zMDgsOS4yNzIsMzEuOTA4LDguMTQ3bDAuOTAxLTAuNzY1Yy0wLjI4LDIuODc2LTAuMTUyLDUuNjg5LDAuMzYxLDkuMDE5Yy0xMy41NzUsMTUuMTY3LTkuNTg2LDE3LjgzLTM2LjcyMywyMy40MTYgICAgYy0yNy40NTksNS42NTktMTEuMzI4LDE1LjczNC0wLjc5NiwxOC4zNjdjMTIuNzY4LDMuMTkzLDQyLjMwNyw3LjcxNiw2Mi4yNjYtMjAuMjI0bC0wLjc5NiwzLjE4OGM1LjMxOSw0LjI2LDkuMDU0LDI3LjcxMSw4LjQyOCw0OC45NjljLTAuNjI2LDIxLjI1OS0xLjA0NCwzNS44NTQsMy4xNDcsNDcuMjU0YzQuMTkxLDExLjQsOC4zNjgsMzcuMDUsNDQuMDQyLDI5LjQwNmMyOS44MDktNi4zODgsNDUuMjU2LTIyLjk0Miw0Ny40MDUtNTAuNTU1ICAgIGMxLjUyNS0xOS42MzEsNC45NzYtMTYuNzI5LDUuMTk0LTM0LjI4bDIuNzY4LTguMzA5YzMuMTkyLTI2LjYxMSwwLjUwNy0zNS4xOTYsMTguODcyLTMxLjIwM2w0LjQ2MywwLjM5MmMxMy41MTcsMC42MTUsMzEuMjA4LTIuMTc0LDQxLjU5MS03YzIyLjM1OC0xMC4zNzYsMzUuNjE4LTI3LjcsMTMuNTczLTIzLjE0OHoiLz4KPHBhdGggZD0iTTIxNS44NjYsMjg2LjQ4NGMtMS4zODUsNDkuNTE2LDAuMzQ4LDk5LjM3Nyw1LjE5MywxMTEuNDk1YzQuODQ4LDEyLjExOCwxNS4yMjMsMzUuNjg4LDUwLjksMjguMDQ1YzI5LjgwNi02LjM5LDQwLjY1MS0xOC43NTYsNDUuMzU3LTQ2LjA1MWMzLjQ2Ni0yMC4wODIsMTAuMTQ4LTc1Ljg1NCwxMS4wMDUtODcuMjgxIi8+CjxwYXRoIGQ9Ik0xNzMuMTA0LDM4LjI1NmMwLDAtMTYxLjUyMS02Ni4wMTYtMTU0LjAxMiw4NC4xMDljMS41OTcsMzEuOTM4LDQ1Ljc3OSwyNDEuNjY0LDk4LjQ3MywxNzguMzE2YzE5LjI1Ni0yMy4xNjYsMzYuNjcxLTQxLjMzNSwzNi42NzEtNDEuMzM1Ii8+CjxwYXRoIGQ9Ik0yNjAuMzQ5LDI2LjIwN2MtNS41OTEsMS43NTMsODkuODQ4LTM0Ljg4OSwxNDQuMDg3LDM0LjQxN2MxOS4xNTksMjQuNDg0LTMuMDQzLDEyNC41MTktNTYuMTUzLDIwMy4zMjkiLz4KPHBhdGggc3R5bGU9InN0cm9rZS1saW5lam9pbjpiZXZlbDsiIGQ9Ik0zNDguMjgyLDI2My45NTNjMCwwLDMuNDYxLDE3LjAzNiw1My43NjQsNi42NTNjMjIuMDQtNC41NTIsOC43NzYsMTIuNzc0LTEzLjU3NywyMy4xNTVjLTE4LjM0NSw4LjUxNC01OS40NzQsMTAuNjk2LTYwLjE0Ni0xLjA2OWMtMS43MjktMzAuMzU1LDIxLjY0Ny0yMS4xMzMsMTkuOTYtMjguNzM5Yy0xLjUyNS02Ljg1LTExLjk3OS0xMy41NzMtMTguODk0LTMwLjMzOCAgICBjLTYuMDM3LTE0LjYzMy04Mi43OTYtMTI2Ljg0OSwyMS4yODctMTEwLjE4M2MzLjgxMy0wLjc4OS0yNy4xNDYtOTkuMDAyLTEyNC41NTMtMTAwLjU5OWMtOTcuMzg1LTEuNTk3LTk0LjE5LDExOS43NjItOTQuMTksMTE5Ljc2MiIvPgo8cGF0aCBkPSJNMTg4LjYwNCwyNzQuMzM0Yy0xMy41NzcsMTUuMTY2LTkuNTg0LDE3LjgyOS0zNi43MjMsMjMuNDE3Yy0yNy40NTksNS42Ni0xMS4zMjYsMTUuNzMzLTAuNzk3LDE4LjM2NWMxMi43NjgsMy4xOTUsNDIuMzA3LDcuNzE4LDYyLjI2Ni0yMC4yMjljNi4wNzgtOC41MDktMC4wMzYtMjIuMDg2LTguMzg1LTI1LjU0N2MtNC4wMzQtMS42NzEtOS40MjgtMy43NjUtMTYuMzYxLDMuOTk0eiIvPgo8cGF0aCBkPSJNMTg3LjcxNSwyNzQuMDY5Yy0xLjM2OC04LjkxNywyLjkzLTE5LjUyOCw3LjUzNi0zMS45NDJjNi45MjItMTguNjI2LDIyLjg5My0zNy4yNTUsMTAuMTE3LTk2LjMzOWMtOS41MjMtNDQuMDI5LTczLjM5Ni05LjE2My03My40MzYtMy4xOTNjLTAuMDM5LDUuOTY4LDIuODg5LDMwLjI2LTEuMDY3LDU4LjU0OGMtNS4xNjIsMzYuOTEzLDIzLjQ4OCw2OC4xMzIsNTYuNDc5LDY0LjkzOCIvPgo8cGF0aCBzdHlsZT0iZmlsbDojRkZGRkZGO3N0cm9rZS13aWR0aDo0LjE1NTtzdHJva2UtbGluZWNhcDpidXR0O3N0cm9rZS1saW5lam9pbjptaXRlcjsiIGQ9Ik0xNzIuNTE3LDE0MS43Yy0wLjI4OCwyLjAzOSwzLjczMyw3LjQ4LDguOTc2LDguMjA3YzUuMjM0LDAuNzMsOS43MTQtMy41MjIsOS45OTgtNS41NTljMC4yODQtMi4wMzktMy43MzItNC4yODUtOC45NzctNS4wMTVjLTUuMjM3LTAuNzMxLTkuNzE5LDAuMzMzLTkuOTk2LDIuMzY3eiIvPgo8cGF0aCBzdHlsZT0iZmlsbDojRkZGRkZGO3N0cm9rZS13aWR0aDoyLjA3NzU7c3Ryb2tlLWxpbmVjYXA6YnV0dDtzdHJva2UtbGluZWpvaW46bWl0ZXI7IiBkPSJNMzMxLjk0MSwxMzcuNTQzYzAuMjg0LDIuMDM5LTMuNzMyLDcuNDgtOC45NzYsOC4yMDdjLTUuMjM4LDAuNzMtOS43MTgtMy41MjItMTAuMDA1LTUuNTU5Yy0wLjI3Ny0yLjAzOSwzLjc0LTQuMjg1LDguOTc5LTUuMDE1YzUuMjM5LTAuNzMsOS43MTgsMC4zMzMsMTAuMDAyLDIuMzY4eiIvPgo8cGF0aCBkPSJNMzUwLjY3NiwxMjMuNDMyYzAuODYzLDE1Ljk5NC0zLjQ0NSwyNi44ODgtMy45ODgsNDMuOTE0Yy0wLjgwNCwyNC43NDgsMTEuNzk5LDUzLjA3NC03LjE5MSw4MS40MzUiLz4KPHBhdGggc3R5bGU9InN0cm9rZS13aWR0aDozOyIgZD0iTTAsNjAuMjMyIi8+CjwvZz4KPC9zdmc+"
-    catalog.cluster.local/maintainer: ""
-    catalog.cluster.local/url: "https://www.postgresql.org/"
-    catalog.cluster.local/tags: "database,unmanaged,helm"
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v1
     kind: PostgreSQLComposite
 
-  writeConnectionSecretsToNamespace: crossplane-system # this writes the connection secrets listed in the below resources connectionDetails sections to the specified namespace as a combined secret of all resources https://docs.crossplane.io/knowledge-base/guides/connection-details/#connection-secrets-in-compositions
-  # Be aware that you can't patch this field (it's in the composition, not in a resource or the composite)
-  # The namespace where the user can get his combined secret (the same as this one) is specified implicitly by the claim's namespace if you set the writeConnectionSecretToRef.name in the claim (one could think that this field here is therefore not needed, but it is, without it, there is also no combined secret written to the claim's namespace)
-
+  writeConnectionSecretsToNamespace: crossplane-system
+ 
   mode: Pipeline
   pipeline:
-    - step: patch-and-transform
+    - step: postgres
       functionRef:
-        name: crossplane-contrib-function-patch-and-transform
+        name: crossplane-contrib-function-go-templating
       input:
-        apiVersion: pt.fn.crossplane.io/v1beta1
-        environment: null
-        kind: Resources
-        patchSets: []
-        resources:
-          - name: helm-release # definition: https://doc.crds.dev/github.com/crossplane-contrib/provider-helm/helm.crossplane.io/Release/v1beta1@v0.15.0
-            base:
-              apiVersion: helm.crossplane.io/v1beta1
-              kind: Release # full example, see: https://github.com/crossplane-contrib/provider-helm/blob/master/examples/sample/release.yaml
-              metadata:
-                annotations:
-                  crossplane.io/external-name: tbd # patch taken from composite spec.claimRef.name
-              spec:
-                providerConfigRef:
-                  name: provider-helm
-                forProvider:
-                  chart: # https://artifacthub.io/packages/helm/bitnami/postgresql
-                    name: postgresql
-                    repository: oci://registry-1.docker.io/bitnamicharts
-                    version: 15.4.0 # also update the version in the map transform below!
-                  namespace: tbd # patch taken from composite spec.claimRef.namespace
-                  values:
-                    commonLabels:
-                      catalog.cluster.local/kind: tbd # patch taken from composite spec.claimRef.kind
-                      catalog.cluster.local/name: tbd # patch taken from composite spec.claimRef.name
-                    fullnameOverride: tbd # patch taken from composite metadata.name (needed because the chart creates a secret with an unpredictable name otherwise)
-                    auth:
-                      database: postgres
-                    primary:
-                      persistence:
-                        size: 8Gi # patch taken from composite spec.size
-                      persistentVolumeClaimRetentionPolicy:
-                        enabled: true
-                        whenDeleted: Delete
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
 
-                # the connection details of this resource
-                connectionDetails: # list the "secrets" created by this managed resources (further down, they are used to create the connection details for the whole composite)
-                  - apiVersion: v1
-                    kind: Secret
-                    name: # patch taken from spec.claimRef.name
-                    namespace: # patch taken from composite spec.claimRef.namespace
-                    fieldPath: data.postgres-password
-                    toConnectionSecretKey: password
+            {{ $claim := .observed.composite.resource.spec.claimRef }}
 
-                  - apiVersion: v1
-                    kind: Service
-                    name: # patch taken from spec.claimRef.name
-                    namespace: # patch taken from composite spec.claimRef.namespace
-                    fieldPath: spec.ports[0].port
-                    toConnectionSecretKey: port
+            {{ $versionMapping := dict "16" "15.4.0" "15" "12.8.0" }}
+            {{ $version := index $versionMapping .observed.composite.resource.spec.version }}
 
-                writeConnectionSecretToRef: # this will write the above connection details from this resource to a secret with this name to the specified namespace (we actually need to write this so that we can reference this connection details in the combined connection details)
-                  # name: tbd # patch taken from composite spec.resourceRefs[0].name + "-connection" # not entirely sure what is going on here, it writes two secrets (two ending in -connection), if uncommented only one with -connection but one that is called tbd
-                  namespace: tbd # patch taken from composite spec.claimRef.namespace
+            apiVersion: helm.crossplane.io/v1beta1
+            kind: Release
+            metadata:
+              annotations:
+                crossplane.io/external-name: {{ $claim.name }}
+                gotemplating.fn.crossplane.io/composition-resource-name: "release"
+            spec:
+              providerConfigRef:
+                name: provider-helm
+              forProvider:
+                chart: # https://artifacthub.io/packages/helm/bitnami/postgresql
+                  name: postgresql
+                  repository: oci://registry-1.docker.io/bitnamicharts
+                  version: {{ $version }}
+                namespace: {{ $claim.namespace }}
+                values:
+                  fullnameOverride: {{ $claim.name }}
+                  commonLabels:
+                    catalog.cluster.local/kind: {{ $claim.kind }}
+                    catalog.cluster.local/name: {{ $claim.name }}
+                  auth:
+                    database: postgres
+                  primary:
+                    persistence:
+                      size: {{ $.observed.composite.resource.spec.size}}
+                    persistentVolumeClaimRetentionPolicy:
+                      enabled: true
+                      whenDeleted: Delete
+             
+              connectionDetails:
+                - apiVersion: v1
+                  kind: Secret
+                  name: {{ $claim.name }}
+                  namespace: {{ $claim.namespace }}
+                  fieldPath: data.postgres-password
+                  toConnectionSecretKey: password
 
-            # connection secrets mentioned here will be added to the "combined connection details" (combination of all the resources connection details)
-            # Attention: add the items listed here as allowed ones in the definition
-            connectionDetails:
-              - name: username
-                type: FromValue
-                value: postgres
+                - apiVersion: v1
+                  kind: Service
+                  name: {{ $claim.name }}
+                  namespace: {{ $claim.namespace }}
+                  fieldPath: spec.ports[0].port
+                  toConnectionSecretKey: port
 
-              - name: password
-                type: FromConnectionSecretKey
-                fromConnectionSecretKey: password
+              writeConnectionSecretToRef:
+                name: {{ $claim.name }}-connection
+                namespace: {{ $claim.namespace }}
+            ---
+            {{ $values := .observed.resources.release.resource.spec.forProvider.values }}
+            {{ $connectionDetails := .observed.resources.release.connectionDetails }}
 
-              - name: port
-                type: FromConnectionSecretKey
-                fromConnectionSecretKey: port
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: CompositeConnectionDetails
+            {{ if eq $.observed.resources nil }}
+            data: {}
+            {{ else }}
+            data:
+              host: {{ printf "%s.%s" $claim.name $claim.namespace | b64enc }}
+              username: {{ "postgres" | b64enc }}
+              password: {{ $connectionDetails.password }}
+              port: {{ $connectionDetails.port }}
+              database: {{ $values.auth.database | b64enc }}
+            {{ end }}
 
-              - name: database
-                type: FromFieldPath
-                fromFieldPath: "spec.forProvider.values.auth.database"
-
-              - name: host
-                type: FromFieldPath
-                fromFieldPath: "metadata.annotations['host']"
-
-            # copy stuff from claim/composite to resource (Release) and the other way around
-            patches:
-
-              # get the values for the chart from the claim
-              - type: FromCompositeFieldPath # from composite (PostgreSQLComposite) to managed resource (Release)
-                fromFieldPath: "spec.size"
-                toFieldPath: "spec.forProvider.values.primary.persistence.size"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "spec.forProvider.values.fullnameOverride"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/name']"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.kind"
-                toFieldPath: "spec.forProvider.values.commonLabels['catalog.cluster.local/kind']"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.version"
-                toFieldPath: "spec.forProvider.chart.version"
-                transforms:
-                  - type: map
-                    map:
-                      "15": "12.8.0"
-                      "16": "15.4.0"
-                      
-              - type: ToCompositeFieldPath
-                fromFieldPath: "spec.forProvider.chart.version"
-                toFieldPath: "spec.version"
-                transforms:
-                  - type: map
-                    map:
-                      "12.8.0": "15"
-                      "15.4.0": "16"
-
-              # give resources (service, secrets, ...) the name and namespace of the claim
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "metadata.annotations[crossplane.io/external-name]"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.namespace"
-                toFieldPath: "spec.forProvider.namespace"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "spec.connectionDetails[0].name"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.namespace"
-                toFieldPath: "spec.connectionDetails[0].namespace"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "spec.connectionDetails[1].name"
-              
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.namespace"
-                toFieldPath: "spec.connectionDetails[1].namespace"
-
-              # set name and namespace to where we write the resource connection details
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.namespace"
-                toFieldPath: "spec.writeConnectionSecretToRef.namespace"
-
-              - type: FromCompositeFieldPath
-                fromFieldPath: "spec.claimRef.name"
-                toFieldPath: "spec.writeConnectionSecretToRef.name"
-                transforms: # not sure why two secrets are created :(
-                  - type: string
-                    string:
-                      type: Format
-                      fmt: "%s-connection" # renaming is needed in order not to overwrite the secret created by the chart (from where we take the db password)
-
-              # copy stuff from resource to claim status and back to resource annotations from where it is copied to the connection details # this must be the wrong way but I don't know how to do the string manipulations otherwise
-              # Attention: newly introduced claim fields must be specified in the definition
-              - type: CombineToEnvironment
-                combine:
-                  variables:
-                    - fromFieldPath: spec.forProvider.values.fullnameOverride
-                    - fromFieldPath: spec.forProvider.namespace
-                  strategy: string
-                  string:
-                    fmt: "%s.%s"
-                toFieldPath: host
-                
-              - type: FromEnvironmentFieldPath
-                fromFieldPath: host
-                toFieldPath: "metadata.annotations['host']"
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready

@@ -36,12 +36,10 @@ spec:
                 size:
                   type: string
                   pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                  default: "8Gi"
+                  # default: "8Gi"
                 version:
                   type: string
                   default: "2024.7.16"
                   enum:
                     - "2024.7.16"
                     - "2023.7.18"
-
-                  
