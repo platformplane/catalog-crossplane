@@ -24,7 +24,8 @@ spec:
             {{ $claim := .observed.composite.resource.spec.claimRef }}
 
             {{ $versionMapping := dict "7" "19.6.4" }}
-            {{ $version := index $versionMapping .observed.composite.resource.spec.version }}
+            {{ $specVersion := .observed.composite.resource.spec.version | default "7" }}
+            {{ $version := index $versionMapping $specVersion }}
 
             apiVersion: helm.crossplane.io/v1beta1
             kind: Release
@@ -81,7 +82,7 @@ spec:
             data: {}
             {{ else }}
             data:
-              host: {{ printf "%s.%s" $claim.name $claim.namespace | b64enc }}
+              host: {{ printf "%s-master.%s" $claim.name $claim.namespace | b64enc }}
               password: {{ $connectionDetails.password }}
               port: {{ $connectionDetails.port }}
             {{ end }}
