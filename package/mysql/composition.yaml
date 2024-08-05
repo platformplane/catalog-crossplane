@@ -31,8 +31,11 @@ spec:
 
             {{ $claim := .observed.composite.resource.spec.claimRef }}
 
+            {{ $size := .observed.composite.resource.spec.size | default "8Gi" }}
+
             {{ $versionMapping := dict "8" "10.2.4" }}
-            {{ $version := index $versionMapping .observed.composite.resource.spec.version }}
+            {{ $specVersion := .observed.composite.resource.spec.version | default "8" }}
+            {{ $version := index $versionMapping $specVersion }}
 
             apiVersion: helm.crossplane.io/v1beta1
             kind: Release
@@ -59,7 +62,7 @@ spec:
                     database: db
                   primary:
                     persistence:
-                      size: {{ $.observed.composite.resource.spec.size}}
+                      size: {{ $size }}
                     persistentVolumeClaimRetentionPolicy:
                       enabled: true
                       whenDeleted: Delete

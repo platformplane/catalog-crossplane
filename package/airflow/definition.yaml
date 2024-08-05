@@ -40,3 +40,4 @@ spec:
                     public:
                       type: boolean
                       default: true
+                      description: Expose public endpoint (Be aware that your application will be public available on the internet.)

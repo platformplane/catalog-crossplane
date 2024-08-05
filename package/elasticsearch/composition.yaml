@@ -22,9 +22,12 @@ spec:
           template: |
 
             {{ $claim := .observed.composite.resource.spec.claimRef }}
+
+            {{ $size := .observed.composite.resource.spec.size | default "8Gi" }}
             
             {{ $versionMapping := dict "8" "21.1.0" }}
-            {{ $version := index $versionMapping .observed.composite.resource.spec.version }}
+            {{ $specVersion := .observed.composite.resource.spec.version | default "8" }}
+            {{ $version := index $versionMapping $specVersion }}
 
             apiVersion: helm.crossplane.io/v1beta1
             kind: Release
@@ -50,7 +53,7 @@ spec:
                     masterOnly: false
                     replicaCount: 1
                     persistence:
-                      size: {{ $.observed.composite.resource.spec.size}}
+                      size: {{ $size }}
                   data:
                     replicaCount: 0
                   coordinating:

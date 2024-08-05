@@ -33,6 +33,10 @@ spec:
               description: CassetteSpec defines the desired state of Cassette
               type: object
               properties:
+                size:
+                  type: string
+                  default: "8Gi"
+                  pattern: ^(?P<size>\d+(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?)$
                 ingress:
                   type: object
                   default: {}
@@ -40,3 +44,4 @@ spec:
                     public:
                       type: boolean
                       default: true
+                      description: Expose public endpoint (Be aware that your application will be public available on the internet.)

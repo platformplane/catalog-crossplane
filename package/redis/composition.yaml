@@ -23,6 +23,8 @@ spec:
 
             {{ $claim := .observed.composite.resource.spec.claimRef }}
 
+            {{ $size := .observed.composite.resource.spec.size | default "8Gi" }}
+
             {{ $versionMapping := dict "7" "19.6.4" }}
             {{ $specVersion := .observed.composite.resource.spec.version | default "7" }}
             {{ $version := index $versionMapping $specVersion }}
@@ -50,7 +52,7 @@ spec:
                   architecture: standalone
                   master:
                     persistence:
-                      size: 8Gi
+                      size: {{ $size }}
                     persistentVolumeClaimRetentionPolicy:
                       enabled: true
                       whenDeleted: Delete

@@ -35,10 +35,11 @@ spec:
                 size:
                   type: string
                   default: "8Gi"
-                  pattern: ^(?P<sizeingi>[1-9]\d*)Gi$
+                  pattern: ^(?P<size>\d+(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?)$
                 version:
                   type: string
                   default: "16"
+                  description: PostgreSQL Major Verson
                   enum:
                     - "15"
                     - "16"

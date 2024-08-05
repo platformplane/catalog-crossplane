@@ -37,6 +37,8 @@ spec:
             {{ $zone := index $.context "apiextensions.crossplane.io/environment" "zone" }}
             {{ $claim := .observed.composite.resource.spec.claimRef }}
 
+            {{ $size := .observed.composite.resource.spec.size | default "8Gi" }}
+
             apiVersion: kubernetes.crossplane.io/v1alpha2
             kind: Object
             metadata:
@@ -183,7 +185,7 @@ spec:
                       - ReadWriteOnce
                     resources:
                       requests:
-                        storage: 8Gi
+                        storage: {{ $size }}
             ---
             apiVersion: kubernetes.crossplane.io/v1alpha2
             kind: Object
