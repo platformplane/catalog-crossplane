@@ -35,7 +35,7 @@ spec:
                 size:
                   type: string
                   default: "8Gi"
-                  pattern: /^(?P<sizeingi>\d+Gi|\d+(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?)$/
+                  pattern: ^(?P<size>\d+(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?)$
                 version:
                   type: string
                   default: "7"
