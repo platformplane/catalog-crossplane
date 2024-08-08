@@ -25,7 +25,7 @@ spec:
 
             {{ $size := .observed.composite.resource.spec.size | default "8Gi" }}
 
-            {{ $versionMapping := dict "7" "19.6.4" }}
+            {{ $versionMapping := dict "7" "19.4.0" }}
             {{ $specVersion := .observed.composite.resource.spec.version | default "7" }}
             {{ $version := index $versionMapping $specVersion }}
 
