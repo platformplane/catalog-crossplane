@@ -25,8 +25,8 @@ spec:
 
             {{ $size := .observed.composite.resource.spec.size | default "8Gi" }}
 
-            {{ $versionMapping := dict "2023.7.18" "12.6.12" "2024.7.16" "14.6.26" }}
-            {{ $specVersion := .observed.composite.resource.spec.version | default "2024.7.16" }}
+            {{ $versionMapping := dict "2023.7.18" "12.6.12" "2024.5.10" "14.6.0" }}
+            {{ $specVersion := .observed.composite.resource.spec.version | default "2024.5.10" }}
             {{ $version := index $versionMapping $specVersion }}
 
             apiVersion: helm.crossplane.io/v1beta1

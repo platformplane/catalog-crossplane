@@ -39,7 +39,7 @@ spec:
                   pattern: ^(?P<size>\d+(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?)$
                 version:
                   type: string
-                  default: "2024.7.16"
+                  default: "2024.5.10"
                   enum:
-                    - "2024.7.16"
+                    - "2024.5.10"
                     - "2023.7.18"
