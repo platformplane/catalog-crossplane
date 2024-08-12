@@ -43,7 +43,7 @@ spec:
             metadata:
               annotations:
                 crossplane.io/external-name: {{ $claim.name }}
-                gotemplating.fn.crossplane.io/composition-resource-name: "release"
+                gotemplating.fn.crossplane.io/composition-resource-name: "helm-release"
             spec:
               providerConfigRef:
                 name: provider-helm
@@ -64,7 +64,7 @@ spec:
                         admin_users:
                         - admin
                       DummyAuthenticator:
-                        password: {{ dig "resources" "release" "resource" "spec" "forProvider" "values" "hub" "config" "DummyAuthenticator" "password" (randAlphaNum 12) .observed }}
+                        password: {{ dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "hub" "config" "DummyAuthenticator" "password" (randAlphaNum 12) .observed }}
                       JupyterHub:
                         admin_access: true
                         authenticator_class: dummy
@@ -87,7 +87,7 @@ spec:
                     userScheduler:
                       enabled: false
             ---
-            {{ $values := .observed.resources.release.resource.spec.forProvider.values }}
+            {{ $values := dig "resources" "helm-release" "resource" "spec" "forProvider" "values" dict .observed }}
 
             apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
             kind: CompositeConnectionDetails
@@ -99,7 +99,7 @@ spec:
               host: {{ index $values.ingress.hosts 0 | b64enc }}
               {{ end }}
               username: {{ index $values.hub.config.Authenticator.admin_users 0 | b64enc }}
-              password: {{ dig "resources" "release" "resource" "spec" "forProvider" "values" "hub" "config" "DummyAuthenticator" "password" "no value yet" .observed | b64enc }}
+              password: {{ dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "hub" "config" "DummyAuthenticator" "password" "no value yet" .observed | b64enc }}
             {{ end }}
 
     - step: automatically-detect-ready-composed-resources

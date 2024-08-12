@@ -34,7 +34,7 @@ spec:
             metadata:
               annotations:
                 crossplane.io/external-name: {{ $claim.name }}
-                gotemplating.fn.crossplane.io/composition-resource-name: "release"
+                gotemplating.fn.crossplane.io/composition-resource-name: "helm-release"
             spec:
               providerConfigRef:
                 name: provider-helm
@@ -78,8 +78,8 @@ spec:
                 name: {{ $claim.name }}-connection
                 namespace: {{ $claim.namespace }}
             ---
-            {{ $connectionDetails := .observed.resources.release.connectionDetails }}
-
+            {{ $connectionDetails := dig "resources" "helm-release" "connectionDetails" dict .observed }}
+            
             apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
             kind: CompositeConnectionDetails
             {{ if eq $.observed.resources nil }}

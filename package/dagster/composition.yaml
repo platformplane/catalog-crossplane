@@ -43,7 +43,7 @@ spec:
             metadata:
               annotations:
                 crossplane.io/external-name: {{ $claim.name }}
-                gotemplating.fn.crossplane.io/composition-resource-name: "release"
+                gotemplating.fn.crossplane.io/composition-resource-name: "helm-release"
             spec:
               providerConfigRef:
                 name: provider-helm
@@ -115,7 +115,7 @@ spec:
                     password: {{ $password  }}
                     auth: {{ htpasswd $username $password}}
             ---
-            {{ $values := .observed.resources.release.resource.spec.forProvider.values }}
+            {{ $values := dig "resources" "helm-release" "resource" "spec" "forProvider" "values" dict .observed }}
 
             apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
             kind: CompositeConnectionDetails

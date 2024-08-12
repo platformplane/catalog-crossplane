@@ -43,7 +43,7 @@ spec:
             metadata:
               annotations:
                 crossplane.io/external-name: {{ $claim.name }}
-                gotemplating.fn.crossplane.io/composition-resource-name: "release"
+                gotemplating.fn.crossplane.io/composition-resource-name: "helm-release"
             spec:
               providerConfigRef:
                 name: provider-helm
@@ -62,7 +62,7 @@ spec:
                   webserver:
                     defaultUser:
                       username: admin
-                      password: {{ dig "resources" "release" "resource" "spec" "forProvider" "values" "webserver" "defaultUser" "password" (randAlphaNum 12) .observed }}
+                      password: {{ dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "webserver" "defaultUser" "password" (randAlphaNum 12) .observed }}
                   ingress:
                     enabled: true
                     web:
@@ -79,9 +79,9 @@ spec:
                           tls:
                             enabled: true
                             secretName: {{ $claim.name }}-tls
-                  webserverSecretKey: {{ dig "resources" "release" "resource" "spec" "forProvider" "values" "webserverSecretKey" (randAlphaNum 16) .observed }}
+                  webserverSecretKey: {{ dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "webserverSecretKey" (randAlphaNum 16) .observed }}
             ---
-            {{ $values := .observed.resources.release.resource.spec.forProvider.values }}
+            {{ $values := dig "resources" "helm-release" "resource" "spec" "forProvider" "values" dict .observed }}
 
             apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
             kind: CompositeConnectionDetails
@@ -93,7 +93,7 @@ spec:
               host: {{ index $values.ingress.web.hosts 0 "name" | b64enc }}
               {{ end }}
               username: {{ $values.webserver.defaultUser.username | b64enc }}
-              password: {{ dig "resources" "release" "resource" "spec" "forProvider" "values" "webserver" "defaultUser" "password" "no value yet" .observed | b64enc }}
+              password: {{ dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "webserver" "defaultUser" "password" "no value yet" .observed | b64enc }}
             {{ end }}
 
     - step: automatically-detect-ready-composed-resources
