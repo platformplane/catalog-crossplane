@@ -1,4 +1,4 @@
-# catalog-items
+# Common Crossplane Self-Service Catalog Items
 
 Crossplane configuration package containing multiple basic services like a PostgreSQL database for the Platform Plane self-service catalog.
 
@@ -228,12 +228,6 @@ Debugging to see which keys are available: print this stuff you look for as conn
   ```
 
   Then an error including the keys is shown in the managed resource status.
-
-## Azure Storage Account Items (e.g. BlobStorage)
-
-IF you want to add e.g. queue storage, copy paste blob storage and adjust it slightly, see table [here](https://learn.microsoft.com/en-us/azure/private-link/availability#storage)
-
-In order not to expose the storage accoutns publicly, public access is disabled and they are exposed via private endpoint, see [here](https://learn.microsoft.com/en-us/azure/private-link/tutorial-private-endpoint-storage-portal?tabs=dynamic-ip)
 
 ## GitHub Action Prerequisites
 
