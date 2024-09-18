@@ -1,0 +1,58 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: mssqlcomposites.catalog.cluster.local
+spec:
+  group: catalog.cluster.local
+  metadata:
+    labels:
+      catalog.cluster.local/kind: MsSQL
+    annotations:
+      catalog.cluster.local/title: "MS SQL Server"
+      catalog.cluster.local/description: "Microsoft SQL Server is a powerful and reliable database management system. It provides a comprehensive set of features for storing, managing, and analyzing data. With its robust security, scalability, and performance capabilities, SQL Server is an ideal choice for enterprise-level applications and data-driven solutions."
+      catalog.cluster.local/icon: "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPHN2ZyB2ZXJzaW9uPSIxLjEiIGlkPSJFYmVuZV8xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB4PSIwcHgiIHk9IjBweCIKCSB2aWV3Qm94PSIwIDAgMjU1IDI2NS4yIiBzdHlsZT0iZW5hYmxlLWJhY2tncm91bmQ6bmV3IDAgMCAyNTUgMjY1LjI7IiB4bWw6c3BhY2U9InByZXNlcnZlIj4KPHN0eWxlIHR5cGU9InRleHQvY3NzIj4KCS5zdDB7ZmlsbDojQ0ZEOERDO30KCS5zdDF7ZmlsbDojQjcxQzFDO30KPC9zdHlsZT4KPHBhdGggY2xhc3M9InN0MCIgZD0iTTExOC42LDU0Yy0xMC42LTE2LTEzLTM3LjMtMTMuNS00Ni4xQzc4LDEzLjgsNTEuMiwyNC4yLDUyLjcsMzJjMC4yLDEsMS40LDIuMSwzLjUsMy4zTDUzLDQxCgljLTMuOS0yLjItNi4xLTQuNy02LjctNy43Yy0xLjgtOC44LDguMS0xNi43LDMwLjMtMjQuMmMxMC4yLTMuNCwyMC41LTYuMiwzMS04LjNsMy45LTAuOHY0YzAsMC4zLDAuMiwyOCwxMi41LDQ2LjVMMTE4LjYsNTR6Ii8+CjxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0xMjkuOSwyNjAuOWgtMS42Yy01My40LDAtMTEyLjktMTYuOC0xMTkuOS00NC45Yy00LjMtMTcuMiw5LjctMzYuMSw0MC41LTU0LjhsMy40LDUuNgoJYy0yNy43LDE2LjgtNDEuMSwzMy43LTM3LjYsNDcuN2M2LjEsMjQuNCw2Mi41LDM5LjYsMTExLjksMzkuOWM1LjktOC44LDM3LjUtNjAuNCwxOS40LTEyOS42bDYuMy0xLjYKCWMyMC41LDc4LjktMjEsMTM1LjktMjEuNCwxMzYuNUwxMjkuOSwyNjAuOXoiLz4KPHBhdGggY2xhc3M9InN0MCIgZD0iTTMzLjIsMjM2LjRjLTEuOSwwLjEtMy43LTAuMS01LjUtMC41Yy0xLjctMC40LTIuOC0yLjItMi40LTMuOWMwLjEtMC42LDAuNC0xLjEsMC45LTEuNnM0Ni45LTQ3LDUzLjItODQuNgoJbDYuNCwxLjFjLTUuNCwzMi40LTM3LjMsNjkuMy00OS45LDgyLjljMTIuNi0wLjcsNDQuNi02LjYsMTA1LjktNDFjLTQ3LjktNS4yLTU1LjQtNDMuNi01NS41LTQ0bDYuNC0xLjJjMC4zLDEuNiw4LDM5LjIsNjAuMywzOS4yCgloMC4xYzEuNSwwLDIuOCwxLDMuMSwyLjRjMC40LDEuNC0wLjIsMi45LTEuNSwzLjdDODEuNCwyMzEuNCw0NS44LDIzNi40LDMzLjIsMjM2LjR6Ii8+CjxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik02My4xLDI1Mi40Yy0xLjgsMC0zLjMtMS41LTMuMy0zLjNjMC0xLDAuNS0yLDEuNC0yLjZjMC4yLTAuMiwxMS44LTguNywyNC4yLTI3LjZjLTQuOS0yLjItOS43LTQuNi0xNC4zLTcuNAoJYy01LTIuOS05LjYtNi42LTEzLjQtMTFjLTE2LjgsNC40LTMyLjIsNi4yLTQ1LjgsNWwwLjYtNi41YzEyLjIsMSwyNi4xLTAuNCw0MS4yLTQuMmMtMTAuMy0xNy41LTAuOC0zNC45LTAuNy0zNS4ybDUuNywzLjIKCWMtMC40LDAuOC04LjIsMTUuNSwxLjYsMzAuMmMxNS43LTQuNywzMC45LTEwLjcsNDUuNS0xOC4xYzQtMTMuMyw2LjctMjcuMSw4LTQwLjljMC4xLTEsMC43LTIsMS42LTIuNWMwLjktMC41LDItMC42LDMtMC4xCgljMC4yLDAuMSwyMS4zLDkuNywzNi41LDE2YzEuMSwwLjUsMS45LDEuNSwyLDIuN3MtMC40LDIuMy0xLjQsM2MtMTQuMiw5LjctMjguOSwxOC41LTQ0LjIsMjYuNGMtMy45LDEyLjctOS4zLDI1LTE2LDM2LjUKCWMxNC41LDUuNSwyOS45LDguNSw0NS40LDkuMmMxLjgsMCwzLjMsMS40LDMuMywzLjJjMCwxLjItMC42LDIuMy0xLjcsMi45Yy0yOS42LDE2LjUtNzYuOCwyMS4xLTc4LjcsMjEuM0w2My4xLDI1Mi40eiBNOTEuOCwyMjEuNQoJYy01LjMsOC4zLTExLjUsMTYtMTguNCwyM2MxMy0xLjksMzUuOS02LjEsNTQuOS0xNEMxMTUuNywyMjkuMSwxMDMuNSwyMjYsOTEuOCwyMjEuNUw5MS44LDIyMS41eiBNNjQuOCwxOTguNQoJYzIuOSwyLjksNi4yLDUuNCw5LjcsNy40YzQuNywyLjgsOS41LDUuMywxNC41LDcuNGM1LjYtOS41LDEwLjMtMTkuNCwxNC0yOS44QzkwLjYsMTg5LjUsNzcuOCwxOTQuNSw2NC44LDE5OC41TDY0LjgsMTk4LjV6CgkgTTExOS44LDEzOS4xYy0xLjIsMTAuNy0zLjIsMjEuMi02LDMxLjZjMTAuOC01LjgsMjEuOS0xMi40LDMzLTE5LjdDMTM2LjcsMTQ2LjcsMTI1LjYsMTQxLjgsMTE5LjgsMTM5LjFMMTE5LjgsMTM5LjF6Ii8+CjxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik04NS4zLDQ5LjZjLTAuOCwwLTEuNS0wLjMtMi4xLTAuOGMtMTAuNS05LTIyLjktMjcuMy0yMy40LTI4LjFjLTEtMS41LTAuNi0zLjUsMC45LTQuNWMxLTAuNywyLjMtMC43LDMuNC0wLjIKCWMwLjEsMCw2LjEsMi41LDQ3LjEsOS4zYzEuOCwwLjMsMywyLDIuNywzLjhjLTAuMSwwLjYtMC40LDEuMi0wLjgsMS42Yy03LjQsOC0xNi41LDE0LjQtMjYuNiwxOC42Qzg2LjEsNDkuNSw4NS43LDQ5LjUsODUuMyw0OS42egoJIE03MC41LDI0LjRjNC4xLDUuNSwxMCwxMywxNS41LDE4LjFjNi41LTMsMTIuNS03LDE3LjktMTEuN0M4NywyNy45LDc2LjcsMjUuOCw3MC41LDI0LjR6Ii8+CjxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0xMTAuOSwxMzkuNmMtMC41LDAtMC45LTAuMS0xLjMtMC4zYy0xLjMtMC42LTIuMS0xLjktMS45LTMuM2MxLjktMTcuOS0yNS42LTI1LjEtMjUuOS0yNS4yCgljLTEuNy0wLjQtMi44LTIuMi0yLjQtMy45YzAuMS0wLjYsMC40LTEuMSwwLjktMS41YzEuNC0xLjQsMzMuNS0zMy4zLDczLjktNTAuOGMxLjYtMC43LDMuNiwwLDQuMywxLjdjMC4zLDAuNiwwLjMsMS4zLDAuMiwyCgljLTcuNywzNy41LTQzLjgsNzguNi00NS4zLDgwLjNDMTEyLjcsMTM5LjIsMTExLjgsMTM5LjYsMTEwLjksMTM5LjZ6IE04OC44LDEwNi4yYzcuNywyLjksMjEuMyw5LjYsMjQuNywyMS45CgljOS41LTExLjgsMjkuNi0zOSwzNy4yLTY0LjhDMTIyLDc3LjEsOTcuOSw5Ny44LDg4LjgsMTA2LjJ6Ii8+CjxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik01My43LDE2NS40bC0zLjEtNS43YzEyLjMtNi42LDI2LjQtMTguOCwzNy45LTMzYy05LjgsNi43LTE1LjQsMTEuMy0xNS42LDExLjVsLTQuMi01CgljOS42LTcuNiwxOS43LTE0LjYsMzAuMi0yMWM1LjEtOC4zLDkuMS0xNi44LDExLjEtMjQuOWMwLjQtMS40LDAuNi0yLjcsMC45LTRjLTEwLjQtMy44LTIxLjItNi42LTMyLjEtOC4zYy0xLjItMC4yLTIuMi0xLTIuNi0yLjEKCWMtMC40LTEuMS0wLjEtMi40LDAuNy0zLjNDNzcuNSw2OSw5MC43LDU0LjgsMTA3LjMsNDdjMS4zLTAuNiwyLjgtMC4zLDMuOCwwLjhjMC40LDAuNSw5LjQsMTAuNSw3LjEsMzEuM2M3LjgsMywxNS40LDYuNiwyMi44LDEwLjgKCWMxOS4zLTguOCwzOS41LTE1LjQsNjAuMi0xOS44YzEuOC0wLjQsMy41LDAuOCwzLjgsMi41YzAuMSwwLjYsMC4xLDEuMy0wLjIsMS44Yy04LjUsMjEuNy0zMS4yLDQ0LjktMzIuMiw0NS45CgljLTEuMywxLjMtMy4zLDEuMy00LjYsMGMtMC4xLTAuMS0wLjItMC4yLTAuMy0wLjNjLTcuMy05LjItMTYuOS0xNi44LTI3LjItMjNjLTEyLjcsNS45LTI1LjEsMTIuNS0zNy4xLDE5LjkKCUM5MC4zLDEzNy41LDcwLjQsMTU2LjQsNTMuNywxNjUuNHogTTE0Ny43LDkzLjljOC40LDUuMywxNi4xLDExLjgsMjIuNywxOS4yYzUuNC01LjksMTguNC0yMC43LDI1LjctMzUuNAoJQzE3OS42LDgxLjYsMTYzLjQsODcsMTQ3LjcsOTMuOUwxNDcuNyw5My45eiBNMTE3LjEsODUuNmMtMC4yLDEuMS0wLjUsMi4xLTAuNywzLjNjLTEuNSw1LjgtMy42LDExLjQtNi40LDE2LjcKCWM3LjEtNC4xLDE1LjEtOC4zLDIzLjYtMTIuNEMxMjguMyw5MC4zLDEyMi44LDg3LjgsMTE3LjEsODUuNkwxMTcuMSw4NS42eiBNODYuMSw2OS42YzguNywxLjgsMTcuMyw0LjEsMjUuNyw3LjEKCWMxLTEyLTIuMy0xOS40LTQuMi0yMi43Qzk5LjgsNTguMyw5Mi42LDYzLjUsODYuMSw2OS42TDg2LjEsNjkuNnoiLz4KPHBhdGggY2xhc3M9InN0MSIgZD0iTTg2LjEsMTAxLjFjMCwyOC42LTIzLjgsNTEuMy00MSw2Ny44Yy0yLjksMi44LTEyLjYsMy4zLTEyLjYsMy4zYzIuNC0yLjUsNS4xLTUuMSw4LjEtNy45CgljMTYuMy0xNS44LDM4LjktMzcuNCwzOC45LTYzLjJjMC0zMC42LTEyLjMtNDIuNy0yMi4xLTUyLjNjLTQuMy00LjQtOC04LjYtMTAuMi0xMy42bDItMC44bDYuNywyLjljMS44LDIuNSwzLjgsNC44LDYuMSw2LjkKCUM3Mi4yLDU0LjEsODYuMSw2Ny44LDg2LjEsMTAxLjF6Ii8+CjxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0yNDguNSwxMDkuNWMwLDAtMy45LDAuNi01LDAuN2MtNTcuMSw2LjMtMTE2LjEsMjIuOC0xNDkuOCwzNi4zYy0xMi41LDUtMjQuNywxMC44LTM2LjQsMTcuNQoJYy0wLjEsMC4xLTAuMiwwLjEtMC4zLDAuMWMtNi44LDMuOS0yMy4zLDEyLTM2LjcsMTkuMWMxOS42LTIwLjgsNTYuMi0zNi44LDcwLjgtNDIuN2MzMy4xLTEzLjIsODkuOS0yOS4yLDE0NS44LTM2LjEKCWMtNi42LTcuNy0yMi43LTI0LTU0LjQtMzYuMWMtMTguNS03LjItNDYuNy0xMS4yLTcxLjYtMTQuOGMtMzkuNS01LjctNjItOS41LTY0LjItMjAuMmMtMC40LTIuMi0wLjEtNC40LDAuOS02LjQKCWMxLjksMi45LDQuNCw1LjUsNy4yLDcuNGMwLjYsMC40LDEuMywwLjgsMiwxLjJsMC4xLDAuMWM5LjMsNC45LDM0LjIsOC41LDU1LjEsMTEuNWMyNS4yLDMuNyw1My43LDcuOCw3Mi45LDE1LjEKCWM0NC44LDE3LjMsNjAuMyw0Miw2MC45LDQzUzI0OC41LDEwOS41LDI0OC41LDEwOS41eiIvPgo8L3N2Zz4K"
+      catalog.cluster.local/maintainer: ""
+      catalog.cluster.local/url: "https://www.microsoft.com/sql-server"
+      catalog.cluster.local/tags: "database,unmanaged"
+  names:
+    kind: MsSQLComposite
+    plural: mssqlcomposites
+  claimNames:
+    kind: MsSQL
+    plural: mssqls
+  versions:
+    - name: v1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: MsSQL is the Schema for the mssqls API
+          type: object
+          properties:
+            spec:
+              description: MsSQLSpec defines the desired state of MsSQL
+              type: object
+              properties:
+                size:
+                  type: string
+                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                version:
+                  type: string
+                  enum:
+                    - "2019"
+                    - "2022"
+            status:
+              description: MsSQLStatus defines the observed state of MsSQL
+              type: object
+              properties:
+                binding:
+                  properties:
+                    name:
+                      type: string
+                  type: object
+                credentials:
+                  type: object
+                  description: "Misuse composite status as temporary storage."
+                  properties:
+                    host:
+                      type: string

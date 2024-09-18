@@ -1,0 +1,14 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  REPOSITORY: index.docker.io/platformplane/platform-catalog:0.0.3
+
+tasks:
+  publish:
+    dir: package
+    cmds:
+      - crossplane xpkg build -o platform-catalog.xpkg
+      - crossplane xpkg push -f platform-catalog.xpkg {{.REPOSITORY}}
+      - rm platform-catalog.xpkg

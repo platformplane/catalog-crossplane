@@ -1,0 +1,99 @@
+# Composition Definition: https://doc.crds.dev/github.com/crossplane/crossplane/apiextensions.crossplane.io/Composition/v1@v1.15.0
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: postgresqls.catalog.cluster.local
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v1
+    kind: PostgreSQLComposite
+
+  writeConnectionSecretsToNamespace: crossplane-system
+ 
+  mode: Pipeline
+  pipeline:
+    - step: postgres
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+
+            {{ $claim := .observed.composite.resource.spec.claimRef }}
+
+            {{ $size := .observed.composite.resource.spec.size | default "8Gi" }}
+
+            {{ $versionMapping := dict "16" "15.4.0" "15" "12.8.0" }}
+            {{ $specVersion := .observed.composite.resource.spec.version | default "16" }}
+            {{ $version := index $versionMapping $specVersion }}
+
+            apiVersion: helm.crossplane.io/v1beta1
+            kind: Release
+            metadata:
+              annotations:
+                crossplane.io/external-name: {{ $claim.name }}
+                gotemplating.fn.crossplane.io/composition-resource-name: "helm-release"
+            spec:
+              providerConfigRef:
+                name: provider-helm
+              forProvider:
+                chart: # https://artifacthub.io/packages/helm/bitnami/postgresql
+                  name: postgresql
+                  repository: oci://registry-1.docker.io/bitnamicharts
+                  version: {{ $version }}
+                namespace: {{ $claim.namespace }}
+                values:
+                  fullnameOverride: {{ $claim.name }}
+                  commonLabels:
+                    catalog.cluster.local/kind: {{ $claim.kind }}
+                    catalog.cluster.local/name: {{ $claim.name }}
+                  auth:
+                    database: postgres
+                  primary:
+                    persistence:
+                      size: {{ $size }}
+                    persistentVolumeClaimRetentionPolicy:
+                      enabled: true
+                      whenDeleted: Delete
+             
+              connectionDetails:
+                - apiVersion: v1
+                  kind: Secret
+                  name: {{ $claim.name }}
+                  namespace: {{ $claim.namespace }}
+                  fieldPath: data.postgres-password
+                  toConnectionSecretKey: password
+
+                - apiVersion: v1
+                  kind: Service
+                  name: {{ $claim.name }}
+                  namespace: {{ $claim.namespace }}
+                  fieldPath: spec.ports[0].port
+                  toConnectionSecretKey: port
+
+              writeConnectionSecretToRef:
+                name: {{ $claim.name }}-connection
+                namespace: {{ $claim.namespace }}
+            ---
+            {{ $values := dig "resources" "helm-release" "resource" "spec" "forProvider" "values" dict .observed }}
+            {{ $connectionDetails := dig "resources" "helm-release" "connectionDetails" dict .observed }}
+
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: CompositeConnectionDetails
+            {{ if eq $.observed.resources nil }}
+            data: {}
+            {{ else }}
+            data:
+              host: {{ printf "%s.%s" $claim.name $claim.namespace | b64enc }}
+              username: {{ "postgres" | b64enc }}
+              password: {{ $connectionDetails.password }}
+              port: {{ $connectionDetails.port }}
+              database: {{ $values.auth.database | b64enc }}
+            {{ end }}
+
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready

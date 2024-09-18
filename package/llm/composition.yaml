@@ -1,0 +1,337 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: llms.catalog.cluster.local
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v1
+    kind: LLMComposite
+
+  writeConnectionSecretsToNamespace: crossplane-system 
+  
+  mode: Pipeline
+  pipeline:
+    - step: get-environment-configs
+      functionRef:
+        name: crossplane-contrib-function-environment-configs
+      input:
+        apiVersion: environmentconfigs.fn.crossplane.io/v1beta1
+        kind: Input
+        spec:
+          environmentConfigs:
+            - type: Reference
+              ref:
+                name: environment
+
+    - step: llm
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+
+            {{ $host := regexReplaceAll "[^a-z0-9-]" (.observed.composite.resource.spec.claimRef.name | lower) "" }}
+            {{ $zone := index $.context "apiextensions.crossplane.io/environment" "zone" }}
+            {{ $claim := .observed.composite.resource.spec.claimRef }}
+
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "configmap"
+            spec:
+              providerConfigRef:
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: ConfigMap
+                  metadata:
+                    name: {{ $claim.name }}
+                    namespace: {{ $claim.namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $claim.kind }}
+                      catalog.cluster.local/name: {{ $claim.name }}
+                      app.kubernetes.io/name: llm
+                      app.kubernetes.io/instance: {{ $claim.name }}
+                  data:
+                    config.yaml: |
+                      authorizers:
+                        - type: static
+                          token: ${TOKEN}
+
+                      providers:
+                        - type: ollama
+                          url: http://localhost:11434
+                          models:
+                            gemma-2-2b:
+                              id: gemma2:2b
+
+                            gemma-2-9b:
+                              id: gemma2:9b
+
+                            llama-3.1-8b:
+                              id: llama3.1:8b
+                            
+                            mistral-7b:
+                              id: mistral:7b
+                            
+                            mistral-nemo-12b:
+                              id: mistral-nemo:12b
+                            
+                            phi-3-mini:
+                              id: phi3:mini
+                            
+                            phi-3-medium:
+                              id: phi3:medium
+                            
+                            nomic-embed-text-v1:
+                              id: nomic-embed-text:v1.5
+            ---
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "secret"
+            spec:
+              providerConfigRef:
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: Secret
+                  metadata:
+                    name: {{ $claim.name }}
+                    namespace: {{ $claim.namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $claim.kind }}
+                      catalog.cluster.local/name: {{ $claim.name }}
+                      app.kubernetes.io/name: llm
+                      app.kubernetes.io/instance: {{ $claim.name }}
+                  stringData:
+                    token: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "token" (printf "sk-%s" (randAlphaNum 48)) .observed }}
+                    password: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" (randAlphaNum 12) .observed }}
+            ---
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "deployment"
+            spec:
+              providerConfigRef:
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: apps/v1
+                  kind: Deployment
+                  metadata:
+                    name: {{ $claim.name }}
+                    namespace: {{ $claim.namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $claim.kind }}
+                      catalog.cluster.local/name: {{ $claim.name }}
+                      app.kubernetes.io/name: llm
+                      app.kubernetes.io/instance: {{ $claim.name }}
+                  spec:
+                    strategy:
+                      type: Recreate
+                    selector:
+                      matchLabels:
+                        catalog.cluster.local/kind: {{ $claim.kind }}
+                        catalog.cluster.local/name: {{ $claim.name }}
+                        app.kubernetes.io/name: llm
+                        app.kubernetes.io/instance: {{ $claim.name }}
+                    template:
+                      metadata:
+                        labels:
+                          catalog.cluster.local/kind: {{ $claim.kind }}
+                          catalog.cluster.local/name: {{ $claim.name }}
+                          app.kubernetes.io/name: llm
+                          app.kubernetes.io/instance: {{ $claim.name }}
+                      spec:
+                        containers:
+                          - name: platform
+                            image: ghcr.io/adrianliechti/llama-platform
+                            env:
+                              - name: BASE_URL
+                                value: https://{{ $host }}.{{ $zone }}
+                              - name: TOKEN
+                                valueFrom:
+                                  secretKeyRef:
+                                    name: {{ $claim.name }}
+                                    key: token
+                            volumeMounts:
+                              - name: config
+                                mountPath: /config.yaml
+                                subPath: config.yaml
+                              - name: data
+                                mountPath: /data
+                            resources: {}
+                          - name: ollama
+                            image: ghcr.io/adrianliechti/ollama
+                            imagePullPolicy: Always
+                            env:
+                              - name: MODEL
+                                value: gemma2:2b,gemma2:9b,llama3.1:8b,mistral:7b,mistral-nemo:12b,phi3:mini,phi3:medium,nomic-embed-text:v1.5
+                            volumeMounts:
+                              - name: data
+                                subPath: ollama
+                                mountPath: /root/.ollama                          
+                            resources: {}
+                          - name: chat
+                            image: ghcr.io/adrianliechti/llama-streamlit
+                            imagePullPolicy: Always
+                            env:
+                              - name: OPENAI_BASE_URL
+                                value: http://localhost:8080/v1
+                              - name: OPENAI_API_KEY
+                                valueFrom:
+                                  secretKeyRef:
+                                    name: {{ $claim.name }}
+                                    key: token
+                              - name: PASSWORD
+                                valueFrom:
+                                  secretKeyRef:
+                                    name: {{ $claim.name }}
+                                    key: password
+                            resources: {}
+                        volumes:
+                          - name: config
+                            configMap:
+                              name: {{ $claim.name }}
+                          - name: data
+                            persistentVolumeClaim:
+                              claimName: {{ $claim.name }}
+            ---
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "service"
+            spec:
+              providerConfigRef:
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: Service
+                  metadata:
+                    name: {{ $claim.name }}
+                    namespace: {{ $claim.namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $claim.kind }}
+                      catalog.cluster.local/name: {{ $claim.name }}
+                      app.kubernetes.io/name: llm
+                      app.kubernetes.io/instance: {{ $claim.name }}
+                  spec:
+                    type: ClusterIP
+                    selector:
+                      catalog.cluster.local/kind: {{ $claim.kind }}
+                      catalog.cluster.local/name: {{ $claim.name }}
+                      app.kubernetes.io/name: llm
+                      app.kubernetes.io/instance: {{ $claim.name }}
+                    ports:
+                      - name: api
+                        port: 80
+                        targetPort: 8080
+                      - name: http
+                        port: 8501
+                        targetPort: 8501
+            ---
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "persistentvolumeclaim"
+            spec:
+              providerConfigRef:
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  kind: PersistentVolumeClaim
+                  apiVersion: v1
+                  metadata:
+                    name: {{ $claim.name }}
+                    namespace: {{ $claim.namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $claim.kind }}
+                      catalog.cluster.local/name: {{ $claim.name }}
+                      app.kubernetes.io/name: llm
+                      app.kubernetes.io/instance: {{ $claim.name }}
+                  spec:
+                    accessModes:
+                      - ReadWriteOnce
+                    resources:
+                      requests:
+                        storage: 100Gi
+            ---
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "ingress"
+            spec:
+              providerConfigRef:
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: networking.k8s.io/v1
+                  kind: Ingress
+                  metadata:
+                    name: {{ $claim.name }}
+                    namespace: {{ $claim.namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $claim.kind }}
+                      catalog.cluster.local/name: {{ $claim.name }}
+                      app.kubernetes.io/name: llm
+                      app.kubernetes.io/instance: {{ $claim.name }}
+                    annotations:
+                      kubernetes.io/tls-acme: "true"
+                  spec:
+                    {{- if or ($.observed.composite.resource.spec.ingress.public) (eq $.observed.composite.resource.spec.ingress nil) }}
+                    ingressClassName: nginx
+                    {{- else }}
+                    ingressClassName: nginx-internal
+                    {{- end }}
+                    rules:
+                      - host: {{ $host }}.{{ $zone }}
+                        http:
+                          paths:
+                            - path: /v1/
+                              pathType: Prefix
+                              backend:
+                                service:
+                                  name: {{ $claim.name }}
+                                  port:
+                                    number: 80
+                            - path: /
+                              pathType: Prefix
+                              backend:
+                                service:
+                                  name: {{ $claim.name }}
+                                  port:
+                                    number: 8501
+                    tls:
+                      - hosts:
+                          - {{ $host }}.{{ $zone }}
+                        secretName: {{ $claim.name }}-tls
+            ---
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: CompositeConnectionDetails
+            {{ if eq $.observed.resources nil }}
+            data: {}
+            {{ else }}
+            data:
+              {{ if ne $.observed.resources.ingress nil }}
+              host: {{ index .observed.resources.ingress.resource.spec.forProvider.manifest.spec.rules 0 "host" | b64enc }}
+              {{ end }}
+              token: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "token" "no value yet" .observed | b64enc }}
+              password: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" "no value yet" .observed | b64enc }}
+            {{ end }}
+
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready

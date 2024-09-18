@@ -1,0 +1,7 @@
+apiVersion: catalog.cluster.local/v1
+kind: Elasticsearch
+metadata:
+  name: elasticsearch-sample
+spec:
+  size: 1Gi
+  version: "8"

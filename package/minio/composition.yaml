@@ -1,0 +1,99 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: minios.catalog.cluster.local
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v1
+    kind: MinIOComposite
+
+  writeConnectionSecretsToNamespace: crossplane-system
+
+  mode: Pipeline
+  pipeline:
+    - step: minio
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+
+            {{ $claim := .observed.composite.resource.spec.claimRef }}
+
+            {{ $size := .observed.composite.resource.spec.size | default "8Gi" }}
+
+            {{ $versionMapping := dict "2023.7.18" "12.6.12" "2024.5.10" "14.6.0" }}
+            {{ $specVersion := .observed.composite.resource.spec.version | default "2024.5.10" }}
+            {{ $version := index $versionMapping $specVersion }}
+
+            apiVersion: helm.crossplane.io/v1beta1
+            kind: Release
+            metadata:
+              annotations:
+                crossplane.io/external-name: {{ $claim.name }}
+                gotemplating.fn.crossplane.io/composition-resource-name: "helm-release"
+            spec:
+              providerConfigRef:
+                name: provider-helm
+              forProvider:
+                chart: # https://artifacthub.io/packages/helm/bitnami/minio
+                  name: minio
+                  repository: oci://registry-1.docker.io/bitnamicharts
+                  version: {{ $version }}
+                namespace: {{ $claim.namespace }}
+                values:
+                  fullnameOverride: {{ $claim.name }}
+                  commonLabels:
+                    catalog.cluster.local/kind: {{ $claim.kind }}
+                    catalog.cluster.local/name: {{ $claim.name }}
+                  extraEnvVars:
+                    - name: MINIO_BROWSER_LOGIN_ANIMATION
+                      value: "off"
+                  rootUser: admin
+                  persistence:
+                    size: {{ $size }}
+                  metrics:
+                    enabled: true
+                    serviceMonitor:
+                      enabled: true
+
+              connectionDetails:
+                - apiVersion: v1
+                  kind: Secret
+                  name: {{ $claim.name }}
+                  namespace: {{ $claim.namespace }}
+                  fieldPath: data.root-password
+                  toConnectionSecretKey: password
+
+                - apiVersion: v1
+                  kind: Service
+                  name: {{ $claim.name }}
+                  namespace: {{ $claim.namespace }}
+                  fieldPath: spec.ports[0].port
+                  toConnectionSecretKey: port
+
+              writeConnectionSecretToRef:
+                name: {{ $claim.name }}-connection
+                namespace: {{ $claim.namespace }}
+            ---
+            {{ $values := dig "resources" "helm-release" "resource" "spec" "forProvider" "values" dict .observed }}
+            {{ $connectionDetails := dig "resources" "helm-release" "connectionDetails" dict .observed }}
+
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: CompositeConnectionDetails
+            {{ if eq $.observed.resources nil }}
+            data: {}
+            {{ else }}
+            data:
+              host: {{ printf "%s.%s" $claim.name $claim.namespace | b64enc }}
+              username: {{ $values.rootUser | b64enc }}
+              password: {{ $connectionDetails.password }}
+              port: {{ $connectionDetails.port }}
+            {{ end }}
+
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready

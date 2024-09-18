@@ -1,0 +1,101 @@
+# Composition Definition: https://doc.crds.dev/github.com/crossplane/crossplane/apiextensions.crossplane.io/Composition/v1@v1.15.0
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: airflows.catalog.cluster.local
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v1
+    kind: AirflowComposite
+
+  writeConnectionSecretsToNamespace: crossplane-system
+
+  mode: Pipeline
+  pipeline:
+    - step: get-environment-configs
+      functionRef:
+        name: crossplane-contrib-function-environment-configs
+      input:
+        apiVersion: environmentconfigs.fn.crossplane.io/v1beta1
+        kind: Input
+        spec:
+          environmentConfigs:
+            - type: Reference
+              ref:
+                name: environment
+
+    - step: airflow
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+
+            {{ $host := regexReplaceAll "[^a-z0-9-]" (.observed.composite.resource.spec.claimRef.name | lower) "" }}
+            {{ $zone := index $.context "apiextensions.crossplane.io/environment" "zone" }}
+            {{ $claim := .observed.composite.resource.spec.claimRef }}
+
+            apiVersion: helm.crossplane.io/v1beta1
+            kind: Release # full example, see: https://github.com/crossplane-contrib/provider-helm/blob/master/examples/sample/release.yaml
+            metadata:
+              annotations:
+                crossplane.io/external-name: {{ $claim.name }}
+                gotemplating.fn.crossplane.io/composition-resource-name: "helm-release"
+            spec:
+              providerConfigRef:
+                name: provider-helm
+              forProvider:
+                chart:
+                  name: airflow
+                  repository: https://airflow.apache.org
+                  version: 1.14.0
+                namespace: {{ $claim.namespace }}
+                values:
+                  labels:
+                    catalog.cluster.local/kind: {{ $claim.kind }}
+                    catalog.cluster.local/name: {{ $claim.name }}
+                  fullnameOverride: {{ $claim.name }}
+                  useStandardNaming: true
+                  webserver:
+                    defaultUser:
+                      username: admin
+                      password: {{ dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "webserver" "defaultUser" "password" (randAlphaNum 12) .observed }}
+                  ingress:
+                    enabled: true
+                    web:
+                      enabled: true
+                      {{- if or ($.observed.composite.resource.spec.ingress.public) (eq $.observed.composite.resource.spec.ingress nil) }}
+                      ingressClassName: nginx
+                      {{- else }}
+                      ingressClassName: nginx-internal
+                      {{- end }}
+                      annotations:
+                        kubernetes.io/tls-acme: "true"
+                      hosts:
+                        - name: {{ $host }}.{{ $zone }}
+                          tls:
+                            enabled: true
+                            secretName: {{ $claim.name }}-tls
+                  webserverSecretKey: {{ dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "webserverSecretKey" (randAlphaNum 16) .observed }}
+            ---
+            {{ $values := dig "resources" "helm-release" "resource" "spec" "forProvider" "values" dict .observed }}
+
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: CompositeConnectionDetails
+            {{ if eq $.observed.resources nil }}
+            data: {}
+            {{ else }}
+            data:
+              {{ if ne $values.ingress nil }}
+              host: {{ index $values.ingress.web.hosts 0 "name" | b64enc }}
+              {{ end }}
+              username: {{ $values.webserver.defaultUser.username | b64enc }}
+              password: {{ dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "webserver" "defaultUser" "password" "no value yet" .observed | b64enc }}
+            {{ end }}
+
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready

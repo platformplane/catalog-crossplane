@@ -1,0 +1,7 @@
+apiVersion: catalog.cluster.local/v1
+kind: MsSQL
+metadata:
+  name: mssql-sample-2019
+spec:
+  size: 3Gi
+  version: "2019"

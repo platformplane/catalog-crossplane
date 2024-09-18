@@ -1,0 +1,95 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: elasticsearches.catalog.cluster.local
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v1
+    kind: ElasticsearchComposite
+
+  writeConnectionSecretsToNamespace: crossplane-system
+
+  mode: Pipeline
+  pipeline:
+    - step: elasticsearch
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+
+            {{ $claim := .observed.composite.resource.spec.claimRef }}
+
+            {{ $size := .observed.composite.resource.spec.size | default "8Gi" }}
+            
+            {{ $versionMapping := dict "8" "21.1.0" }}
+            {{ $specVersion := .observed.composite.resource.spec.version | default "8" }}
+            {{ $version := index $versionMapping $specVersion }}
+
+            apiVersion: helm.crossplane.io/v1beta1
+            kind: Release
+            metadata:
+              annotations:
+                crossplane.io/external-name: {{ $claim.name }}
+                gotemplating.fn.crossplane.io/composition-resource-name: "helm-release"
+            spec:
+              providerConfigRef:
+                name: provider-helm
+              forProvider:
+                chart: # https://artifacthub.io/packages/helm/bitnami/elasticsearch
+                  name: elasticsearch
+                  repository: oci://registry-1.docker.io/bitnamicharts
+                  version: {{ $version }}
+                namespace: {{ $claim.namespace }}
+                values:
+                  fullnameOverride: {{ $claim.name }}
+                  commonLabels:
+                    catalog.cluster.local/kind: {{ $claim.kind }}
+                    catalog.cluster.local/name: {{ $claim.name }}
+                  master:
+                    masterOnly: false
+                    replicaCount: 1
+                    persistence:
+                      size: {{ $size }}
+                  data:
+                    replicaCount: 0
+                  coordinating:
+                    replicaCount: 0
+                  ingest:
+                    replicaCount: 0
+                  # metrics: # before enabling, check whehter the metrics deployment will be cleaned up when the helm release is deleted
+                  #   enabled: true
+                  #   serviceMonitor:
+                  #     enabled: true
+                  # think about password and kibana parameters https://artifacthub.io/packages/helm/bitnami/elasticsearch
+
+              connectionDetails:
+                - apiVersion: v1
+                  kind: Service
+                  name: {{ $claim.name }}
+                  namespace: {{ $claim.namespace }}
+                  fieldPath: spec.ports[0].port
+                  toConnectionSecretKey: port
+
+              writeConnectionSecretToRef:
+                name: {{ $claim.name }}-connection
+                namespace: {{ $claim.namespace }}
+            ---
+            {{ $connectionDetails := dig "resources" "helm-release" "connectionDetails" dict .observed }}
+            
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: CompositeConnectionDetails
+            {{ if eq $.observed.resources nil }}
+            data: {}
+            {{ else }}
+            data:
+              host: {{ printf "%s.%s" $claim.name $claim.namespace | b64enc }}
+              port: {{ $connectionDetails.port }}
+            {{ end }}
+
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready
