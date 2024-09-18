@@ -1,0 +1,43 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: sparkcomposites.catalog.cluster.local
+spec:
+  group: catalog.cluster.local
+  metadata:
+    labels:
+      catalog.cluster.local/kind: Spark
+    annotations:
+      catalog.cluster.local/title: "Spark"
+      catalog.cluster.local/description: "Apache Spark is a high-performance engine for large-scale computing tasks, such as data processing, machine learning and real-time data streaming. It includes APIs for Java, Python, Scala and R."
+      catalog.cluster.local/icon: "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4Ij48cGF0aCBmaWxsPSIjZTE1OTE5IiBkPSJNNTcuNjQ2LjAwNGMtMi4yNjkuMDY0LTQuNTEgMS4xNDMtNi4zODQgMy4yMjMtMS4wMyAxLjE0Ni0xLjkwNSAyLjUxLTIuNjMgMy44NTUtMS44OSAzLjU0LTIuMjYyIDcuNTQ3LTIuOTYyIDExLjQzbC0zLjg1MiAyMS44MWMtLjE0OC44NTYtLjUzMiAxLjIxLTEuMyAxLjQ1NWwtMjguMjY4IDguOThjLTIuMDYuNjczLTQuMTI1IDEuNTQzLTUuOTQ3IDIuNy01LjU1OCAzLjUzLTYuMzggOS4zMzgtMi4yMDcgMTQuNDM4IDEuODQyIDIuMjU2IDQuMjE2IDMuODQzIDYuODUgNC45OTZsMTcuNjAzIDcuODQzYy4xNDcuMDguMzA0LjEzMi40NjMuMTYybDMuNzE3IDIuNjgycy0zLjcgNDAuOTQ4IDMuMjQ2IDQzLjc4MWMtLjA2MS0uMDEtLjQxLS4wODItLjQxLS4wODJzLjcwNC43NjEgMi42MDMuNTM3YzEuNDU0LjI3IDEuMjYyLjIyNi4wNzQtLjAxIDIuNTgzLS4zMzQgNy4zMzctMi40OTcgMTUuNTc4LTEwLjc4NGE0Ny4zOTYgNDcuMzk2IDAgMCAwIDEuNzc2LTEuNjc2bDE3LjgtMTkuMjE3IDQuMTYzIDEuNDY1Yy4xNS4yMDcuMzY3LjM0LjcxNC40NDNsMTkuODIzIDYuMDMxYzIuNzA5LjgzNiA1LjM4OSAxLjQ0OCA4LjI3NyAxLjAyNiA1LjE1Ni0uNzU1IDguOTUxLTUgOC45LTEwLjE5Mi0uMDItMi4yOC0uODItNC4zMzktMS44Ny02LjMyNGwtMTMuMTI4LTI0Ljg5OGMtLjQxOC0uNzg3LS40MDUtMS4yOTYuMTk2LTJsMjIuMDU0LTI1LjkyMmMxLjQyOC0xLjcwMyAyLjcxNy0zLjUyOSAzLjQ2NS01LjY0NSAxLjY0My00LjY3LS40ODItOC4zODItNS4zMy05LjI4OS0yLjIyOS0uMzk4LTQuNDI3LS4xODgtNi42LjM4NWwtMzEuNTk3IDguMzk1Yy0uOTMuMjUtMS4zOS4wNzUtMS44OTUtLjc3MmwtMTIuOS0yMS40MzRjLS45NzUtMS42MTUtMi4xNC0zLjE5NC0zLjQ3Ny00LjUyN0M2Mi4yMTIuODkgNTkuOTE1LS4wNTkgNTcuNjQ2LjAwNHptLjk0NCAxOS43MzZjLjUxLjM1OC43NjguNzI3IDEuMDEgMS4xMjVsMTMuODggMjMuMTNjLjM4Mi42MjguNzI1Ljg1IDEuNDg1LjY0OGwyNC40NDMtNi40OTcgNS44ODUtMS41NGMtLjA4Ny40OTMtLjMwMi43OS0uNTM3IDEuMDY4bC0yMC4xNiAyMy42NzJjLS41Ny42ODgtLjYyMyAxLjE3LS4xOTQgMS45NzZsMTIuNzQzIDI0LjE2LjU4NSAxLjIzNy0uMDE1LjAyLTIyLjcyNy02LjI2NC0uMDA2LS4wMTgtNC4yOTgtMS4yMDUtMjUuNDkzIDI4LjI1NiA0LjY2My0zNy4xNS00LjE4NC0xLjgyLjAwOC0uMDA3LTIzLjY3NC05LjRjLjQ1NC0uNDEzLjg2LS41ODUgMS4yODUtLjcxN2wyOC43NzctOS4wOTZjLjY3Ni0uMjEgMS4wNjEtLjQ3IDEuMTI1LTEuMjQybC40MDMtMi4zNTUgMy44NzUtMjEuODA3IDEuMTItNi4xNzR6Ii8+PC9zdmc+"
+      catalog.cluster.local/maintainer: ""
+      catalog.cluster.local/url: "https://spark.apache.org/"
+      catalog.cluster.local/tags: "engine,unmanaged,helm"
+  names:
+    kind: SparkComposite
+    plural: sparkcomposites
+  claimNames:
+    kind: Spark
+    plural: sparks
+  versions:
+    - name: v1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: Spark is the Schema for the sparks API
+          type: object
+          properties:
+            spec:
+              description: SparkSpec defines the desired state of Spark
+              type: object
+              properties:
+                ingress:
+                  type: object
+                  default: {}
+                  properties:
+                    public:
+                      type: boolean
+                      default: true
+                      description: Expose public endpoint (Be aware that your application will be public available on the internet.)
