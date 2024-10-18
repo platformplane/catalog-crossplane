@@ -1,0 +1,185 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: mssql.catalog.cluster.local
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v1
+    kind: MsSQLComposite
+
+  writeConnectionSecretsToNamespace: crossplane-system
+
+  mode: Pipeline
+  pipeline:
+    - step: mssql
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+
+            {{ $claim := .observed.composite.resource.spec.claimRef }}
+
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "secret" 
+            spec:
+              providerConfigRef:
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: Secret
+                  metadata:
+                    name: {{ $claim.name }}
+                    namespace: {{ $claim.namespace }}
+                    labels:
+                        catalog.cluster.local/kind: {{ $claim.kind }}
+                        catalog.cluster.local/name: {{ $claim.name }}
+                        app.kubernetes.io/name: mssql
+                        app.kubernetes.io/instance: {{ $claim.name }}
+                  stringData:
+                    password: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" (randAlphaNum 12) .observed }}
+            ---
+
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: CompositeConnectionDetails
+            {{ if eq $.observed.resources nil }}
+            data: {}
+            {{ else }}
+            data:
+              host: {{ printf "%s.%s" $claim.name $claim.namespace | b64enc }}
+              port: {{ "1433" | b64enc }}
+              username: {{ "sa" | b64enc }}
+              password: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" "no value yet" .observed | b64enc }}
+            {{ end }}
+
+            ---
+            {{ $claim := .observed.composite.resource.spec.claimRef }}
+            {{ $size := .observed.composite.resource.spec.size | default "8Gi" }}
+            {{ $version := .observed.composite.resource.spec.version | default "2022" }}
+
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "statefulset"
+            spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: apps/v1
+                    kind: StatefulSet
+                    metadata:
+                      labels:
+                        catalog.cluster.local/kind: {{ $claim.kind }}
+                        catalog.cluster.local/name: {{ $claim.name }}
+                        app.kubernetes.io/name: mssql
+                        app.kubernetes.io/instance: {{ $claim.name }}
+                      name: {{ $claim.name }}
+                      namespace: {{ $claim.namespace }}
+                    spec:
+                      selector:
+                        matchLabels:
+                          catalog.cluster.local/kind: {{ $claim.kind }}
+                          catalog.cluster.local/name: {{ $claim.name }}
+                          app.kubernetes.io/name: mssql
+                          app.kubernetes.io/instance: {{ $claim.name }}
+                      serviceName: {{ $claim.name }}
+                      template:
+                        metadata:
+                          labels:
+                            catalog.cluster.local/kind: {{ $claim.kind }}
+                            catalog.cluster.local/name: {{ $claim.name }}
+                            app.kubernetes.io/name: mssql
+                            app.kubernetes.io/instance: {{ $claim.name }}
+                        spec:
+                          initContainers:
+                          - command:
+                            - sh
+                            - -c
+                            - chown 10001:0 /data
+                            image: busybox
+                            imagePullPolicy: Always
+                            name: init
+                            volumeMounts:
+                            - mountPath: /data
+                              name: data
+                              subPath: mssql
+                          containers:
+                          - image: mcr.microsoft.com/mssql/server:{{ $version }}-latest
+                            imagePullPolicy: Always
+                            name: mssql
+                            env:
+                            - name: ACCEPT_EULA
+                              value: "Y"
+                            - name: MSSQL_AGENT_ENABLED
+                              value: "1"
+                            - name: MSSQL_SA_PASSWORD
+                              valueFrom:
+                                secretKeyRef:
+                                  key: password
+                                  name: {{ $claim.name }}
+                            ports:
+                            - containerPort: 1433
+                              protocol: TCP
+                            volumeMounts:
+                            - mountPath: /var/opt/mssql
+                              name: data
+                              subPath: mssql
+                      volumeClaimTemplates:
+                      - metadata:
+                          labels:
+                            catalog.cluster.local/kind: {{ $claim.kind }}
+                            catalog.cluster.local/name: {{ $claim.name }}
+                            app.kubernetes.io/name: mssql
+                            app.kubernetes.io/instance: {{ $claim.name }}
+                          name: data
+                        spec:
+                          accessModes:
+                          - ReadWriteOnce
+                          resources:
+                            requests:
+                              storage: {{ $size }}
+            ---
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "service"
+            spec:
+                providerConfigRef:
+                  name: provider-kubernetes
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: Service
+                    metadata:
+                      labels:
+                        catalog.cluster.local/kind: {{ $claim.kind }}
+                        catalog.cluster.local/name: {{ $claim.name }}
+                        app.kubernetes.io/name: mssql
+                        app.kubernetes.io/instance: {{ $claim.name }}
+                      name: {{ $claim.name }}
+                      namespace: {{ $claim.namespace }}
+                    spec:
+                      type: ClusterIP
+                      ports:
+                      - port: 1433
+                        name: mssql
+                        targetPort: 1433
+                      selector:
+                        catalog.cluster.local/kind: {{ $claim.kind }}
+                        catalog.cluster.local/name: {{ $claim.name }}
+                        app.kubernetes.io/name: mssql
+                        app.kubernetes.io/instance: {{ $claim.name }}
+
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready
