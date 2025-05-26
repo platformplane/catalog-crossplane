@@ -50,7 +50,7 @@ spec:
                   apiVersion: v1
                   kind: ConfigMap
                   metadata:
-                    name: {{ $claim.name }}
+                    name: {{ $claim.name }}-workspace
                     namespace: {{ $claim.namespace }}
                     labels:
                       catalog.cluster.local/kind: {{ $claim.kind }}
