@@ -23,6 +23,47 @@ spec:
             - type: Reference
               ref:
                 name: environment
+    - step: workspace-config
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            
+            {{ $host := regexReplaceAll "[^a-z0-9-]" (.observed.composite.resource.spec.claimRef.name | lower) "" }}
+            {{ $zone := index $.context "apiextensions.crossplane.io/environment" "zone" }}
+            {{ $claim := .observed.composite.resource.spec.claimRef }}
+            
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "configmap"
+            spec:
+              providerConfigRef:
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: ConfigMap
+                  metadata:
+                    name: {{ $claim.name }}
+                    namespace: {{ $claim.namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $claim.kind }}
+                      catalog.cluster.local/name: {{ $claim.name }}
+                      app.kubernetes.io/name: workspace
+                      app.kubernetes.io/instance: {{ $claim.name }}
+                    data:
+                      workspace.yaml : |
+                        load_from:
+                          servers:
+                            - host: "k8s-example-user-code-1"
+                              port: 3030
+                              name: "user-code-example"
 
     - step: dagster
       functionRef:
@@ -59,6 +100,9 @@ spec:
                     labels:
                       catalog.cluster.local/kind: {{ $claim.kind }}
                       catalog.cluster.local/name: {{ $claim.name }}
+                    workspace:
+                      servers: null
+                      externalConfigmap: {{ $claim.name }}-workspace
                   dagsterDaemon:
                     labels:
                       catalog.cluster.local/kind: {{ $claim.kind }}
