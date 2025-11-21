@@ -1,0 +1,8 @@
+apiVersion: helm.m.crossplane.io/v1beta1
+kind: ClusterProviderConfig
+metadata:
+  name: provider-helm
+  namespace: crossplane-system
+spec:
+  credentials:
+    source: InjectedIdentity

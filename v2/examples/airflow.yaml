@@ -1,0 +1,7 @@
+apiVersion: catalog.cluster.local/v1
+kind: Airflow
+metadata:
+  name: airflow-sample
+spec:
+  ingress:
+    public: true

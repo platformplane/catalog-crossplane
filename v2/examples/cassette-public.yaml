@@ -1,0 +1,7 @@
+apiVersion: catalog.cluster.local/v1
+kind: Cassette
+metadata:
+  name: cassette-public-sample
+spec:
+  ingress:
+    public: true

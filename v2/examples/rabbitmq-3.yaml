@@ -1,0 +1,7 @@
+apiVersion: catalog.cluster.local/v1
+kind: RabbitMQ
+metadata:
+  name: rabbitmq-sample
+spec:
+  size: 3Gi
+  version: "3"
