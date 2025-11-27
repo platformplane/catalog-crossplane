@@ -58,7 +58,7 @@ spec:
                 chart:
                   name: airflow
                   repository: https://airflow.apache.org
-                  version: 1.14.0
+                  version: 1.18.0
                 namespace: {{ $namespace }}
                 values:
                   labels:
