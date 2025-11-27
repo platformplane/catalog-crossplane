@@ -1,0 +1,106 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: mongodbsv2.catalog.cluster.local
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v1
+    kind: MongoDBCompositeV2
+
+  writeConnectionSecretsToNamespace: crossplane-system
+
+  mode: Pipeline
+  pipeline:
+    - step: mongodb
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{ $kind := .observed.composite.resource.kind }}
+            {{ $xrName := .observed.composite.resource.metadata.name }}
+            {{ $namespace := .observed.composite.resource.metadata.namespace }}
+
+            {{ $params := .observed.composite.resource.spec.parameters }}
+
+            {{ $size := $params.size | default "8Gi" }}
+
+            {{ $versionMapping := dict "8" "0.6.4" }}
+            {{ $specVersion := $params.version | default "8" }}
+            {{ $version := index $versionMapping $specVersion }}
+
+            apiVersion: helm.m.crossplane.io/v1beta1
+            kind: Release
+            metadata:
+              name: {{ $xrName }}
+              namespace: {{ $namespace }}
+              annotations:
+                crossplane.io/external-name: {{ $xrName }}
+                gotemplating.fn.crossplane.io/composition-resource-name: "helm-release"
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-helm
+              forProvider:
+                chart:
+                  name: mongodb
+                  repository: oci://registry-1.docker.io/cloudpirates
+                  version: {{ $version }}
+                namespace: {{ $namespace }}
+                values:
+                  fullnameOverride: {{ $xrName  }}
+                  commonLabels:
+                    catalog.cluster.local/kind: {{ $kind }}
+                    catalog.cluster.local/name: {{ $xrName }}
+                  architecture: standalone
+                  auth:
+                    rootUser: root
+                  persistence:
+                    size: {{ $size }}
+                  persistentVolumeClaimRetentionPolicy:
+                    enabled: true
+                    whenDeleted: Delete
+                  # metrics:
+                  #   enabled: true
+                  #   serviceMonitor:
+                  #     enabled: true
+
+              connectionDetails:
+                - apiVersion: v1
+                  kind: Secret
+                  name: {{ $xrName }}
+                  namespace: {{ $namespace }}
+                  fieldPath: data.mongodb-root-password
+                  toConnectionSecretKey: password
+
+                - apiVersion: v1
+                  kind: Service
+                  name: {{ $xrName }}
+                  namespace: {{ $namespace }}
+                  fieldPath: spec.ports[0].port
+                  toConnectionSecretKey: port
+
+              writeConnectionSecretToRef:
+                name: {{ $xrName }}-connection
+            ---
+            {{ $values := dig "resources" "helm-release" "resource" "spec" "forProvider" "values" dict .observed }}
+            {{ $connectionDetails := dig "resources" "helm-release" "connectionDetails" dict .observed }}
+
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: CompositeConnectionDetails
+            {{ if eq $.observed.resources nil }}
+            data: {}
+            {{ else }}
+            data:
+              host: {{ printf "%s.%s" $xrName $namespace | b64enc }}
+              username: {{ $values.auth.rootUser | b64enc }}
+              password: {{ $connectionDetails.password }}
+              port: {{ $connectionDetails.port }}
+            {{ end }}
+
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready
