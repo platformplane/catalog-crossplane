@@ -58,7 +58,7 @@ spec:
                 chart:
                   name: dagster
                   repository: https://dagster-io.github.io/helm
-                  version: 1.7.13
+                  version: 1.12.3
                 namespace: {{ $namespace }}
                 values:
                   fullnameOverride: {{ $xrName }}
@@ -95,32 +95,25 @@ spec:
                   telemetry:
                     enabled: false
             ---
-            apiVersion: kubernetes.crossplane.io/v1alpha2
-            kind: Object
+            {{ $username := "admin" }}
+            {{ $password := dig "resources" "secret" "resource" "stringData" "password" (randAlphaNum 12) .observed }}
+
+            apiVersion: v1
+            kind: Secret
             metadata:
+              name: {{ $xrName }}-auth
+              namespace: {{ $namespace }}
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: "secret"
-            spec:
-              providerConfigRef:
-                name: provider-kubernetes
-              forProvider:
-                manifest:
-                  apiVersion: v1
-                  kind: Secret
-                  metadata:
-                    name: {{ $xrName }}-auth
-                    namespace: {{ $namespace }}
-                    labels:
-                      catalog.cluster.local/kind: {{ $kind }}
-                      catalog.cluster.local/name: {{ $xrName }}
-                      app.kubernetes.io/name: dagster
-                      app.kubernetes.io/instance: {{ $xrName }}
-                  stringData:
-                    {{ $password := dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" (randAlphaNum 12) .observed }}
-                    {{ $username := "admin" }}
-                    username: {{ $username  }}
-                    password: {{ $password  }}
-                    auth: {{ htpasswd $username $password}}
+              labels:
+                catalog.cluster.local/kind: {{ $kind }}
+                catalog.cluster.local/name: {{ $xrName }}
+                app.kubernetes.io/name: dagster
+                app.kubernetes.io/instance: {{ $xrName }}
+            stringData:
+              username: {{ $username }}
+              password: {{ $password }}
+              auth: {{ htpasswd $username $password }}
             ---
             {{ $values := dig "resources" "helm-release" "resource" "spec" "forProvider" "values" dict .observed }}
 

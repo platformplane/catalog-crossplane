@@ -41,13 +41,15 @@ spec:
             {{ $host := regexReplaceAll "[^a-z0-9-]" ($xrName | lower) "" }}
             {{ $zone := index $.context "apiextensions.crossplane.io/environment" "zone" }}
 
-            apiVersion: kubernetes.crossplane.io/v1alpha2
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
             kind: Object
             metadata:
+              name: {{ $xrName }}-configmap
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: "configmap"
             spec:
               providerConfigRef:
+                kind: ClusterProviderConfig
                 name: provider-kubernetes
               forProvider:
                 manifest:
@@ -95,13 +97,15 @@ spec:
                             nomic-embed-text-v1:
                               id: nomic-embed-text:v1.5
             ---
-            apiVersion: kubernetes.crossplane.io/v1alpha2
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
             kind: Object
             metadata:
+              name: {{ $xrName }}-secret
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: "secret"
             spec:
               providerConfigRef:
+                kind: ClusterProviderConfig
                 name: provider-kubernetes
               forProvider:
                 manifest:
@@ -119,13 +123,15 @@ spec:
                     token: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "token" (printf "sk-%s" (randAlphaNum 48)) .observed }}
                     password: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" (randAlphaNum 12) .observed }}
             ---
-            apiVersion: kubernetes.crossplane.io/v1alpha2
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
             kind: Object
             metadata:
+              name: {{ $xrName }}-deployment
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: "deployment"
             spec:
               providerConfigRef:
+                kind: ClusterProviderConfig
                 name: provider-kubernetes
               forProvider:
                 manifest:
@@ -210,13 +216,15 @@ spec:
                             persistentVolumeClaim:
                               claimName: {{ $xrName }}
             ---
-            apiVersion: kubernetes.crossplane.io/v1alpha2
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
             kind: Object
             metadata:
+              name: {{ $xrName }}-service
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: "service"
             spec:
               providerConfigRef:
+                kind: ClusterProviderConfig
                 name: provider-kubernetes
               forProvider:
                 manifest:
@@ -245,13 +253,15 @@ spec:
                         port: 8501
                         targetPort: 8501
             ---
-            apiVersion: kubernetes.crossplane.io/v1alpha2
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
             kind: Object
             metadata:
+              name: {{ $xrName }}-pvc
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: "persistentvolumeclaim"
             spec:
               providerConfigRef:
+                kind: ClusterProviderConfig
                 name: provider-kubernetes
               forProvider:
                 manifest:
@@ -272,13 +282,15 @@ spec:
                       requests:
                         storage: 100Gi
             ---
-            apiVersion: kubernetes.crossplane.io/v1alpha2
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
             kind: Object
             metadata:
+              name: {{ $xrName }}-ingress
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: "ingress"
             spec:
               providerConfigRef:
+                kind: ClusterProviderConfig
                 name: provider-kubernetes
               forProvider:
                 manifest:
@@ -329,9 +341,7 @@ spec:
             data: {}
             {{ else }}
             data:
-              {{ if ne $.observed.resources.ingress nil }}
-              host: {{ index .observed.resources.ingress.resource.spec.forProvider.manifest.spec.rules 0 "host" | b64enc }}
-              {{ end }}
+              host: {{ printf "%s.%s" $host $zone | b64enc }}
               token: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "token" "no value yet" .observed | b64enc }}
               password: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" "no value yet" .observed | b64enc }}
             {{ end }}

@@ -43,13 +43,15 @@ spec:
 
             {{ $size := $params.size | default "8Gi" }}
 
-            apiVersion: kubernetes.crossplane.io/v1alpha2
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
             kind: Object
             metadata:
+              name: {{ $xrName }}-secret
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: "secret"
             spec:
               providerConfigRef:
+                kind: ClusterProviderConfig
                 name: provider-kubernetes
               forProvider:
                 manifest:
@@ -67,13 +69,15 @@ spec:
                     username: admin
                     password: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" (randAlphaNum 12) .observed }}
             ---
-            apiVersion: kubernetes.crossplane.io/v1alpha2
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
             kind: Object
             metadata:
+              name: {{ $xrName }}-deployment
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: "deployment"
             spec:
               providerConfigRef:
+                kind: ClusterProviderConfig
                 name: provider-kubernetes
               forProvider:
                 manifest:
@@ -132,13 +136,15 @@ spec:
                             persistentVolumeClaim:
                               claimName: {{ $xrName }}
             ---
-            apiVersion: kubernetes.crossplane.io/v1alpha2
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
             kind: Object
             metadata:
+              name: {{ $xrName }}-service
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: "service"
             spec:
               providerConfigRef:
+                kind: ClusterProviderConfig
                 name: provider-kubernetes
               forProvider:
                 manifest:
@@ -164,13 +170,15 @@ spec:
                         port: 80
                         targetPort: 3000
             ---
-            apiVersion: kubernetes.crossplane.io/v1alpha2
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
             kind: Object
             metadata:
+              name: {{ $xrName }}-pvc
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: "persistentvolumeclaim"
             spec:
               providerConfigRef:
+                kind: ClusterProviderConfig
                 name: provider-kubernetes
               forProvider:
                 manifest:
@@ -191,13 +199,15 @@ spec:
                       requests:
                         storage: {{ $size }}
             ---
-            apiVersion: kubernetes.crossplane.io/v1alpha2
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
             kind: Object
             metadata:
+              name: {{ $xrName }}-ingress
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: "ingress"
             spec:
               providerConfigRef:
+                kind: ClusterProviderConfig
                 name: provider-kubernetes
               forProvider:
                 manifest:
@@ -241,10 +251,8 @@ spec:
             data: {}
             {{ else }}
             data:
-              {{ if ne $.observed.resources.ingress nil }}
-              host: {{ index .observed.resources.ingress.resource.spec.forProvider.manifest.spec.rules 0 "host" | b64enc }}
-              {{ end }}
-              username: {{ .observed.resources.secret.resource.spec.forProvider.manifest.stringData.username | b64enc }}
+              host: {{ printf "%s.%s" $host $zone | b64enc }}
+              username: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "username" "admin" .observed | b64enc }}
               password: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" "no value yet" .observed | b64enc }}
             {{ end }}
 

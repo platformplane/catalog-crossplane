@@ -82,7 +82,6 @@ spec:
 
               writeConnectionSecretToRef:
                 name: {{ $xrName }}-connection
-                namespace: {{ $namespace }}
             ---
             {{ $connectionDetails := dig "resources" "helm-release" "connectionDetails" dict .observed }}
 

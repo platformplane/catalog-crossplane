@@ -1,7 +1,7 @@
 apiVersion: catalog.cluster.local/v1
 kind: PostgreSQLCompositeV2
 metadata:
-  name: my-postgres-instance
+  name: my-postgres-17-instance
   namespace: crossplane-v2-migration-tests
 spec:
   parameters:
