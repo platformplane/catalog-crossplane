@@ -1,14 +1,14 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: jenkinses.catalog.cluster.local
+  name: jenkinsesv2.catalog.cluster.local
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v1
-    kind: JenkinsComposite
+    kind: JenkinsCompositeV2
 
-  writeConnectionSecretsToNamespace: crossplane-system 
-  
+  writeConnectionSecretsToNamespace: crossplane-system
+
   mode: Pipeline
   pipeline:
     - step: get-environment-configs
@@ -32,120 +32,132 @@ spec:
         source: Inline
         inline:
           template: |
+            {{ $kind := .observed.composite.resource.kind }}
+            {{ $xrName := .observed.composite.resource.metadata.name }}
+            {{ $namespace := .observed.composite.resource.metadata.namespace }}
 
-            {{ $host := regexReplaceAll "[^a-z0-9-]" (.observed.composite.resource.spec.claimRef.name | lower) "" }}
+            {{ $params := .observed.composite.resource.spec.parameters }}
+
+            {{ $host := regexReplaceAll "[^a-z0-9-]" ($xrName | lower) "" }}
             {{ $zone := index $.context "apiextensions.crossplane.io/environment" "zone" }}
-            {{ $claim := .observed.composite.resource.spec.claimRef }}
 
-            apiVersion: kubernetes.crossplane.io/v1alpha2
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
             kind: Object
             metadata:
+              name: {{ $xrName }}-secret
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: "secret"
             spec:
               providerConfigRef:
+                kind: ClusterProviderConfig
                 name: provider-kubernetes
               forProvider:
                 manifest:
                   apiVersion: v1
                   kind: Secret
                   metadata:
-                    name: {{ $claim.name }}
-                    namespace: {{ $claim.namespace }}
+                    name: {{ $xrName }}
+                    namespace: {{ $namespace }}
                     labels:
-                      catalog.cluster.local/kind: {{ $claim.kind }}
-                      catalog.cluster.local/name: {{ $claim.name }}
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
                       app.kubernetes.io/name: jenkins
-                      app.kubernetes.io/instance: {{ $claim.name }}
+                      app.kubernetes.io/instance: {{ $xrName }}
                   stringData:
                     username: admin
                     password: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" (randAlphaNum 12) .observed }}
             ---
-            apiVersion: kubernetes.crossplane.io/v1alpha2
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
             kind: Object
             metadata:
+              name: {{ $xrName }}-serviceaccount
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: "serviceaccount"
             spec:
               providerConfigRef:
+                kind: ClusterProviderConfig
                 name: provider-kubernetes
               forProvider:
                 manifest:
                   apiVersion: v1
                   kind: ServiceAccount
                   metadata:
-                    name: {{ $claim.name }}
-                    namespace: {{ $claim.namespace }}
+                    name: {{ $xrName }}
+                    namespace: {{ $namespace }}
                     labels:
-                      catalog.cluster.local/kind: {{ $claim.kind }}
-                      catalog.cluster.local/name: {{ $claim.name }}
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
                       app.kubernetes.io/name: jenkins
-                      app.kubernetes.io/instance: {{ $claim.name }}
+                      app.kubernetes.io/instance: {{ $xrName }}
             ---
-            apiVersion: kubernetes.crossplane.io/v1alpha2
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
             kind: Object
             metadata:
+              name: {{ $xrName }}-clusterrolebinding
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: "clusterrolebinding"
             spec:
               providerConfigRef:
+                kind: ClusterProviderConfig
                 name: provider-kubernetes
               forProvider:
                 manifest:
                   apiVersion: rbac.authorization.k8s.io/v1
                   kind: ClusterRoleBinding
                   metadata:
-                    name: {{ $claim.name }}
+                    name: {{ $xrName }}
                     labels:
-                      catalog.cluster.local/kind: {{ $claim.kind }}
-                      catalog.cluster.local/name: {{ $claim.name }}
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
                       app.kubernetes.io/name: jenkins
-                      app.kubernetes.io/instance: {{ $claim.name }}
+                      app.kubernetes.io/instance: {{ $xrName }}
                   roleRef:
                     apiGroup: rbac.authorization.k8s.io
                     kind: ClusterRole
                     name: cluster-admin
                   subjects:
                     - kind: ServiceAccount
-                      name: {{ $claim.name }}
-                      namespace: {{ $claim.namespace }}
+                      name: {{ $xrName }}
+                      namespace: {{ $namespace }}
             ---
-            apiVersion: kubernetes.crossplane.io/v1alpha2
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
             kind: Object
             metadata:
+              name: {{ $xrName }}-deployment
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: "deployment"
             spec:
               providerConfigRef:
+                kind: ClusterProviderConfig
                 name: provider-kubernetes
               forProvider:
                 manifest:
                   apiVersion: apps/v1
                   kind: Deployment
                   metadata:
-                    name: {{ $claim.name }}
-                    namespace: {{ $claim.namespace }}
+                    name: {{ $xrName }}
+                    namespace: {{ $namespace }}
                     labels:
-                      catalog.cluster.local/kind: {{ $claim.kind }}
-                      catalog.cluster.local/name: {{ $claim.name }}
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
                       app.kubernetes.io/name: jenkins
-                      app.kubernetes.io/instance: {{ $claim.name }}
+                      app.kubernetes.io/instance: {{ $xrName }}
                   spec:
                     selector:
                       matchLabels:
-                        catalog.cluster.local/kind: {{ $claim.kind }}
-                        catalog.cluster.local/name: {{ $claim.name }}
+                        catalog.cluster.local/kind: {{ $kind }}
+                        catalog.cluster.local/name: {{ $xrName }}
                         app.kubernetes.io/name: jenkins
-                        app.kubernetes.io/instance: {{ $claim.name }}
+                        app.kubernetes.io/instance: {{ $xrName }}
                     template:
                       metadata:
                         labels:
-                          catalog.cluster.local/kind: {{ $claim.kind }}
-                          catalog.cluster.local/name: {{ $claim.name }}
+                          catalog.cluster.local/kind: {{ $kind }}
+                          catalog.cluster.local/name: {{ $xrName }}
                           app.kubernetes.io/name: jenkins
-                          app.kubernetes.io/instance: {{ $claim.name }}
+                          app.kubernetes.io/instance: {{ $xrName }}
                       spec:
-                        serviceAccountName: {{ $claim.name }}
+                        serviceAccountName: {{ $xrName }}
                         containers:
                           - name: jenkins
                             image: adrianliechti/loop-jenkins
@@ -156,12 +168,12 @@ spec:
                               - name: ADMIN_USERNAME
                                 valueFrom:
                                   secretKeyRef:
-                                    name: {{ $claim.name }}
+                                    name: {{ $xrName }}
                                     key: username
                               - name: ADMIN_PASSWORD
                                 valueFrom:
                                   secretKeyRef:
-                                    name: {{ $claim.name }}
+                                    name: {{ $xrName }}
                                     key: password
                               - name: DOCKER_HOST
                                 value: "unix:///var/run/dind/docker.sock"
@@ -206,62 +218,66 @@ spec:
                         volumes:
                           - name: data
                             persistentVolumeClaim:
-                              claimName: {{ $claim.name }}
+                              claimName: {{ $xrName }}
                           - name: dind
                             emptyDir: {}
             ---
-            apiVersion: kubernetes.crossplane.io/v1alpha2
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
             kind: Object
             metadata:
+              name: {{ $xrName }}-service
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: "service"
             spec:
               providerConfigRef:
+                kind: ClusterProviderConfig
                 name: provider-kubernetes
               forProvider:
                 manifest:
                   apiVersion: v1
                   kind: Service
                   metadata:
-                    name: {{ $claim.name }}
-                    namespace: {{ $claim.namespace }}
+                    name: {{ $xrName }}
+                    namespace: {{ $namespace }}
                     labels:
-                      catalog.cluster.local/kind: {{ $claim.kind }}
-                      catalog.cluster.local/name: {{ $claim.name }}
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
                       app.kubernetes.io/name: jenkins
-                      app.kubernetes.io/instance: {{ $claim.name }}
+                      app.kubernetes.io/instance: {{ $xrName }}
                   spec:
                     type: ClusterIP
                     selector:
-                      catalog.cluster.local/kind: {{ $claim.kind }}
-                      catalog.cluster.local/name: {{ $claim.name }}
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
                       app.kubernetes.io/name: jenkins
-                      app.kubernetes.io/instance: {{ $claim.name }}
+                      app.kubernetes.io/instance: {{ $xrName }}
                     ports:
                       - name: http
                         port: 80
                         targetPort: 8080
             ---
-            apiVersion: kubernetes.crossplane.io/v1alpha2
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
             kind: Object
             metadata:
+              name: {{ $xrName }}-pvc
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: "persistentvolumeclaim"
             spec:
               providerConfigRef:
+                kind: ClusterProviderConfig
                 name: provider-kubernetes
               forProvider:
                 manifest:
                   kind: PersistentVolumeClaim
                   apiVersion: v1
                   metadata:
-                    name: {{ $claim.name }}
-                    namespace: {{ $claim.namespace }}
+                    name: {{ $xrName }}
+                    namespace: {{ $namespace }}
                     labels:
-                      catalog.cluster.local/kind: {{ $claim.kind }}
-                      catalog.cluster.local/name: {{ $claim.name }}
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
                       app.kubernetes.io/name: jenkins
-                      app.kubernetes.io/instance: {{ $claim.name }}
+                      app.kubernetes.io/instance: {{ $xrName }}
                   spec:
                     accessModes:
                       - ReadWriteOnce
@@ -269,30 +285,32 @@ spec:
                       requests:
                         storage: 8Gi
             ---
-            apiVersion: kubernetes.crossplane.io/v1alpha2
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
             kind: Object
             metadata:
+              name: {{ $xrName }}-ingress
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: "ingress"
             spec:
               providerConfigRef:
+                kind: ClusterProviderConfig
                 name: provider-kubernetes
               forProvider:
                 manifest:
                   apiVersion: networking.k8s.io/v1
                   kind: Ingress
                   metadata:
-                    name: {{ $claim.name }}
-                    namespace: {{ $claim.namespace }}
+                    name: {{ $xrName }}
+                    namespace: {{ $namespace }}
                     labels:
-                      catalog.cluster.local/kind: {{ $claim.kind }}
-                      catalog.cluster.local/name: {{ $claim.name }}
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
                       app.kubernetes.io/name: jenkins
-                      app.kubernetes.io/instance: {{ $claim.name }}
+                      app.kubernetes.io/instance: {{ $xrName }}
                     annotations:
                       kubernetes.io/tls-acme: "true"
                   spec:
-                    {{- if or ($.observed.composite.resource.spec.ingress.public) (eq $.observed.composite.resource.spec.ingress nil) }}
+                    {{- if or ($params.ingress.public) (eq $params.ingress nil) }}
                     ingressClassName: nginx
                     {{- else }}
                     ingressClassName: nginx-internal
@@ -303,7 +321,7 @@ spec:
                           paths:
                             - backend:
                                 service:
-                                  name: {{ $claim.name }}
+                                  name: {{ $xrName }}
                                   port:
                                     number: 80
                               path: /
@@ -311,7 +329,7 @@ spec:
                     tls:
                       - hosts:
                           - {{ $host }}.{{ $zone }}
-                        secretName: {{ $claim.name }}-tls
+                        secretName: {{ $xrName }}-tls
             ---
             apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
             kind: CompositeConnectionDetails
@@ -319,10 +337,8 @@ spec:
             data: {}
             {{ else }}
             data:
-              {{ if ne $.observed.resources.ingress nil }}
-              host: {{ index .observed.resources.ingress.resource.spec.forProvider.manifest.spec.rules 0 "host" | b64enc }}
-              {{ end }}
-              username: {{ .observed.resources.secret.resource.spec.forProvider.manifest.stringData.username | b64enc }}
+              host: {{ printf "%s.%s" $host $zone | b64enc }}
+              username: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "username" "admin" .observed | b64enc }}
               password: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" "no value yet" .observed | b64enc }}
             {{ end }}
 

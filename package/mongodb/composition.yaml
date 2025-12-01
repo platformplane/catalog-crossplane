@@ -1,17 +1,17 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: mongodbs.catalog.cluster.local
+  name: mongodbsv2.catalog.cluster.local
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v1
-    kind: MongoDBComposite
+    kind: MongoDBCompositeV2
 
   writeConnectionSecretsToNamespace: crossplane-system
 
   mode: Pipeline
   pipeline:
-    - step: mangodb
+    - step: mongodb
       functionRef:
         name: crossplane-contrib-function-go-templating
       input:
@@ -20,36 +20,41 @@ spec:
         source: Inline
         inline:
           template: |
+            {{ $kind := .observed.composite.resource.kind }}
+            {{ $xrName := .observed.composite.resource.metadata.name }}
+            {{ $namespace := .observed.composite.resource.metadata.namespace }}
 
-            {{ $claim := .observed.composite.resource.spec.claimRef }}
+            {{ $params := .observed.composite.resource.spec.parameters }}
 
-            {{ $size := .observed.composite.resource.spec.size | default "8Gi" }}
+            {{ $size := $params.size | default "8Gi" }}
 
-            {{ $versionMapping := dict "7" "15.5.1" "6" "13.16.2" }}
-            {{ $specVersion := .observed.composite.resource.spec.version | default "7" }}
+            {{ $versionMapping := dict "8" "0.6.4" }}
+            {{ $specVersion := $params.version | default "8" }}
             {{ $version := index $versionMapping $specVersion }}
 
-            apiVersion: helm.crossplane.io/v1beta1
+            apiVersion: helm.m.crossplane.io/v1beta1
             kind: Release
             metadata:
+              name: {{ $xrName }}
+              namespace: {{ $namespace }}
               annotations:
-                crossplane.io/external-name: {{ $claim.name }}
+                crossplane.io/external-name: {{ $xrName }}
                 gotemplating.fn.crossplane.io/composition-resource-name: "helm-release"
-                host: {{ $claim.name }}.{{ $claim.namespace }}
             spec:
               providerConfigRef:
+                kind: ClusterProviderConfig
                 name: provider-helm
               forProvider:
-                chart: # https://artifacthub.io/packages/helm/bitnami/mongodb
+                chart:
                   name: mongodb
-                  repository: oci://registry-1.docker.io/bitnamicharts
+                  repository: oci://registry-1.docker.io/cloudpirates
                   version: {{ $version }}
-                namespace: {{ $claim.namespace }}
+                namespace: {{ $namespace }}
                 values:
-                  fullnameOverride: {{ $claim.name }}
+                  fullnameOverride: {{ $xrName  }}
                   commonLabels:
-                    catalog.cluster.local/kind: {{ $claim.kind }}
-                    catalog.cluster.local/name: {{ $claim.name }}
+                    catalog.cluster.local/kind: {{ $kind }}
+                    catalog.cluster.local/name: {{ $xrName }}
                   architecture: standalone
                   auth:
                     rootUser: root
@@ -66,21 +71,20 @@ spec:
               connectionDetails:
                 - apiVersion: v1
                   kind: Secret
-                  name: {{ $claim.name }}
-                  namespace: {{ $claim.namespace }}
+                  name: {{ $xrName }}
+                  namespace: {{ $namespace }}
                   fieldPath: data.mongodb-root-password
                   toConnectionSecretKey: password
 
                 - apiVersion: v1
                   kind: Service
-                  name: {{ $claim.name }}
-                  namespace: {{ $claim.namespace }}
+                  name: {{ $xrName }}
+                  namespace: {{ $namespace }}
                   fieldPath: spec.ports[0].port
                   toConnectionSecretKey: port
 
               writeConnectionSecretToRef:
-                name: {{ $claim.name }}-connection
-                namespace: {{ $claim.namespace }}
+                name: {{ $xrName }}-connection
             ---
             {{ $values := dig "resources" "helm-release" "resource" "spec" "forProvider" "values" dict .observed }}
             {{ $connectionDetails := dig "resources" "helm-release" "connectionDetails" dict .observed }}
@@ -91,8 +95,12 @@ spec:
             data: {}
             {{ else }}
             data:
-              host: {{ printf "%s.%s" $claim.name $claim.namespace | b64enc }}
+              host: {{ printf "%s.%s" $xrName $namespace | b64enc }}
               username: {{ $values.auth.rootUser | b64enc }}
               password: {{ $connectionDetails.password }}
               port: {{ $connectionDetails.port }}
             {{ end }}
+
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready
