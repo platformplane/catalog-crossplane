@@ -14,7 +14,7 @@ Crossplane configuration package containing multiple basic services like a Postg
 
 ## Update Strategy of Catalog Items
 
-We assume that minor versions can be updated without breaking changes. This means that the `spec.forProvider.chart.version` field in the Crossplane configuration can be updated within the same minor version (read the release notes anyways to be sure). Note that there is usually a version mapping table defined at the beginning of the inline template mapping the major product versions to the corresponding Helm chart version. Applying a new version of this Crossplane configuration including new default values for Helm charts will replace the affected Helm releasees with the new version and therefore cause downtime and potentially issues for the customers! They can explicitly set the version (instead of relying on the default) to avoid this.
+We assume that minor versions can be updated without breaking changes. This means that the `spec.forProvider.chart.version` field in the Crossplane configuration can be updated within the same minor version (read the release notes anyways to be sure). Note that there is usually a version mapping table defined at the beginning of the inline template mapping the major product versions to the corresponding Helm chart version. Applying a new version of this Crossplane configuration including new default values for Helm charts will replace the affected Helm releases with the new version and therefore cause downtime and potentially issues for the customers! They can explicitly set the version (instead of relying on the default) to avoid this.
 
 ## Create the Crossplane package locally
 
