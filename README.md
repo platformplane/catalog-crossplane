@@ -109,7 +109,7 @@ In order that the catalog actually shows your items, the Crossplane definition w
   git tag -a v1.40.0 -m "Release v1.40.0"
   
   # 2. Push the tag to the remote repository:
-   git push origin tag v.1.40.0
+   git push origin tag v1.40.0
   ```
 
   - update the `crossplane` ConfigMap in the `platformplane` namespace on platform plane so that other developers can use it (via GitOps Repo)
