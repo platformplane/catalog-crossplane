@@ -52,17 +52,15 @@ spec:
                   podLabels:
                     catalog.cluster.local/kind: {{ $claim.kind }}
                     catalog.cluster.local/name: {{ $claim.name }}
+                  image:
+                    repository: bitnamilegacy/rabbitmq
                   auth:
                     username: platform
                   persistence:
                     size: {{ $size }}
                   persistentVolumeClaimRetentionPolicy:
                     enabled: true
-                    whenDeleted: Delete
-                  # metrics:
-                  #   enabled: true
-                  #   serviceMonitor:
-                  #     enabled: true                
+                    whenDeleted: Delete              
 
               connectionDetails:
                 - apiVersion: v1
