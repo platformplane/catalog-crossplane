@@ -46,10 +46,12 @@ spec:
                   version: {{ $version }}
                 namespace: {{ $claim.namespace }}
                 values:
+                  fullnameOverride:  {{ $claim.name }}
                   commonLabels:
                     catalog.cluster.local/kind: {{ $claim.kind }}
                     catalog.cluster.local/name: {{ $claim.name }}
-                  fullnameOverride:  {{ $claim.name }}
+                  image:
+                    repository: bitnamilegacy/mariadb
                   architecture: standalone
                   auth:
                     database: db
@@ -59,10 +61,6 @@ spec:
                     persistentVolumeClaimRetentionPolicy:
                       enabled: true
                       whenDeleted: Delete
-                  # metrics:
-                  #   enabled: true
-                  #   serviceMonitor:
-                  #     enabled: true
 
               connectionDetails:
                 - apiVersion: v1

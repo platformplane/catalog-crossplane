@@ -50,6 +50,8 @@ spec:
                   commonLabels:
                     catalog.cluster.local/kind: {{ $claim.kind }}
                     catalog.cluster.local/name: {{ $claim.name }}
+                  image:
+                    repository: bitnamilegacy/mongodb
                   architecture: standalone
                   auth:
                     rootUser: root
@@ -58,10 +60,6 @@ spec:
                   persistentVolumeClaimRetentionPolicy:
                     enabled: true
                     whenDeleted: Delete
-                  # metrics:
-                  #   enabled: true
-                  #   serviceMonitor:
-                  #     enabled: true
 
               connectionDetails:
                 - apiVersion: v1

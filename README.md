@@ -165,7 +165,7 @@ sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule require
     username="user" \
     password="$(kubectl get secret kafka-user-passwords --namespace test -o jsonpath='{.data.client-passwords}' | base64 -d | cut -d , -f 1)";
 # save the file and run the following commands
-kubectl run kafka-kafka-client --restart='Never' --image docker.io/bitnami/kafka:3.7.0-debian-12-r0 --namespace test --command -- sleep infinity
+kubectl run kafka-kafka-client --restart='Never' --image docker.io/bitnamilegacy/kafka:3.3.2-debian-11-r11 --namespace test --command -- sleep infinity
 kubectl cp --namespace test ./client.properties kafka-kafka-client:/tmp/client.properties
 kubectl exec --tty -i kafka-kafka-client --namespace test -- bash
 kafka-console-producer.sh \
