@@ -3,7 +3,7 @@ name: Build & Push Docker Image
 on:
   push:
     branches: [main]
-    paths:
+    paths-ignore:
       - '!future-package-items/**'
       - '!examples/**'
   workflow_dispatch:
