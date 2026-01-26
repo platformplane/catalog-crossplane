@@ -1,0 +1,37 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: mytests.catalog.cluster.local
+spec:
+  group: catalog.cluster.local
+  names:
+    kind: MyTest
+    plural: mytests
+  versions:
+    - name: v1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: Cassette is the Schema for the cassettes API
+          type: object
+          properties:
+            spec:
+              description: CassetteSpec defines the desired state of Cassette
+              type: object
+              properties:
+                #parameters:
+                #  type: object
+                #  properties:
+                    size:
+                      type: string
+                      default: "8Gi"
+                      pattern: ^(?<size>\d+(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?)$
+                    ingress:
+                      type: object
+                      default: {}
+                      properties:
+                        public:
+                          type: boolean
+                          default: true
+                          description: Expose public endpoint (Be aware that your application will be public available on the internet.)

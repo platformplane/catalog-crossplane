@@ -81,18 +81,26 @@ spec:
                   toConnectionSecretKey: port
 
               writeConnectionSecretToRef:
-                name: {{ $xrName }}-connection
+                name: {{ $xrName }}-connection-secret
             ---
-            {{ $connectionDetails := dig "resources" "helm-release" "connectionDetails" dict .observed }}
-
-            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
-            kind: CompositeConnectionDetails
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              name: {{ $xrName }}-connection
+              namespace: {{ $namespace }}
+              annotations:
+                {{ setResourceNameAnnotation "connection-secret" }}
             {{ if eq $.observed.resources nil }}
             data: {}
             {{ else }}
+            {{- $helmSecret := (index $.observed.resources "helm-release").connectionDetails | default dict }}
+            {{- if $helmSecret.port }}
             data:
               host: {{ printf "%s.%s" $xrName $namespace | b64enc }}
-              port: {{ $connectionDetails.port }}
+              port: {{ $helmSecret.port }}
+            {{- else }}
+            data: {}
+            {{- end }}
             {{ end }}
 
     - step: automatically-detect-ready-composed-resources

@@ -1,11 +1,12 @@
+# Composition Definition: https://doc.crds.dev/github.com/crossplane/crossplane/apiextensions.crossplane.io/Composition/v1@v1.15.0
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: mariadbsv2.catalog.cluster.local
+  name: mydbs.catalog.cluster.local
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v1
-    kind: MariaDBCompositeV2
+    kind: MyDbComposite
 
   writeConnectionSecretsToNamespace: crossplane-system
 
@@ -20,41 +21,35 @@ spec:
         source: Inline
         inline:
           template: |
-            {{ $kind := .observed.composite.resource.kind }}
-            {{ $xrName := .observed.composite.resource.metadata.name }}
-            {{ $namespace := .observed.composite.resource.metadata.namespace }}
 
-            {{ $params := .observed.composite.resource.spec.parameters }}
+            {{ $claim := .observed.composite.resource.spec.claimRef }}
 
-            {{ $size := $params.size | default "8Gi" }}
+            {{ $size := .observed.composite.resource.spec.size | default "8Gi" }}
 
-            {{ $versionMapping := dict "11" "0.1.4" "12" "0.7.0" }}
-            {{ $specVersion := $params.version | default "12" }}
+            {{ $versionMapping := dict "11" "18.1.0" }}
+            {{ $specVersion := .observed.composite.resource.spec.version | default "11" }}
             {{ $version := index $versionMapping $specVersion }}
 
-            apiVersion: helm.m.crossplane.io/v1beta1
+            apiVersion: helm.crossplane.io/v1beta1
             kind: Release
             metadata:
-              name: {{ $xrName }}
-              namespace: {{ $namespace }}
               annotations:
-                crossplane.io/external-name: {{ $xrName }}
+                crossplane.io/external-name: {{ $claim.name }}
                 gotemplating.fn.crossplane.io/composition-resource-name: "helm-release"
             spec:
               providerConfigRef:
-                kind: ClusterProviderConfig
                 name: provider-helm
               forProvider:
-                chart:
+                chart: # https://artifacthub.io/packages/helm/bitnami/mariadb
                   name: mariadb
-                  repository: oci://registry-1.docker.io/cloudpirates
+                  repository: oci://registry-1.docker.io/bitnamicharts
                   version: {{ $version }}
-                namespace: {{ $namespace }}
+                namespace: {{ $claim.namespace }}
                 values:
                   commonLabels:
-                    catalog.cluster.local/kind: {{ $kind }}
-                    catalog.cluster.local/name: {{ $xrName }}
-                  fullnameOverride:  {{ $xrName }}
+                    catalog.cluster.local/kind: {{ $claim.kind }}
+                    catalog.cluster.local/name: {{ $claim.name }}
+                  fullnameOverride:  {{ $claim.name }}
                   architecture: standalone
                   auth:
                     database: db
@@ -64,45 +59,42 @@ spec:
                     persistentVolumeClaimRetentionPolicy:
                       enabled: true
                       whenDeleted: Delete
+                  # metrics:
+                  #   enabled: true
+                  #   serviceMonitor:
+                  #     enabled: true
 
               connectionDetails:
                 - apiVersion: v1
                   kind: Secret
-                  name: {{ $xrName }}
-                  namespace: {{ $namespace }}
+                  name: {{ $claim.name }}
+                  namespace: {{ $claim.namespace }}
                   fieldPath: data.mariadb-root-password
                   toConnectionSecretKey: password
 
                 - apiVersion: v1
                   kind: Service
-                  name: {{ $xrName }}
-                  namespace: {{ $namespace }}
+                  name: {{ $claim.name }}
+                  namespace: {{ $claim.namespace }}
                   fieldPath: spec.ports[0].port
                   toConnectionSecretKey: port
 
               writeConnectionSecretToRef:
-                name: {{ $xrName }}-connection-secret
+                name: {{ $claim.name }}-connection
+                namespace: {{ $claim.namespace }}
             ---
-            apiVersion: v1
-            kind: Secret
-            metadata:
-              name: {{ $xrName }}-connection
-              namespace: {{ $namespace }}
-              annotations:
-                {{ setResourceNameAnnotation "connection-secret" }}
+            {{ $connectionDetails := dig "resources" "helm-release" "connectionDetails" dict .observed }}
+
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: CompositeConnectionDetails
             {{ if eq $.observed.resources nil }}
             data: {}
             {{ else }}
-            {{- $helmSecret := (index $.observed.resources "helm-release").connectionDetails | default dict }}
-            {{- if and $helmSecret.password $helmSecret.port }}
             data:
-              host: {{ printf "%s.%s" $xrName $namespace | b64enc }}
+              host: {{ printf "%s.%s" $claim.name $claim.namespace | b64enc }}
               username: {{ "root" | b64enc }}
-              password: {{ $helmSecret.password }}
-              port: {{ $helmSecret.port }}
-            {{- else }}
-            data: {}
-            {{- end }}
+              password: {{ $connectionDetails.password }}
+              port: {{ $connectionDetails.port }}
             {{ end }}
 
     - step: automatically-detect-ready-composed-resources

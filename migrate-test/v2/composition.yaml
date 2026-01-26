@@ -1,17 +1,17 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: postgresqlsv2.catalog.cluster.local
+  name: mydbs.catalog.cluster.local.v2
 spec:
   compositeTypeRef:
-    apiVersion: catalog.cluster.local/v1
-    kind: PostgreSQLCompositeV2
+    apiVersion: catalog.cluster.local/v2
+    kind: MyDb
 
   writeConnectionSecretsToNamespace: crossplane-system
 
   mode: Pipeline
   pipeline:
-    - step: postgres
+    - step: mariadb
       functionRef:
         name: crossplane-contrib-function-go-templating
       input:
@@ -27,9 +27,9 @@ spec:
             {{ $params := .observed.composite.resource.spec.parameters }}
 
             {{ $size := $params.size | default "8Gi" }}
-
-            {{ $versionMapping := dict "18" "0.12.1" "17" "0.5.5" }}
-            {{ $specVersion := $params.version | default "18" }}
+e
+            {{ $versionMapping := dict "11" "0.1.4" "12" "0.7.0" }}
+            {{ $specVersion := $params.version | default "12" }}
             {{ $version := index $versionMapping $specVersion }}
 
             apiVersion: helm.m.crossplane.io/v1beta1
@@ -45,18 +45,19 @@ spec:
                 kind: ClusterProviderConfig
                 name: provider-helm
               forProvider:
-                chart: # https://artifacthub.io/packages/helm/cloudpirates/postgres
-                  name: postgres
+                chart:
+                  name: mariadb
                   repository: oci://registry-1.docker.io/cloudpirates
                   version: {{ $version }}
                 namespace: {{ $namespace }}
                 values:
-                  fullnameOverride: {{ $xrName  }}
                   commonLabels:
                     catalog.cluster.local/kind: {{ $kind }}
                     catalog.cluster.local/name: {{ $xrName }}
+                  fullnameOverride:  {{ $xrName }}
+                  architecture: standalone
                   auth:
-                    database: postgres
+                    database: db
                   primary:
                     persistence:
                       size: {{ $size }}
@@ -69,7 +70,7 @@ spec:
                   kind: Secret
                   name: {{ $xrName }}
                   namespace: {{ $namespace }}
-                  fieldPath: data.postgres-password
+                  fieldPath: data.mariadb-root-password
                   toConnectionSecretKey: password
 
                 - apiVersion: v1
@@ -80,29 +81,20 @@ spec:
                   toConnectionSecretKey: port
 
               writeConnectionSecretToRef:
-                name: {{ $xrName }}-connection-secret
+                name: {{ $xrName }}-connection
             ---
-            apiVersion: v1
-            kind: Secret
-            metadata:
-              name: {{ $xrName }}-connection
-              namespace: {{ $namespace }}
-              annotations:
-                {{ setResourceNameAnnotation "connection-secret" }}
+            {{ $connectionDetails := dig "resources" "helm-release" "connectionDetails" dict .observed }}
+
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: CompositeConnectionDetails
             {{ if eq $.observed.resources nil }}
             data: {}
             {{ else }}
-            {{- $helmSecret := (index $.observed.resources "helm-release").connectionDetails | default dict }}
-            {{- if and $helmSecret.password $helmSecret.port }}
             data:
               host: {{ printf "%s.%s" $xrName $namespace | b64enc }}
-              username: {{ "postgres" | b64enc }}
-              password: {{ $helmSecret.password }}
-              port: {{ $helmSecret.port }}
-              database: {{ dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "auth" "database" "postgres" .observed | b64enc }}
-            {{- else }}
-            data: {}
-            {{- end }}
+              username: {{ "root" | b64enc }}
+              password: {{ $connectionDetails.password }}
+              port: {{ $connectionDetails.port }}
             {{ end }}
 
     - step: automatically-detect-ready-composed-resources

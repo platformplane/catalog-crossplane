@@ -1,0 +1,12 @@
+apiVersion: catalog.cluster.local/v2
+kind: MyDb
+metadata:
+  name: mydb-v2-example
+spec:
+  parameters:
+    # Storage size (default: "8Gi")
+    size: "16Gi"
+
+    # MariaDB version (default: "12")
+    # Options: "11", "12"
+    version: "12"
