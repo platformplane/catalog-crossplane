@@ -57,6 +57,8 @@ spec:
                   commonLabels:
                     catalog.cluster.local/kind: {{ $claim.kind }}
                     catalog.cluster.local/name: {{ $claim.name }}
+                  image:
+                    repository: bitnamilegacy/mysql
                   architecture: standalone
                   auth:
                     database: db

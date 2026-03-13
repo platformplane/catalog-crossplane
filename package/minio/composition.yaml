@@ -49,6 +49,13 @@ spec:
                   commonLabels:
                     catalog.cluster.local/kind: {{ $claim.kind }}
                     catalog.cluster.local/name: {{ $claim.name }}
+                  image:
+                    repository: bitnamilegacy/minio
+                  clientImage:
+                    repository: bitnamilegacy/minio-client
+                  console:
+                    image:
+                      repository: bitnamilegacy/minio-object-browser
                   extraEnvVars:
                     - name: MINIO_BROWSER_LOGIN_ANIMATION
                       value: "off"

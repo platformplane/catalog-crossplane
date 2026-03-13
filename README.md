@@ -14,7 +14,7 @@ Crossplane configuration package containing multiple basic services like a Postg
 
 ## Update Strategy of Catalog Items
 
-We assume that minor versions can be updated without breaking changes. This means that the `spec.forProvider.chart.version` field in the Crossplane configuration can be updated within the same minor version (read the release notes anyways to be sure). Note that there is usually a version mapping table defined at the beginning of the inline template mapping the major product versions to the corresponding Helm chart version. Applying a new version of this Crossplane configuration including new default values for Helm charts will replace the affected Helm releasees with the new version and therefore cause downtime and potentially issues for the customers! They can explicitly set the version (instead of relying on the default) to avoid this.
+We assume that minor versions can be updated without breaking changes. This means that the `spec.forProvider.chart.version` field in the Crossplane configuration can be updated within the same minor version (read the release notes anyways to be sure). Note that there is usually a version mapping table defined at the beginning of the inline template mapping the major product versions to the corresponding Helm chart version. Applying a new version of this Crossplane configuration including new default values for Helm charts will replace the affected Helm releases with the new version and therefore cause downtime and potentially issues for the customers! They can explicitly set the version (instead of relying on the default) to avoid this.
 
 ## Create the Crossplane package locally
 
@@ -102,7 +102,16 @@ In order that the catalog actually shows your items, the Crossplane definition w
 - create a merge request, assign it to a platform team member and ask for a review
 - merge the merge request after it got approved
 - coordinate the release with the platform team
-  - tag the merge commit with a version number (e.g. `0.0.1`)
+  - tag the merge commit with a version number (e.g. `1.40.0`), which will ensure future versions base on this new one
+
+  ```bash
+  # 1. Create a new tag, for example `v1.40.0`:
+  git tag -a v1.40.0 -m "Release v1.40.0"
+  
+  # 2. Push the tag to the remote repository:
+   git push origin tag v1.40.0
+  ```
+
   - update the `crossplane` ConfigMap in the `platformplane` namespace on platform plane so that other developers can use it (via GitOps Repo)
 
 ## How to debug e.g. a new helm-based catalog item
@@ -156,7 +165,7 @@ sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule require
     username="user" \
     password="$(kubectl get secret kafka-user-passwords --namespace test -o jsonpath='{.data.client-passwords}' | base64 -d | cut -d , -f 1)";
 # save the file and run the following commands
-kubectl run kafka-kafka-client --restart='Never' --image docker.io/bitnami/kafka:3.7.0-debian-12-r0 --namespace test --command -- sleep infinity
+kubectl run kafka-kafka-client --restart='Never' --image docker.io/bitnamilegacy/kafka:3.3.2-debian-11-r11 --namespace test --command -- sleep infinity
 kubectl cp --namespace test ./client.properties kafka-kafka-client:/tmp/client.properties
 kubectl exec --tty -i kafka-kafka-client --namespace test -- bash
 kafka-console-producer.sh \
