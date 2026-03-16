@@ -27,7 +27,6 @@ spec:
             {{ $params := .observed.composite.resource.spec.parameters }}
 
             {{ $size := $params.size | default "8Gi" }}
-e
             {{ $versionMapping := dict "11" "0.1.4" "12" "0.7.0" }}
             {{ $specVersion := $params.version | default "12" }}
             {{ $version := index $versionMapping $specVersion }}
@@ -82,6 +81,7 @@ e
 
               writeConnectionSecretToRef:
                 name: {{ $xrName }}-connection
+                namespace: {{ $namespace }}
             ---
             {{ $connectionDetails := dig "resources" "helm-release" "connectionDetails" dict .observed }}
 

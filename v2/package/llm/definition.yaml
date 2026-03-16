@@ -30,6 +30,9 @@ spec:
               description: LLMSpec defines the desired state of LLM
               type: object
               properties:
+                crossplane:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
                 parameters:
                   type: object
                   properties:

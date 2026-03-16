@@ -85,8 +85,9 @@ spec:
                   fieldPath: spec.ports[0].port
                   toConnectionSecretKey: port
 
-              writeConnectionSecretToRef:
+              writeConnectionSecretToRef
                 name: {{ $xrName }}-connection-secret
+                namespace: {{ $namespace }}
             ---
             apiVersion: v1
             kind: Secret

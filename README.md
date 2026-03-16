@@ -8,9 +8,11 @@ Crossplane configuration package containing multiple basic services like a Postg
 
 - [package](./package/) This is the "root" folder for the Crossplane package that we build here, it consists of:
   - [configuration.yaml](./package/configuration.yaml) This yaml file (kind: Configuration) specifies that this is a Crossplane package, on which version of Crossplane it depends and which CRDs it provides.
-  - [<catalog-item>](./package/redis/) For every catalog item, there is a subfolder containing the Crossplane composition and definition files.
+  - [\<catalog-item>](./package/redis/) Item-first catalog folders. Each folder contains:
+    - `definition.yaml` with both definition documents (`v1` compatibility + `v2` API).
+    - `composition.yaml` with both composition documents (`v1` compatibility + `v2` API).
 - [Dockerfile](Dockerfile) The Dockerfile uses the Crossplane CLI to build and push the Crossplane configuration package (OCI image) to a registry (may be useful for local testing).
-- [.github/workflows](./.github/workflows/build-publish-images.yaml) The GitHub pipeline calculates a version number and builds the Crossplane package on every commit.
+- [.github/workflows](./.github/workflows/build-publish-images.yml) The GitHub pipeline calculates a version number and builds the Crossplane package on every commit.
 
 ## Update Strategy of Catalog Items
 
@@ -93,8 +95,10 @@ In order that the catalog actually shows your items, the Crossplane definition w
 
 ## How to add a new catalog item
 
-- create a new subfolder in the `package` folder to develop your catalog item
-- add your Crossplane composition and definition files
+- create a new `package/<catalog-item>` subfolder
+- add two manifests:
+  - `definition.yaml` containing both documents (`v1` and `v2`)
+  - `composition.yaml` containing both documents (`v1` and `v2`)
 - verify that the pipeline builds the Dockerfile successfully
 - use your own platformplane space to test your catalog item by manually applying/deleting the composition and definition files
 - iterate until you are happy

@@ -29,6 +29,9 @@ spec:
             spec:
               type: object
               properties:
+                crossplane:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
                 parameters:
                   type: object
                   properties:

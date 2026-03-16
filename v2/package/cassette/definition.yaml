@@ -30,6 +30,9 @@ spec:
               description: CassetteSpec defines the desired state of Cassette
               type: object
               properties:
+                crossplane:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
                 parameters:
                   type: object
                   properties:

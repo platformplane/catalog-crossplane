@@ -30,6 +30,9 @@ spec:
               description: ElasticsearchSpec defines the desired state of Elasticsearch
               type: object
               properties:
+                crossplane:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
                 parameters:
                   type: object
                   properties:

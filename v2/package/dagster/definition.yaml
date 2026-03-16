@@ -30,6 +30,9 @@ spec:
               description: DagsterSpec defines the desired state of Dagster
               type: object
               properties:
+                crossplane:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
                 parameters:
                   type: object
                   properties:

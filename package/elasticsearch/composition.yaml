@@ -92,3 +92,113 @@ spec:
     - step: automatically-detect-ready-composed-resources
       functionRef:
         name: crossplane-contrib-function-auto-ready
+---
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: elasticsearches-next.catalog.cluster.local
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v2
+    kind: ElasticsearchCompositeNext
+
+  writeConnectionSecretsToNamespace: crossplane-system
+
+  mode: Pipeline
+  pipeline:
+    - step: elasticsearch
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{ $kind := .observed.composite.resource.kind }}
+            {{ $xrName := .observed.composite.resource.metadata.name }}
+            {{ $namespace := .observed.composite.resource.metadata.namespace }}
+
+            {{ $params := .observed.composite.resource.spec.parameters }}
+
+            {{ $size := $params.size | default "8Gi" }}
+
+            {{ $versionMapping := dict "8" "21.1.0" }}
+            {{ $specVersion := $params.version | default "8" }}
+            {{ $version := index $versionMapping $specVersion }}
+
+            apiVersion: helm.m.crossplane.io/v1beta1
+            kind: Release
+            metadata:
+              name: {{ $xrName }}
+              namespace: {{ $namespace }}
+              annotations:
+                crossplane.io/external-name: {{ $xrName }}
+                gotemplating.fn.crossplane.io/composition-resource-name: "helm-release"
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-helm
+              forProvider:
+                chart: # https://artifacthub.io/packages/helm/bitnami/elasticsearch
+                  name: elasticsearch
+                  repository: oci://registry-1.docker.io/bitnamicharts
+                  version: {{ $version }}
+                namespace: {{ $namespace }}
+                values:
+                  fullnameOverride: {{ $xrName }}
+                  commonLabels:
+                    catalog.cluster.local/kind: {{ $kind }}
+                    catalog.cluster.local/name: {{ $xrName }}
+                  master:
+                    masterOnly: false
+                    replicaCount: 1
+                    persistence:
+                      size: {{ $size }}
+                  data:
+                    replicaCount: 0
+                  coordinating:
+                    replicaCount: 0
+                  ingest:
+                    replicaCount: 0
+                  # metrics: # before enabling, check whehter the metrics deployment will be cleaned up when the helm release is deleted
+                  #   enabled: true
+                  #   serviceMonitor:
+                  #     enabled: true
+                  # think about password and kibana parameters https://artifacthub.io/packages/helm/bitnami/elasticsearch
+
+              connectionDetails:
+                - apiVersion: v1
+                  kind: Service
+                  name: {{ $xrName }}
+                  namespace: {{ $namespace }}
+                  fieldPath: spec.ports[0].port
+                  toConnectionSecretKey: port
+
+              writeConnectionSecretToRef
+                name: {{ $xrName }}-connection-secret
+                namespace: {{ $namespace }}
+            ---
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              name: {{ $xrName }}-connection
+              namespace: {{ $namespace }}
+              annotations:
+                {{ setResourceNameAnnotation "connection-secret" }}
+            {{ if eq $.observed.resources nil }}
+            data: {}
+            {{ else }}
+            {{- $helmSecret := (index $.observed.resources "helm-release").connectionDetails | default dict }}
+            {{- if $helmSecret.port }}
+            data:
+              host: {{ printf "%s.%s" $xrName $namespace | b64enc }}
+              port: {{ $helmSecret.port }}
+            {{- else }}
+            data: {}
+            {{- end }}
+            {{ end }}
+
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready

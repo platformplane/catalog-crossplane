@@ -30,6 +30,9 @@ spec:
               description: MinIOSpec defines the desired state of MinIO
               type: object
               properties:
+                crossplane:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
                 parameters:
                   type: object
                   properties:
