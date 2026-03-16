@@ -1,0 +1,135 @@
+# Composition Definition: https://doc.crds.dev/github.com/crossplane/crossplane/apiextensions.crossplane.io/Composition/v1@v1.15.0
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: dagsters.catalog.cluster.local
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v1
+    kind: DagsterComposite
+
+  writeConnectionSecretsToNamespace: crossplane-system
+
+  mode: Pipeline
+  pipeline:
+    - step: get-environment-configs
+      functionRef:
+        name: crossplane-contrib-function-environment-configs
+      input:
+        apiVersion: environmentconfigs.fn.crossplane.io/v1beta1
+        kind: Input
+        spec:
+          environmentConfigs:
+            - type: Reference
+              ref:
+                name: environment
+
+    - step: dagster
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+
+            {{ $host := regexReplaceAll "[^a-z0-9-]" (.observed.composite.resource.spec.claimRef.name | lower) "" }}
+            {{ $zone := index $.context "apiextensions.crossplane.io/environment" "zone" }}
+            {{ $claim := .observed.composite.resource.spec.claimRef }}
+
+            apiVersion: helm.crossplane.io/v1beta1
+            kind: Release # full example, see: https://github.com/crossplane-contrib/provider-helm/blob/master/examples/sample/release.yaml
+            metadata:
+              annotations:
+                crossplane.io/external-name: {{ $claim.name }}
+                gotemplating.fn.crossplane.io/composition-resource-name: "helm-release"
+            spec:
+              providerConfigRef:
+                name: provider-helm
+              forProvider:
+                chart:
+                  name: dagster
+                  repository: https://dagster-io.github.io/helm
+                  version: 1.7.13
+                namespace: {{ $claim.namespace }}
+                values:
+                  fullnameOverride: {{ $claim.name }}
+                  dagsterWebserver:
+                    labels:
+                      catalog.cluster.local/kind: {{ $claim.kind }}
+                      catalog.cluster.local/name: {{ $claim.name }}
+                  dagsterDaemon:
+                    labels:
+                      catalog.cluster.local/kind: {{ $claim.kind }}
+                      catalog.cluster.local/name: {{ $claim.name }}
+                  ingress:
+                    labels:
+                      catalog.cluster.local/kind: {{ $claim.kind }}
+                      catalog.cluster.local/name: {{ $claim.name }}
+                    enabled: true
+                    {{- if or ($.observed.composite.resource.spec.ingress.public) (eq $.observed.composite.resource.spec.ingress nil) }}
+                    ingressClassName: nginx
+                    {{- else }}
+                    ingressClassName: nginx-internal
+                    {{- end }}
+                    annotations:
+                      kubernetes.io/tls-acme: "true"
+                      nginx.ingress.kubernetes.io/auth-type: basic
+                      nginx.ingress.kubernetes.io/auth-secret: {{ $claim.name }}-auth
+                      nginx.ingress.kubernetes.io/auth-realm: "Authentication Required"
+                    dagsterWebserver:
+                      host: {{ $host }}.{{ $zone }}
+                      path: /
+                      pathType: Prefix
+                      tls:
+                        enabled: true
+                        secretName: {{ $claim.name }}-tls
+                  telemetry:
+                    enabled: false
+            ---
+            apiVersion: kubernetes.crossplane.io/v1alpha2
+            kind: Object
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "secret"
+            spec:
+              providerConfigRef:
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: Secret
+                  metadata:
+                    name: {{ $claim.name }}-auth
+                    namespace: {{ $claim.namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $claim.kind }}
+                      catalog.cluster.local/name: {{ $claim.name }}
+                      app.kubernetes.io/name: dagster
+                      app.kubernetes.io/instance: {{ $claim.name }}
+                  stringData:
+                    {{ $password := dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" (randAlphaNum 12) .observed }}
+                    {{ $username := "admin" }}
+                    username: {{ $username  }}
+                    password: {{ $password  }}
+                    auth: {{ htpasswd $username $password}}
+            ---
+            {{ $values := dig "resources" "helm-release" "resource" "spec" "forProvider" "values" dict .observed }}
+
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: CompositeConnectionDetails
+            {{ if eq $.observed.resources nil }}
+            data: {}
+            {{ else }}
+            data:
+              {{ if ne $values.ingress nil }}
+              host: {{ $values.ingress.dagsterWebserver.host | b64enc }}
+              {{ end }}
+              username: {{ .observed.resources.secret.resource.spec.forProvider.manifest.stringData.username | b64enc }}
+              password: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" "no value yet" .observed | b64enc }}
+            {{ end }}
+
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready

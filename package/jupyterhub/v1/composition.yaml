@@ -1,0 +1,107 @@
+# Composition Definition: https://doc.crds.dev/github.com/crossplane/crossplane/apiextensions.crossplane.io/Composition/v1@v1.15.0
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: jupyterhubs.catalog.cluster.local
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v1
+    kind: JupyterHubComposite
+
+  writeConnectionSecretsToNamespace: crossplane-system
+
+  mode: Pipeline
+  pipeline:
+    - step: get-environment-configs
+      functionRef:
+        name: crossplane-contrib-function-environment-configs
+      input:
+        apiVersion: environmentconfigs.fn.crossplane.io/v1beta1
+        kind: Input
+        spec:
+          environmentConfigs:
+            - type: Reference
+              ref:
+                name: environment
+
+    - step: jupyterhub
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+
+            {{ $host := regexReplaceAll "[^a-z0-9-]" (.observed.composite.resource.spec.claimRef.name | lower) "" }}
+            {{ $zone := index $.context "apiextensions.crossplane.io/environment" "zone" }}
+            {{ $claim := .observed.composite.resource.spec.claimRef }}
+
+            apiVersion: helm.crossplane.io/v1beta1
+            kind: Release # full example, see: https://github.com/crossplane-contrib/provider-helm/blob/master/examples/sample/release.yaml
+            metadata:
+              annotations:
+                crossplane.io/external-name: {{ $claim.name }}
+                gotemplating.fn.crossplane.io/composition-resource-name: "helm-release"
+            spec:
+              providerConfigRef:
+                name: provider-helm
+              forProvider:
+                chart:
+                  name: jupyterhub
+                  repository: https://hub.jupyter.org/helm-chart
+                  version: 3.3.7 
+                namespace: {{ $claim.namespace }}
+                values:
+                  fullnameOverride: {{ $claim.name }}
+                  hub:
+                    labels:
+                      catalog.cluster.local/kind: {{ $claim.kind }}
+                      catalog.cluster.local/name: {{ $claim.name }}
+                    config:
+                      Authenticator:
+                        admin_users:
+                        - admin
+                      DummyAuthenticator:
+                        password: {{ dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "hub" "config" "DummyAuthenticator" "password" (randAlphaNum 12) .observed }}
+                      JupyterHub:
+                        admin_access: true
+                        authenticator_class: dummy
+                  ingress:
+                    enabled: true
+                    {{- if or ($.observed.composite.resource.spec.ingress.public) (eq $.observed.composite.resource.spec.ingress nil) }}
+                    ingressClassName: nginx
+                    {{- else }}
+                    ingressClassName: nginx-internal
+                    {{- end }}
+                    annotations:
+                      kubernetes.io/tls-acme: "true"
+                    hosts:
+                      - {{ $host }}.{{ $zone }}
+                    tls:
+                      - secretName: {{ $claim.name }}-tls
+                        hosts:
+                          - {{ $host }}.{{ $zone }}
+                  scheduling:
+                    userScheduler:
+                      enabled: false
+            ---
+            {{ $values := dig "resources" "helm-release" "resource" "spec" "forProvider" "values" dict .observed }}
+
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: CompositeConnectionDetails
+            {{ if eq $.observed.resources nil }}
+            data: {}
+            {{ else }}
+            data:
+              {{ if ne $values.ingress nil }}
+              host: {{ index $values.ingress.hosts 0 | b64enc }}
+              {{ end }}
+              username: {{ index $values.hub.config.Authenticator.admin_users 0 | b64enc }}
+              password: {{ dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "hub" "config" "DummyAuthenticator" "password" "no value yet" .observed | b64enc }}
+            {{ end }}
+
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready

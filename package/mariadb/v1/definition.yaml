@@ -1,0 +1,43 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: mariadbcomposites.catalog.cluster.local
+spec:
+  group: catalog.cluster.local
+  metadata:
+    labels:
+      catalog.cluster.local/kind: MariaDB
+    annotations:
+      catalog.cluster.local/title: "MariaDB"
+      catalog.cluster.local/description: "Unmanaged MariaDB instance running within the cluster."
+      catalog.cluster.local/icon: "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBkYXRhLW5hbWU9IkxheWVyIDEiIHZlcnNpb249IjEuMSIgdmlld0JveD0iMCAwIDI5My4zMSAxOTAuODgiCiAgICB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogICAgPHBhdGgKICAgICAgICBkPSJtMjkxLjk0IDAuOTUzOTZhNC4xOCA0LjE4IDAgMCAwLTIuODQtMC45NWMtMi44MyAwLTYuNDkgMS45Mi04LjQ2IDIuOTVsLTAuNzggMC40YTI2Ljg2IDI2Ljg2IDAgMCAxLTEwLjU3IDIuNjZjLTMuNzYgMC4xMi03IDAuMzQtMTEuMjIgMC43OC0yNSAyLjU3LTM2LjE1IDIxLjczLTQ2Ljg5IDQwLjI2LTUuODUgMTAuMDgtMTEuODkgMjAuNTUtMjAuMTcgMjguNTVhNTQuNCA1NC40IDAgMCAxLTUuNDUgNC42M2MtOC41NyA2LjM3LTE5LjMzIDEwLjkyLTI3LjcgMTQuMTQtOC4wNiAzLjA4LTE2Ljg2IDUuODUtMjUuMzYgOC41My03Ljc5IDIuNDUtMTUuMTQgNC43Ny0yMS45IDcuMjgtMy4wNSAxLjEzLTUuNjQgMi03LjkzIDIuNzYtNi4xNiAyLTEwLjYgMy41My0xNy4wOSA4LTIuNTMgMS43My01LjA3IDMuNi02Ljc5IDVhNzEuNjIgNzEuNjIgMCAwIDAtMTMuNTUgMTQuMjcgODQuMjUgODQuMjUgMCAwIDEtMTEuMzggMTMuNjZjLTEuMzcgMS4zNC0zLjggMi03LjQ0IDItNC4yNiAwLTkuNDMtMC44OC0xNC45LTEuODEtNS42NC0xLTExLjQ3LTEuOTUtMTYuNDctMS45NS00LjA2IDAtNy4xNyAwLjY2LTkuNDkgMiAwIDAtMy45MSAyLjI4LTUuNTYgNS4yM2wxLjYyIDAuNzNhMzMuMjEgMzMuMjEgMCAwIDEgNi45MiA1IDM0LjcyIDM0LjcyIDAgMCAwIDcuMiA1LjEyIDYuMTggNi4xOCAwIDAgMSAyLjIyIDEuNDFjLTAuNjggMS0xLjY4IDIuMjktMi43MyAzLjY3LTUuNzcgNy41NS05LjE0IDEyLjMyLTcuMjEgMTQuOTJhNi4wNyA2LjA3IDAgMCAwIDMgMC42OGMxMi41OCAwIDE5LjM0LTMuMjcgMjcuODktNy40MSAyLjQ4LTEuMiA1LTIuNDMgOC0zLjcgNS0yLjE3IDEwLjM4LTUuNjMgMTYuMDktOS4yOSA3LjQ3LTQuODcgMTUuMjgtOS44NyAyMi44Ni0xMi4yOGE2Mi4zIDYyLjMgMCAwIDEgMTkuMjMtMi43YzggMCAxNi40MiAxLjA3IDI0LjU0IDIuMTEgNi4wNSAwLjc4IDEyLjMyIDEuNTggMTguNDcgMS45NSAyLjM5IDAuMTQgNC42IDAuMjEgNi43NSAwLjIxYTc4LjIxIDc4LjIxIDAgMCAwIDguNjEtMC40NWwwLjY5LTAuMjRjNC4zMS0yLjY1IDYuMzMtOC4zNCA4LjI5LTEzLjg0IDEuMjYtMy41NCAyLjMyLTYuNzIgNC04Ljc0YTIuNTUgMi41NSAwIDAgMSAwLjMyLTAuMjcgMC40IDAuNCAwIDAgMSAwLjQ5IDAuMDh2MC4xNmMtMSAyMS41MS05LjY2IDM1LjE3LTE4LjQyIDQ3LjMxbC01Ljg1IDYuMjdzOC4xOSAwIDEyLjg1LTEuOGMxNy01LjA4IDI5LjgzLTE2LjI4IDM5LjE3LTM0LjE0YTE0NS43IDE0NS43IDAgMCAwIDYuMTctMTQuMDljMC4xNi0wLjQgMS42My0xLjE0IDEuNDkgMC45My0wLjA1IDAuNjEtMC4wOSAxLjI5LTAuMTQgMiAwIDAuNDIgMCAwLjg1LTAuMDggMS4yOC0wLjI0IDMtMC45NSA5LjM0LTAuOTUgOS4zNGw1LjI1LTIuODFjMTIuNjYtOCAyMi40Mi0yNC4xNCAyOS44Mi00OS4yNSAzLjA4LTEwLjQ2IDUuMzQtMjAuODUgNy4zMy0zMCAyLjM4LTExIDQuNDMtMjAuNDMgNi43OC0yNC4wOSAzLjY5LTUuNzQgOS4zMi05LjYyIDE0Ljc3LTEzLjM5IDAuNzQtMC41MSAxLjQ5LTEgMi4yMi0xLjU0IDYuODUtNC44MSAxMy42Ni0xMC4zNiAxNS4xNi0yMC43MXYtMC4yM2MxLjA5LTcuNzIgMC4xNy05LjY5LTAuODgtMTAuNTl6IgogICAgICAgIGZpbGw9IiM2ODY4NjgiIC8+Cjwvc3ZnPg=="
+      catalog.cluster.local/maintainer: ""
+      catalog.cluster.local/url: "https://mariadb.org/"
+      catalog.cluster.local/tags: "database,unmanaged,helm"
+  names:
+    kind: MariaDBComposite
+    plural: mariadbcomposites
+  claimNames:
+    kind: MariaDB
+    plural: mariadbs
+  versions:
+    - name: v1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: MariaDB is a fast, scalable open-source community-supported relational database management system that's also an enhanced version of MySQL. Artturi Jalli is CEO and co-founder of Nodesk and founder of Codingem. MariaDB is fast, scalable and supports more storage engines than MySQL.
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                size:
+                  type: string
+                  default: "8Gi"
+                  pattern: ^(?<size>\d+(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?)$
+                version:
+                  type: string
+                  default: "11"
+                  enum:
+                    - "11"
