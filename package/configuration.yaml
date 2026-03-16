@@ -4,7 +4,7 @@ metadata:
   name: platform-catalog
 spec:
   crossplane:
-    version: ">=v2.1.3 <v3.0.0"
+    version: ">=v2.1.3"
   dependsOn:
     - provider: xpkg.crossplane.io/crossplane-contrib/provider-helm
       version: ">=v1.2.0"
