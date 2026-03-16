@@ -4,23 +4,23 @@ metadata:
   name: platform-catalog
 spec:
   crossplane:
-    version: ">=2.3.1 <3.0.0"
+    version: ">=v2.1.3 <v3.0.0"
   dependsOn:
     - provider: xpkg.crossplane.io/crossplane-contrib/provider-helm
-      version: ">=1.2.0"
+      version: ">=v1.2.0"
     - provider: xpkg.crossplane.io/crossplane-contrib/provider-kubernetes
-      version: ">=1.2.1"
+      version: ">=v1.2.1"
     - provider: xpkg.upbound.io/upbound/provider-azure-storage
-      version: ">=2.0.0"
+      version: ">=v2.0.0"
     - provider: xpkg.upbound.io/upbound/provider-azure-network
-      version: ">=2.0.0"
+      version: ">=v2.0.0"
     - provider: xpkg.upbound.io/upbound/provider-azure-cognitiveservices
-      version: ">=2.0.0"
+      version: ">=v2.0.0"
     - function: xpkg.crossplane.io/crossplane-contrib/function-go-templating
-      version: ">=0.11.4"
+      version: ">=v0.11.4"
     - function: xpkg.crossplane.io/crossplane-contrib/function-auto-ready
-      version: ">=0.6.1"
+      version: ">=v0.6.1"
     - function: xpkg.crossplane.io/crossplane-contrib/function-environment-configs
-      version: ">=0.6.0"
+      version: ">=v0.6.0"
     - function: xpkg.crossplane.io/crossplane-contrib/function-sequencer
-      version: ">=0.5.0"
+      version: ">=v0.5.0"
