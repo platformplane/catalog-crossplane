@@ -2,7 +2,7 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: mysqls-next.catalog.cluster.local
+  name: mysqls-v2.catalog.cluster.local
   annotations:
     catalog.cluster.local/title: "MySQLV2"
     catalog.cluster.local/description: "Unmanaged MySQL instance running within the cluster."
@@ -12,7 +12,7 @@ metadata:
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v2
-    kind: MySQLCompositeNext
+    kind: MySQLCompositeV2
 
   writeConnectionSecretsToNamespace: crossplane-system
 

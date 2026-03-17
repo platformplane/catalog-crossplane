@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
-  name: jupyterhubcompositesnext.catalog.cluster.local
+  name: jupyterhubcompositesv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
   metadata:
@@ -15,8 +15,8 @@ spec:
       catalog.cluster.local/url: "https://jupyter.org/hub"
       catalog.cluster.local/tags: "datascience,unmanaged,helm"
   names:
-    kind: JupyterHubCompositeNext
-    plural: jupyterhubcompositesnext
+    kind: JupyterHubCompositeV2
+    plural: jupyterhubcompositesv2
   versions:
     - name: v2
       served: true

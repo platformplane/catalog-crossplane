@@ -2,11 +2,11 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: airflows-next.catalog.cluster.local
+  name: airflows-v2.catalog.cluster.local
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v2
-    kind: AirflowCompositeNext
+    kind: AirflowCompositeV2
 
   writeConnectionSecretsToNamespace: crossplane-system
 

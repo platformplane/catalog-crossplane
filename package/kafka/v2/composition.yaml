@@ -2,11 +2,11 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: kafkas-next.catalog.cluster.local
+  name: kafkas-v2.catalog.cluster.local
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v2
-    kind: KafkaCompositeNext
+    kind: KafkaCompositeV2
 
   writeConnectionSecretsToNamespace: crossplane-system
 

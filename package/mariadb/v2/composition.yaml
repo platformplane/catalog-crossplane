@@ -1,11 +1,11 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: mariadbs-next.catalog.cluster.local
+  name: mariadbs-v2.catalog.cluster.local
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v2
-    kind: MariaDBCompositeNext
+    kind: MariaDBCompositeV2
 
   writeConnectionSecretsToNamespace: crossplane-system
 

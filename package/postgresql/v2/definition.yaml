@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
-  name: postgresqlcompositesnext.catalog.cluster.local
+  name: postgresqlcompositesv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
   metadata:
@@ -15,8 +15,8 @@ spec:
       catalog.cluster.local/url: "https://www.postgresql.org/"
       catalog.cluster.local/tags: "database,unmanaged,helm"
   names:
-    kind: PostgreSQLCompositeNext
-    plural: postgresqlcompositesnext
+    kind: PostgreSQLCompositeV2
+    plural: postgresqlcompositesv2
   versions:
     - name: v2
       served: true

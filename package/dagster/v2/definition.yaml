@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
-  name: dagstercompositesnext.catalog.cluster.local
+  name: dagstercompositesv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
   metadata:
@@ -15,8 +15,8 @@ spec:
       catalog.cluster.local/url: "https://dagster.io"
       catalog.cluster.local/tags: "datascience,unmanaged,helm"
   names:
-    kind: DagsterCompositeNext
-    plural: dagstercompositesnext
+    kind: DagsterCompositeV2
+    plural: dagstercompositesv2
   versions:
     - name: v2
       served: true

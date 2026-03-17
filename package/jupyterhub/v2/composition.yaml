@@ -2,11 +2,11 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: jupyterhubs-next.catalog.cluster.local
+  name: jupyterhubs-v2.catalog.cluster.local
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v2
-    kind: JupyterHubCompositeNext
+    kind: JupyterHubCompositeV2
 
   writeConnectionSecretsToNamespace: crossplane-system
 

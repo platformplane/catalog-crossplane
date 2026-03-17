@@ -1,11 +1,11 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: redises-next.catalog.cluster.local
+  name: redises-v2.catalog.cluster.local
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v2
-    kind: RedisCompositeNext
+    kind: RedisCompositeV2
 
   writeConnectionSecretsToNamespace: crossplane-system
 

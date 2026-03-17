@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
-  name: elasticsearchcompositesnext.catalog.cluster.local
+  name: elasticsearchcompositesv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
   metadata:
@@ -15,8 +15,8 @@ spec:
       catalog.cluster.local/url: "https://www.elastic.co/elasticsearch"
       catalog.cluster.local/tags: "storage,unmanaged,helm"
   names:
-    kind: ElasticsearchCompositeNext
-    plural: elasticsearchcompositesnext
+    kind: ElasticsearchCompositeV2
+    plural: elasticsearchcompositesv2
   versions:
     - name: v2
       served: true

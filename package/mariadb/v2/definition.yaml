@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
-  name: mariadbcompositesnext.catalog.cluster.local
+  name: mariadbcompositesv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
   metadata:
@@ -15,8 +15,8 @@ spec:
       catalog.cluster.local/url: "https://mariadb.org/"
       catalog.cluster.local/tags: "database,unmanaged,helm"
   names:
-    kind: MariaDBCompositeNext
-    plural: mariadbcompositesnext
+    kind: MariaDBCompositeV2
+    plural: mariadbcompositesv2
   versions:
     - name: v2
       served: true

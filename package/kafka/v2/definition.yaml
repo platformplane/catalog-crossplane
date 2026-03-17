@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
-  name: kafkacompositesnext.catalog.cluster.local
+  name: kafkacompositesv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
   metadata:
@@ -15,8 +15,8 @@ spec:
       catalog.cluster.local/url: "https://kafka.apache.org/"
       catalog.cluster.local/tags: "unmanaged,helm"
   names:
-    kind: KafkaCompositeNext
-    plural: kafkacompositesnext
+    kind: KafkaCompositeV2
+    plural: kafkacompositesv2
   versions:
     - name: v2
       served: true

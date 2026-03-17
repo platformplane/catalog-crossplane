@@ -1,11 +1,11 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: elasticsearches-next.catalog.cluster.local
+  name: elasticsearches-v2.catalog.cluster.local
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v2
-    kind: ElasticsearchCompositeNext
+    kind: ElasticsearchCompositeV2
 
   writeConnectionSecretsToNamespace: crossplane-system
 

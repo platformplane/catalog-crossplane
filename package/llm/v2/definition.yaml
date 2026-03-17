@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
-  name: llmcompositesnext.catalog.cluster.local
+  name: llmcompositesv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
   metadata:
@@ -15,8 +15,8 @@ spec:
       catalog.cluster.local/url: "https://github.com/adrianliechti/llama"
       catalog.cluster.local/tags: "ai,llm,unmanaged"
   names:
-    kind: LLMCompositeNext
-    plural: llmcompositesnext
+    kind: LLMCompositeV2
+    plural: llmcompositesv2
   versions:
     - name: v2
       served: true

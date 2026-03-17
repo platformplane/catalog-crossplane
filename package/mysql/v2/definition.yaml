@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
-  name: mysqlcompositesnext.catalog.cluster.local
+  name: mysqlcompositesv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
   metadata:
@@ -16,8 +16,8 @@ spec:
       catalog.cluster.local/url: "https://www.mysql.com/"
       catalog.cluster.local/tags: "database,unmanaged,helm"
   names:
-    kind: MySQLCompositeNext
-    plural: mysqlcompositesnext
+    kind: MySQLCompositeV2
+    plural: mysqlcompositesv2
   versions:
     - name: v2
       served: true

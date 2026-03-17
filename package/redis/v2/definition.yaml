@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
-  name: rediscompositesnext.catalog.cluster.local
+  name: rediscompositesv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
   metadata:
@@ -15,8 +15,8 @@ spec:
       catalog.cluster.local/url: "https://redis.io/"
       catalog.cluster.local/tags: "database,unmanaged,helm"
   names:
-    kind: RedisCompositeNext
-    plural: rediscompositesnext
+    kind: RedisCompositeV2
+    plural: rediscompositesv2
   versions:
     - name: v2
       served: true

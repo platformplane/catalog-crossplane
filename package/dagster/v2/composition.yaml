@@ -2,11 +2,11 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: dagsters-next.catalog.cluster.local
+  name: dagsters-v2.catalog.cluster.local
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v2
-    kind: DagsterCompositeNext
+    kind: DagsterCompositeV2
 
   writeConnectionSecretsToNamespace: crossplane-system
 

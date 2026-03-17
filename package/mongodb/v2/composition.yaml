@@ -1,11 +1,11 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: mongodbs-next.catalog.cluster.local
+  name: mongodbs-v2.catalog.cluster.local
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v2
-    kind: MongoDBCompositeNext
+    kind: MongoDBCompositeV2
 
   writeConnectionSecretsToNamespace: crossplane-system
 

@@ -1,11 +1,11 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: llms-next.catalog.cluster.local
+  name: llms-v2.catalog.cluster.local
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v2
-    kind: LLMCompositeNext
+    kind: LLMCompositeV2
 
   writeConnectionSecretsToNamespace: crossplane-system
 
