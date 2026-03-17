@@ -82,7 +82,6 @@ spec:
 
               writeConnectionSecretToRef:
                 name: {{ $xrName }}-connection-secret
-                namespace: {{ $namespace }}
             ---
             apiVersion: v1
             kind: Secret
