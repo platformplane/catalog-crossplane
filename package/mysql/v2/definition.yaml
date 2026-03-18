@@ -19,7 +19,7 @@ spec:
     kind: MySQLCompositeV2
     plural: mysqlcompositesv2
   versions:
-    - name: v2
+    - name: v1
       served: true
       referenceable: true
       schema:

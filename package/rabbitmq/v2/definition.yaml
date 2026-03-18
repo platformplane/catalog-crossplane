@@ -18,7 +18,7 @@ spec:
     kind: RabbitMQCompositeV2
     plural: rabbitmqcompositesv2
   versions:
-    - name: v2
+    - name: v1
       served: true
       referenceable: true
       schema:

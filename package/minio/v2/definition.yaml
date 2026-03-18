@@ -18,7 +18,7 @@ spec:
     kind: MinIOCompositeV2
     plural: miniocompositesv2
   versions:
-    - name: v2
+    - name: v1
       served: true
       referenceable: true
       schema:

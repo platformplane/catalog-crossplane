@@ -2,6 +2,8 @@ apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
   name: elasticsearches.catalog.cluster.local
+  labels:
+    catalog.cluster.local/definition-mode: legacy
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v1

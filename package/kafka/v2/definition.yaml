@@ -18,7 +18,7 @@ spec:
     kind: KafkaCompositeV2
     plural: kafkacompositesv2
   versions:
-    - name: v2
+    - name: v1
       served: true
       referenceable: true
       schema:

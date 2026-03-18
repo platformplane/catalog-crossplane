@@ -18,7 +18,7 @@ spec:
     kind: JenkinsCompositeV2
     plural: jenkinscompositesv2
   versions:
-    - name: v2
+    - name: v1
       served: true
       referenceable: true
       schema:

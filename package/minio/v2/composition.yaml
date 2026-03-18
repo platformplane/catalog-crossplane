@@ -4,7 +4,7 @@ metadata:
   name: minios-v2.catalog.cluster.local
 spec:
   compositeTypeRef:
-    apiVersion: catalog.cluster.local/v2
+    apiVersion: catalog.cluster.local/v1
     kind: MinIOCompositeV2
 
   writeConnectionSecretsToNamespace: crossplane-system

@@ -18,7 +18,7 @@ spec:
     kind: DagsterCompositeV2
     plural: dagstercompositesv2
   versions:
-    - name: v2
+    - name: v1
       served: true
       referenceable: true
       schema:

@@ -18,7 +18,7 @@ spec:
     kind: MongoDBCompositeV2
     plural: mongodbcompositesv2
   versions:
-    - name: v2
+    - name: v1
       served: true
       referenceable: true
       schema:

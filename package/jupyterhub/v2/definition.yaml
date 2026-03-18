@@ -18,7 +18,7 @@ spec:
     kind: JupyterHubCompositeV2
     plural: jupyterhubcompositesv2
   versions:
-    - name: v2
+    - name: v1
       served: true
       referenceable: true
       schema:

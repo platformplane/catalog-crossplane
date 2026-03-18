@@ -3,6 +3,8 @@ apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
   name: mysqls.catalog.cluster.local
+  labels:
+    catalog.cluster.local/definition-mode: legacy
   annotations:
     catalog.cluster.local/title: "MySQL"
     catalog.cluster.local/description: "Unmanaged MySQL instance running within the cluster."
