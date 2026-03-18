@@ -34,8 +34,9 @@ spec:
             {{ $params := .observed.composite.resource.spec.parameters }}
 
             {{ $size := $params.size | default "8Gi" }}
+            {{ $rootPassword := dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "auth" "rootPassword" (randAlphaNum 32) .observed }}
 
-            {{ $versionMapping := dict "8" "10.2.4" }}
+            {{ $versionMapping := dict "8" "1.0.7" }}
             {{ $specVersion := $params.version | default "8" }}
             {{ $version := index $versionMapping $specVersion }}
 
@@ -52,25 +53,25 @@ spec:
                 kind: ClusterProviderConfig
                 name: provider-helm
               forProvider:
-                chart: # https://artifacthub.io/packages/helm/bitnami/mysql
+                chart: # https://artifacthub.io/packages/helm/comet-mysql-helm/mysql
                   name: mysql
-                  repository: oci://registry-1.docker.io/bitnamicharts
+                  repository: https://comet-ml.github.io/comet-mysql-helm/
                   version: {{ $version }}
                 namespace: {{ $namespace }}
                 values:
                   fullnameOverride: {{ $xrName }}
-                  commonLabels:
-                    catalog.cluster.local/kind: {{ $kind }}
-                    catalog.cluster.local/name: {{ $xrName }}
-                  architecture: standalone
+                  global:
+                    commonLabels:
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
+                  architecture:
+                    mode: standalone
                   auth:
+                    rootPassword: {{ $rootPassword | quote }}
                     database: db
                   primary:
                     persistence:
                       size: {{ $size }}
-                    persistentVolumeClaimRetentionPolicy:
-                      enabled: true
-                      whenDeleted: Delete
                   # metrics:
                   #   enabled: true
                   #   serviceMonitor:

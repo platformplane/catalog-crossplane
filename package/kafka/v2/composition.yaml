@@ -28,8 +28,11 @@ spec:
             {{ $params := .observed.composite.resource.spec.parameters }}
 
             {{ $size := $params.size | default "8Gi" }}
+            {{ $username := dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "kafka" "auth" "username" "user" .observed }}
+            {{ $generatedPassword := randAlphaNum 32 | b64enc }}
+            {{ $password := dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "kafka" "auth" "password" $generatedPassword .observed }}
 
-            {{ $versionMapping := dict "3" "28.3.0" }}
+            {{ $versionMapping := dict "3" "0.1.35" }}
             {{ $specVersion := $params.version | default "3" }}
             {{ $version := index $versionMapping $specVersion }}
 
@@ -46,48 +49,42 @@ spec:
                 kind: ClusterProviderConfig
                 name: provider-helm
               forProvider:
-                chart: # https://artifacthub.io/packages/helm/bitnami/kafka
+                chart: # https://artifacthub.io/packages/helm/cagriekin/kafka
                   name: kafka
-                  repository: oci://registry-1.docker.io/bitnamicharts
+                  repository: https://cagriekin.github.io/charts
                   version: {{ $version }}
                 namespace: {{ $namespace }}
                 values:
                   fullnameOverride: {{ $xrName }}
-                  commonLabels:
-                    catalog.cluster.local/kind: {{ $kind }}
-                    catalog.cluster.local/name: {{ $xrName }}
-                  sasl:
-                    client:
-                      users:
-                        - user
-                  controller:
-                    persistence:
-                      size: {{ $size }}
-                    replicaCount: 1
-                  broker:
-                    persistence:
-                      size: {{ $size }}
-                  # metrics:
-                  #   enabled: true
-                  #   kafka:
-                  #     enabled: true
-                  #   serviceMonitor:
-                  #     enabled: true
-                  extraConfig: |-
-                    offsets.topic.replication.factor=1
-                    transaction.state.log.replication.factor=1
+                  kafka:
+                    broker:
+                      replicaCount: 1
+                      persistence:
+                        size: {{ $size }}
+                    controller:
+                      replicaCount: 1
+                      persistence:
+                        size: {{ $size }}
+                    auth:
+                      username: {{ $username | quote }}
+                      password: {{ $password | quote }}
+                  exporters:
+                    kafka:
+                      enabled: false
+                  networkPolicy:
+                    enabled: false
 
               connectionDetails:
                 - apiVersion: v1
                   kind: Secret
-                  name: {{ $xrName }}-user-passwords
+                  name: {{ $xrName }}-kafka-secret
                   namespace: {{ $namespace }}
-                  fieldPath: data.client-passwords
+                  fieldPath: data.password
                   toConnectionSecretKey: password
 
                 - apiVersion: v1
                   kind: Service
-                  name: {{ $xrName }}
+                  name: {{ $xrName }}-kafka-broker
                   namespace: {{ $namespace }}
                   fieldPath: spec.ports[0].port
                   toConnectionSecretKey: port
@@ -108,8 +105,8 @@ spec:
             {{- $helmSecret := (index $.observed.resources "helm-release").connectionDetails | default dict }}
             {{- if and $helmSecret.password $helmSecret.port }}
             data:
-              host: {{ printf "%s.%s" $xrName $namespace | b64enc }}
-              username: {{ dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "sasl" "client" "users" (list "user") .observed | first | b64enc }}
+              host: {{ printf "%s-kafka-broker-0.%s-kafka-broker.%s.svc.cluster.local" $xrName $xrName $namespace | b64enc }}
+              username: {{ dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "kafka" "auth" "username" "user" .observed | b64enc }}
               password: {{ $helmSecret.password }}
               port: {{ $helmSecret.port }}
               saslmechanism: {{ "PLAIN" | b64enc }}
