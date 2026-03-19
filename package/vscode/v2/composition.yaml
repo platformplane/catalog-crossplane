@@ -1,0 +1,416 @@
+# Composition Definition: https://doc.crds.dev/github.com/crossplane/crossplane/apiextensions.crossplane.io/Composition/v1@v1.15.0
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: vscodes-v2.catalog.cluster.local
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v1
+    kind: VSCodeCompositeV2
+
+  writeConnectionSecretsToNamespace: crossplane-system
+
+  mode: Pipeline
+  pipeline:
+    - step: get-environment-configs
+      functionRef:
+        name: crossplane-contrib-function-environment-configs
+      input:
+        apiVersion: environmentconfigs.fn.crossplane.io/v1beta1
+        kind: Input
+        spec:
+          environmentConfigs:
+            - type: Reference
+              ref:
+                name: environment
+
+    - step: vscode
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{ $kind := .observed.composite.resource.kind }}
+            {{ $xrName := .observed.composite.resource.metadata.name }}
+            {{ $namespace := .observed.composite.resource.metadata.namespace }}
+
+            {{ $params := .observed.composite.resource.spec.parameters }}
+            {{ $host := regexReplaceAll "[^a-z0-9-]" ($xrName | lower) "" }}
+            {{ $zone := index $.context "apiextensions.crossplane.io/environment" "zone" }}
+            {{ $workspaceSize := $params.workspaceSize | default "10Gi" }}
+
+            {{ $pythonImageMapping := dict "3.11" "mcr.microsoft.com/devcontainers/python:3.11-bookworm" "3.12" "mcr.microsoft.com/devcontainers/python:3.12-bookworm" }}
+            {{ $pythonVersion := $params.pythonVersion | default "3.12" }}
+            {{ $pythonImage := index $pythonImageMapping $pythonVersion }}
+
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $xrName }}-secret
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "secret"
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: Secret
+                  metadata:
+                    name: {{ $xrName }}
+                    namespace: {{ $namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
+                      app.kubernetes.io/name: vscode
+                      app.kubernetes.io/instance: {{ $xrName }}
+                  stringData:
+                    username: vscode
+                    password: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" (randAlphaNum 20) .observed }}
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $xrName }}-pvc
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "persistentvolumeclaim"
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: PersistentVolumeClaim
+                  metadata:
+                    name: {{ $xrName }}
+                    namespace: {{ $namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
+                      app.kubernetes.io/name: vscode
+                      app.kubernetes.io/instance: {{ $xrName }}
+                  spec:
+                    accessModes:
+                      - ReadWriteOnce
+                    resources:
+                      requests:
+                        storage: {{ $workspaceSize }}
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $xrName }}-configmap
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "bootstrap-config"
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: ConfigMap
+                  metadata:
+                    name: {{ $xrName }}-bootstrap
+                    namespace: {{ $namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
+                      app.kubernetes.io/name: vscode
+                      app.kubernetes.io/instance: {{ $xrName }}
+                  data:
+                    init.sh: |
+                      #!/usr/bin/env bash
+                      set -euo pipefail
+
+                      mkdir -p /workspace /workspace/.devcontainer /workspace/.vscode-data /workspace/.vscode-extensions
+
+                      if ! command -v curl >/dev/null 2>&1; then
+                        export DEBIAN_FRONTEND=noninteractive
+                        apt-get update
+                        apt-get install -y --no-install-recommends curl ca-certificates
+                        rm -rf /var/lib/apt/lists/*
+                      fi
+
+                      if [ ! -x /tools/code-server/bin/code-server ]; then
+                        curl -fsSL https://code-server.dev/install.sh | sh -s -- --version 4.111.0 --method=standalone --prefix=/tools/code-server
+                      fi
+
+                      if [ ! -f /workspace/.devcontainer/devcontainer.json ]; then
+                        cp /bootstrap/devcontainer.json /workspace/.devcontainer/devcontainer.json
+                      fi
+
+                      if [ ! -f /workspace/.devcontainer/Dockerfile ]; then
+                        cp /bootstrap/Dockerfile /workspace/.devcontainer/Dockerfile
+                      fi
+
+                      if [ ! -f /workspace/requirements.txt ]; then
+                        cp /bootstrap/requirements.txt /workspace/requirements.txt
+                      fi
+
+                      if [ ! -f /workspace/app.py ]; then
+                        cp /bootstrap/app.py /workspace/app.py
+                      fi
+
+                      chown -R 1000:1000 /workspace
+                    run.sh: |
+                      #!/usr/bin/env bash
+                      set -euo pipefail
+
+                      export HOME=/workspace
+                      mkdir -p /workspace/.code-server /workspace/.vscode-data /workspace/.vscode-extensions
+
+                      cat > /workspace/.code-server/config.yaml <<EOF
+                      bind-addr: 0.0.0.0:13337
+                      auth: password
+                      password: ${PASSWORD}
+                      cert: false
+                      EOF
+
+                      if ! /tools/code-server/bin/code-server --extensions-dir /workspace/.vscode-extensions --list-extensions | grep -qx 'ms-python.python'; then
+                        /tools/code-server/bin/code-server --extensions-dir /workspace/.vscode-extensions --install-extension ms-python.python || true
+                      fi
+
+                      exec /tools/code-server/bin/code-server \
+                        --config /workspace/.code-server/config.yaml \
+                        --user-data-dir /workspace/.vscode-data \
+                        --extensions-dir /workspace/.vscode-extensions \
+                        --disable-telemetry \
+                        --disable-update-check \
+                        /workspace
+                    devcontainer.json: |
+                      {
+                        "name": "Python Dev Container",
+                        "image": "{{ $pythonImage }}",
+                        "remoteUser": "vscode",
+                        "customizations": {
+                          "vscode": {
+                            "settings": {
+                              "python.defaultInterpreterPath": "/usr/local/bin/python",
+                              "python.terminal.activateEnvironment": false
+                            },
+                            "extensions": [
+                              "ms-python.python"
+                            ]
+                          }
+                        },
+                        "postCreateCommand": "python -m pip install -r requirements.txt"
+                      }
+                    Dockerfile: |
+                      FROM {{ $pythonImage }}
+
+                      RUN apt-get update && \
+                          export DEBIAN_FRONTEND=noninteractive && \
+                          apt-get install -y --no-install-recommends git && \
+                          rm -rf /var/lib/apt/lists/*
+                    requirements.txt: |
+                      ruff
+                      pytest
+                    app.py: |
+                      print("Hello from VS Code Python devcontainer")
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $xrName }}-deployment
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "deployment"
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: apps/v1
+                  kind: Deployment
+                  metadata:
+                    name: {{ $xrName }}
+                    namespace: {{ $namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
+                      app.kubernetes.io/name: vscode
+                      app.kubernetes.io/instance: {{ $xrName }}
+                  spec:
+                    selector:
+                      matchLabels:
+                        catalog.cluster.local/kind: {{ $kind }}
+                        catalog.cluster.local/name: {{ $xrName }}
+                        app.kubernetes.io/name: vscode
+                        app.kubernetes.io/instance: {{ $xrName }}
+                    template:
+                      metadata:
+                        labels:
+                          catalog.cluster.local/kind: {{ $kind }}
+                          catalog.cluster.local/name: {{ $xrName }}
+                          app.kubernetes.io/name: vscode
+                          app.kubernetes.io/instance: {{ $xrName }}
+                      spec:
+                        securityContext:
+                          fsGroup: 1000
+                        initContainers:
+                          - name: bootstrap
+                            image: {{ $pythonImage }}
+                            imagePullPolicy: IfNotPresent
+                            command: ["/bin/bash", "/bootstrap/init.sh"]
+                            volumeMounts:
+                              - name: workspace
+                                mountPath: /workspace
+                              - name: tools
+                                mountPath: /tools
+                              - name: bootstrap
+                                mountPath: /bootstrap
+                        containers:
+                          - name: vscode
+                            image: {{ $pythonImage }}
+                            imagePullPolicy: IfNotPresent
+                            securityContext:
+                              runAsUser: 1000
+                              runAsGroup: 1000
+                              allowPrivilegeEscalation: false
+                            command: ["/bin/bash", "/bootstrap/run.sh"]
+                            env:
+                              - name: PASSWORD
+                                valueFrom:
+                                  secretKeyRef:
+                                    name: {{ $xrName }}
+                                    key: password
+                            ports:
+                              - name: http
+                                containerPort: 13337
+                            readinessProbe:
+                              httpGet:
+                                path: /healthz
+                                port: 13337
+                              initialDelaySeconds: 15
+                              periodSeconds: 10
+                            livenessProbe:
+                              httpGet:
+                                path: /healthz
+                                port: 13337
+                              initialDelaySeconds: 30
+                              periodSeconds: 30
+                            volumeMounts:
+                              - name: workspace
+                                mountPath: /workspace
+                              - name: tools
+                                mountPath: /tools
+                              - name: bootstrap
+                                mountPath: /bootstrap
+                            resources: {}
+                        volumes:
+                          - name: workspace
+                            persistentVolumeClaim:
+                              claimName: {{ $xrName }}
+                          - name: tools
+                            emptyDir: {}
+                          - name: bootstrap
+                            configMap:
+                              name: {{ $xrName }}-bootstrap
+                              defaultMode: 493
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $xrName }}-service
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "service"
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: Service
+                  metadata:
+                    name: {{ $xrName }}
+                    namespace: {{ $namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
+                      app.kubernetes.io/name: vscode
+                      app.kubernetes.io/instance: {{ $xrName }}
+                  spec:
+                    type: ClusterIP
+                    selector:
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
+                      app.kubernetes.io/name: vscode
+                      app.kubernetes.io/instance: {{ $xrName }}
+                    ports:
+                      - name: http
+                        port: 80
+                        targetPort: 13337
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $xrName }}-ingress
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "ingress"
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: networking.k8s.io/v1
+                  kind: Ingress
+                  metadata:
+                    name: {{ $xrName }}
+                    namespace: {{ $namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
+                      app.kubernetes.io/name: vscode
+                      app.kubernetes.io/instance: {{ $xrName }}
+                    annotations:
+                      kubernetes.io/tls-acme: "true"
+                  spec:
+                    {{- if or ($params.ingress.public) (eq $params.ingress nil) }}
+                    ingressClassName: nginx
+                    {{- else }}
+                    ingressClassName: nginx-internal
+                    {{- end }}
+                    rules:
+                      - host: {{ $host }}.{{ $zone }}
+                        http:
+                          paths:
+                            - backend:
+                                service:
+                                  name: {{ $xrName }}
+                                  port:
+                                    number: 80
+                              path: /
+                              pathType: Prefix
+                    tls:
+                      - hosts:
+                          - {{ $host }}.{{ $zone }}
+                        secretName: {{ $xrName }}-tls
+            ---
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              name: {{ $xrName }}-connection
+              namespace: {{ $namespace }}
+              annotations:
+                {{ setResourceNameAnnotation "connection-secret" }}
+            {{ if eq $.observed.resources nil }}
+            data: {}
+            {{ else }}
+            data:
+              host: {{ printf "%s.%s" $host $zone | b64enc }}
+              url: {{ printf "https://%s.%s" $host $zone | b64enc }}
+              username: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "username" "vscode" .observed | b64enc }}
+              password: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" "no value yet" .observed | b64enc }}
+              workspacePath: {{ "/workspace" | b64enc }}
+
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready

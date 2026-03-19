@@ -1,0 +1,58 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: vscodecompositesv2.catalog.cluster.local
+spec:
+  group: catalog.cluster.local
+  metadata:
+    labels:
+      catalog.cluster.local/kind: VSCode
+    annotations:
+      catalog.cluster.local/title: "VS Code Python"
+      catalog.cluster.local/description: "Browser-based VS Code development environment backed by a Python devcontainer image."
+      catalog.cluster.local/icon: "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMwMDdBQ0MiLz48cGF0aCBmaWxsPSIjZmZmIiBkPSJNMTggMjAgMzIgMTBsMTQgNnYzMmwtMTQgNi0xNC0xMCAxNC0xMi0xNC0xMlptMTQtNXYzNGw5LTMuOVYxOC45TDMyIDE1WiIvPjxwYXRoIGZpbGw9IiNDRkU4RkYiIGQ9Im0xOCAyMCAxNCAxMi0xNCAxMlYyMFoiLz48L3N2Zz4="
+      catalog.cluster.local/maintainer: ""
+      catalog.cluster.local/url: "https://code-server.dev/"
+      catalog.cluster.local/tags: "developer-tools,workspace,python,unmanaged,kubernetes"
+  names:
+    kind: VSCodeCompositeV2
+    plural: vscodecompositesv2
+  versions:
+    - name: v1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: VSCode is the Schema for browser-based Python development environments.
+          type: object
+          properties:
+            spec:
+              description: VSCodeSpec defines the desired state of a VS Code development environment.
+              type: object
+              properties:
+                crossplane:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+                parameters:
+                  type: object
+                  properties:
+                    workspaceSize:
+                      type: string
+                      default: "10Gi"
+                      description: Persistent workspace size.
+                      pattern: ^(?<size>\d+(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?)$
+                    pythonVersion:
+                      type: string
+                      default: "3.12"
+                      description: Python version used for the devcontainer base image.
+                      enum:
+                        - "3.11"
+                        - "3.12"
+                    ingress:
+                      type: object
+                      default: {}
+                      properties:
+                        public:
+                          type: boolean
+                          default: true
+                          description: Expose a public endpoint. If false, the internal ingress class is used.
