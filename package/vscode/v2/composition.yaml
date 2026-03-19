@@ -410,6 +410,7 @@ spec:
               username: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "username" "vscode" .observed | b64enc }}
               password: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" "no value yet" .observed | b64enc }}
               workspacePath: {{ "/workspace" | b64enc }}
+            {{ end }}
 
     - step: automatically-detect-ready-composed-resources
       functionRef:
