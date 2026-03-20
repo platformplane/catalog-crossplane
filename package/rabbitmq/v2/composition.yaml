@@ -65,6 +65,8 @@ spec:
                   persistentVolumeClaimRetentionPolicy:
                     enabled: true
                     whenDeleted: Delete
+                  pdb:
+                    create: false
                   # metrics:
                   #   enabled: true
                   #   serviceMonitor:

@@ -66,6 +66,8 @@ spec:
                     labels:
                       catalog.cluster.local/kind: {{ $kind }}
                       catalog.cluster.local/name: {{ $xrName }}
+                    pdb:
+                      enabled: false
                     config:
                       Authenticator:
                         admin_users:
@@ -75,6 +77,13 @@ spec:
                       JupyterHub:
                         admin_access: true
                         authenticator_class: dummy
+                  proxy:
+                    chp:
+                      pdb:
+                        enabled: false
+                    traefik:
+                      pdb:
+                        enabled: false
                   ingress:
                     enabled: true
                     {{- if or ($params.ingress.public) (eq $params.ingress nil) }}
@@ -92,6 +101,10 @@ spec:
                           - {{ $host }}.{{ $zone }}
                   scheduling:
                     userScheduler:
+                      enabled: false
+                      pdb:
+                        enabled: false
+                    userPlaceholder:
                       enabled: false
             ---
             {{ $values := dig "resources" "helm-release" "resource" "spec" "forProvider" "values" dict .observed }}

@@ -66,10 +66,21 @@ spec:
                     catalog.cluster.local/name: {{ $xrName }}
                   fullnameOverride: {{ $xrName }}
                   useStandardNaming: true
+                  apiServer:
+                    podDisruptionBudget:
+                      enabled: false
+                  scheduler:
+                    podDisruptionBudget:
+                      enabled: false
                   webserver:
+                    podDisruptionBudget:
+                      enabled: false
                     defaultUser:
                       username: admin
                       password: {{ dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "webserver" "defaultUser" "password" (randAlphaNum 12) .observed }}
+                  pgbouncer:
+                    podDisruptionBudget:
+                      enabled: false
                   ingress:
                     enabled: true
                     web:

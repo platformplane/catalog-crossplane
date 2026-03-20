@@ -59,10 +59,14 @@ spec:
                   kafka:
                     broker:
                       replicaCount: 1
+                      podDisruptionBudget:
+                        enabled: false
                       persistence:
                         size: {{ $size }}
                     controller:
                       replicaCount: 1
+                      podDisruptionBudget:
+                        enabled: false
                       persistence:
                         size: {{ $size }}
                     auth:
@@ -71,6 +75,8 @@ spec:
                   exporters:
                     kafka:
                       enabled: false
+                      podDisruptionBudget:
+                        enabled: false
                   networkPolicy:
                     enabled: false
 

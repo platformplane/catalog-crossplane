@@ -56,6 +56,8 @@ spec:
                     catalog.cluster.local/kind: {{ $kind }}
                     catalog.cluster.local/name: {{ $xrName }}
                   architecture: standalone
+                  pdb:
+                    enabled: false
                   master:
                     persistence:
                       size: {{ $size }}
