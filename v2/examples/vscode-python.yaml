@@ -1,0 +1,11 @@
+apiVersion: catalog.cluster.local/v1
+kind: VSCodeCompositeV2
+metadata:
+  name: vscode-python-sample
+  namespace: crossplane-v2-migration-tests
+spec:
+  parameters:
+    pythonVersion: "3.12"
+    workspaceSize: "10Gi"
+    ingress:
+      public: true

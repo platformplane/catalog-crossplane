@@ -1,4 +1,4 @@
-apiVersion: catalog.cluster.local/v2
+apiVersion: catalog.cluster.local/v1
 kind: MyDb
 metadata:
   name: mydb-v2-example
