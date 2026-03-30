@@ -1,7 +1,9 @@
 apiVersion: catalog.cluster.local/v1
-kind: Kafka
+kind: KafkaCompositeV2
 metadata:
   name: kafka-sample
+  namespace: crossplane-v2-migration-tests
 spec:
-  size: 1Gi
-  version: "3"
+  parameters:
+    size: 1Gi
+    version: "3"

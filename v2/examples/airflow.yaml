@@ -1,9 +1,0 @@
-apiVersion: catalog.cluster.local/v1
-kind: AirflowCompositeV2
-metadata:
-  name: airflow-sample
-  namespace: crossplane-v2-migration-tests
-spec:
-  parameters:
-    ingress:
-      public: true

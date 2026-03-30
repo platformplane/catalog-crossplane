@@ -1,9 +1,0 @@
-apiVersion: catalog.cluster.local/v1
-kind: JenkinsCompositeV2
-metadata:
-  name: jenkins-private-sample
-  namespace: crossplane-v2-migration-tests
-spec:
-  parameters:
-    ingress:
-      public: false

@@ -1,7 +1,0 @@
-apiVersion: kubernetes.m.crossplane.io/v1alpha1
-kind: ClusterProviderConfig
-metadata:
-  name: provider-kubernetes
-spec:
-  credentials:
-    source: InjectedIdentity

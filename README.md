@@ -168,21 +168,21 @@ code client.properties
 # paste the following content
 security.protocol=SASL_PLAINTEXT
 sasl.mechanism=PLAIN
-sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required \
+sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required \
     username="user" \
-    password="$(kubectl get secret kafka-user-passwords --namespace test -o jsonpath='{.data.client-passwords}' | base64 -d | cut -d , -f 1)";
+    password="$(kubectl get secret kafka-sample-kafka-secret --namespace test -o jsonpath='{.data.password}' | base64 -d)";
 # save the file and run the following commands
-kubectl run kafka-kafka-client --restart='Never' --image docker.io/bitnamilegacy/kafka:3.3.2-debian-11-r11 --namespace test --command -- sleep infinity
+kubectl run kafka-kafka-client --restart='Never' --image docker.io/apache/kafka:4.1.0 --namespace test --command -- sleep infinity
 kubectl cp --namespace test ./client.properties kafka-kafka-client:/tmp/client.properties
 kubectl exec --tty -i kafka-kafka-client --namespace test -- bash
 kafka-console-producer.sh \
             --producer.config /tmp/client.properties \
-            --broker-list kafka-sample:9092 \
+            --broker-list kafka-sample-kafka-broker-0.kafka-sample-kafka-broker.test.svc.cluster.local:9092 \
             --topic test
 # write some stuff to topic
 kafka-console-consumer.sh \
             --consumer.config /tmp/client.properties \
-            --bootstrap-server kafka-sample:9092 \
+            --bootstrap-server kafka-sample-kafka-broker-0.kafka-sample-kafka-broker.test.svc.cluster.local:9092 \
             --topic test --from-beginning
 # wait until topic content is shown
 ```

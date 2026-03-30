@@ -1,9 +1,0 @@
-apiVersion: catalog.cluster.local/v1
-kind: MariaDBCompositeV2
-metadata:
-  name: my-mariadb-11-instance
-  namespace: crossplane-v2-migration-tests
-spec:
-  parameters:
-    size: "8Gi"
-    version: "11"
