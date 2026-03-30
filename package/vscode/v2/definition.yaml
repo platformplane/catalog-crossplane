@@ -4,6 +4,7 @@ metadata:
   name: vscodecompositesv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
+  scope: Namespaced
   metadata:
     labels:
       catalog.cluster.local/kind: VSCode
@@ -15,10 +16,10 @@ spec:
       catalog.cluster.local/url: "https://code-server.dev/"
       catalog.cluster.local/tags: "developer-tools,workspace,python,unmanaged,kubernetes"
   names:
-    kind: VSCodeCompositeV2
+    kind: VSCode
     plural: vscodecompositesv2
   versions:
-    - name: v1
+    - name: v2
       served: true
       referenceable: true
       schema:

@@ -4,6 +4,7 @@ metadata:
   name: rediscompositesv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
+  scope: Namespaced
   metadata:
     labels:
       catalog.cluster.local/kind: Redis
@@ -15,10 +16,10 @@ spec:
       catalog.cluster.local/url: "https://redis.io/"
       catalog.cluster.local/tags: "database,unmanaged,helm"
   names:
-    kind: RedisCompositeV2
+    kind: Redis
     plural: rediscompositesv2
   versions:
-    - name: v1
+    - name: v2
       served: true
       referenceable: true
       schema:

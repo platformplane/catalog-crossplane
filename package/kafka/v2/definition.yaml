@@ -4,6 +4,7 @@ metadata:
   name: kafkacompositesv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
+  scope: Namespaced
   metadata:
     labels:
       catalog.cluster.local/kind: Kafka
@@ -15,10 +16,10 @@ spec:
       catalog.cluster.local/url: "https://kafka.apache.org/"
       catalog.cluster.local/tags: "unmanaged,helm"
   names:
-    kind: KafkaCompositeV2
+    kind: Kafka
     plural: kafkacompositesv2
   versions:
-    - name: v1
+    - name: v2
       served: true
       referenceable: true
       schema:

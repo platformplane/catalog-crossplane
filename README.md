@@ -2,7 +2,7 @@
 
 Crossplane configuration package containing multiple basic services like a PostgreSQL database for the Platform Plane self-service catalog.
 
-![catalogv2ui](catalogv2ui.png)
+![catalogv2ui](./catalogv2ui.png)
 
 ## Repo Overview
 
@@ -10,14 +10,14 @@ Crossplane configuration package containing multiple basic services like a Postg
   - [configuration.yaml](./package/configuration.yaml) Package metadata and dependency constraints for the Crossplane v2.3.1-compatible package revision.
   - [\<catalog-item>](./package/redis/) Item-first catalog folders. Each folder contains two explicit manifest sets:
     - `v1/definition.yaml` and `v1/composition.yaml` keep the legacy Crossplane v1.20 claim/composite APIs owned by the package so already-deployed resources are not garbage-collected during upgrades.
-    - `v2/definition.yaml` and `v2/composition.yaml` define the Crossplane v2 API that should be used for all new catalog creations.
+    - `v2/definition.yaml` and `v2/composition.yaml` define the Crossplane v2 API that should be used for all new catalog creations. The public service `kind` stays the same as in `v1`; `apiVersion` is the version selector.
 - [v2](./v2/) Migration and testing helpers (examples, manual manifests, trace scripts). This folder is not part of the built package.
 - [Dockerfile](Dockerfile) The Dockerfile uses the Crossplane CLI to build and push the Crossplane configuration package (OCI image) to a registry (may be useful for local testing).
 - [.github/workflows](./.github/workflows/build-publish-images.yml) The GitHub pipeline calculates a version number and builds the Crossplane package on every commit.
 
 ## Update Strategy of Catalog Items
 
-Crossplane v1.20 support in this repository means that legacy `catalog.cluster.local/v1` resources remain part of the package ownership set after the cluster itself has been upgraded to Crossplane v2.3.1. New catalog items must be created from the `v2` manifests only.
+Crossplane v1.20 support in this repository means that legacy `catalog.cluster.local/v1` resources remain part of the package ownership set after the cluster itself has been upgraded to Crossplane v2.3.1. New catalog items must be created from the `v2` manifests only, for example with `apiVersion: catalog.cluster.local/v2` and the unchanged public service `kind`.
 
 We assume that minor versions can be updated without breaking changes. This means that the `spec.forProvider.chart.version` field in the Crossplane configuration can be updated within the same minor version (read the release notes anyways to be sure). Note that there is usually a version mapping table defined at the beginning of the inline template mapping the major product versions to the corresponding Helm chart version. Applying a new version of this Crossplane configuration including new default values for Helm charts will replace the affected Helm releases with the new version and therefore cause downtime and potentially issues for the customers! They can explicitly set the version (instead of relying on the default) to avoid this.
 
@@ -98,10 +98,9 @@ In order that the catalog actually shows your items, the Crossplane definition w
 
 ## How to add a new catalog item
 
-- create a new `package/<catalog-item>` subfolder with `v1/` and `v2/` children
-- add four manifests:
-  - `v1/definition.yaml` and `v1/composition.yaml` for the legacy compatibility API kept for already-deployed resources
-  - `v2/definition.yaml` and `v2/composition.yaml` for the API used by new catalog creations
+- create a new `package/<catalog-item>` subfolder
+- add two manifests:
+  - `definition.yaml` and `composition.yaml` for the API used by new catalog creations
 - verify that the pipeline builds the Dockerfile successfully
 - use your own platformplane space to test your catalog item by manually applying/deleting the composition and definition files
 - iterate until you are happy

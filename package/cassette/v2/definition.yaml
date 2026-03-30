@@ -4,6 +4,7 @@ metadata:
   name: cassettecompositesv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
+  scope: Namespaced
   metadata:
     labels:
       catalog.cluster.local/kind: Cassette
@@ -15,10 +16,10 @@ spec:
       catalog.cluster.local/url: "https://github.com/adrianliechti/cassette"
       catalog.cluster.local/tags: "web,unmanaged"
   names:
-    kind: CassetteCompositeV2
+    kind: Cassette
     plural: cassettecompositesv2
   versions:
-    - name: v1
+    - name: v2
       served: true
       referenceable: true
       schema:

@@ -4,6 +4,7 @@ metadata:
   name: jupyterhubcompositesv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
+  scope: Namespaced
   metadata:
     labels:
       catalog.cluster.local/kind: JupyterHub
@@ -15,10 +16,10 @@ spec:
       catalog.cluster.local/url: "https://jupyter.org/hub"
       catalog.cluster.local/tags: "datascience,unmanaged,helm"
   names:
-    kind: JupyterHubCompositeV2
+    kind: JupyterHub
     plural: jupyterhubcompositesv2
   versions:
-    - name: v1
+    - name: v2
       served: true
       referenceable: true
       schema:

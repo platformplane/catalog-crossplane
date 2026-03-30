@@ -4,6 +4,7 @@ metadata:
   name: jenkinscompositesv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
+  scope: Namespaced
   metadata:
     labels:
       catalog.cluster.local/kind: Jenkins
@@ -15,10 +16,10 @@ spec:
       catalog.cluster.local/url: "https://www.jenkins.io/"
       catalog.cluster.local/tags: "build,ci,unmanaged"
   names:
-    kind: JenkinsCompositeV2
+    kind: Jenkins
     plural: jenkinscompositesv2
   versions:
-    - name: v1
+    - name: v2
       served: true
       referenceable: true
       schema:

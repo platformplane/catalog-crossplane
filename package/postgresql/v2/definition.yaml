@@ -4,6 +4,7 @@ metadata:
   name: postgresqlcompositesv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
+  scope: Namespaced
   metadata:
     labels:
       catalog.cluster.local/kind: PostgreSQL
@@ -15,10 +16,10 @@ spec:
       catalog.cluster.local/url: "https://www.postgresql.org/"
       catalog.cluster.local/tags: "database,unmanaged,helm"
   names:
-    kind: PostgreSQLCompositeV2
+    kind: PostgreSQL
     plural: postgresqlcompositesv2
   versions:
-    - name: v1
+    - name: v2
       served: true
       referenceable: true
       schema:

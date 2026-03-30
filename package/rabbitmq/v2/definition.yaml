@@ -4,6 +4,7 @@ metadata:
   name: rabbitmqcompositesv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
+  scope: Namespaced
   metadata:
     labels:
       catalog.cluster.local/kind: RabbitMQ
@@ -15,10 +16,10 @@ spec:
       catalog.cluster.local/url: "https://www.rabbitmq.com"
       catalog.cluster.local/tags: "mq,unmanaged,helm"
   names:
-    kind: RabbitMQCompositeV2
+    kind: RabbitMQ
     plural: rabbitmqcompositesv2
   versions:
-    - name: v1
+    - name: v2
       served: true
       referenceable: true
       schema:

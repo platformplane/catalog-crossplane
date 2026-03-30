@@ -4,6 +4,7 @@ metadata:
   name: mariadbcompositesv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
+  scope: Namespaced
   metadata:
     labels:
       catalog.cluster.local/kind: MariaDB
@@ -15,10 +16,10 @@ spec:
       catalog.cluster.local/url: "https://mariadb.org/"
       catalog.cluster.local/tags: "database,unmanaged,helm"
   names:
-    kind: MariaDBCompositeV2
+    kind: MariaDB
     plural: mariadbcompositesv2
   versions:
-    - name: v1
+    - name: v2
       served: true
       referenceable: true
       schema:

@@ -4,7 +4,7 @@ metadata:
   name: mydbs.catalog.cluster.local.v2
 spec:
   compositeTypeRef:
-    apiVersion: catalog.cluster.local/v1
+    apiVersion: catalog.cluster.local/v2
     kind: MyDb
 
   writeConnectionSecretsToNamespace: crossplane-system
@@ -20,9 +20,10 @@ spec:
         source: Inline
         inline:
           template: |
-            {{ $kind := .observed.composite.resource.kind }}
-            {{ $xrName := .observed.composite.resource.metadata.name }}
-            {{ $namespace := .observed.composite.resource.metadata.namespace }}
+            {{ $xr := .observed.composite.resource }}
+            {{ $kind := $xr.kind }}
+            {{ $xrName := $xr.metadata.name }}
+            {{ $namespace := $xr.metadata.namespace }}
 
             {{ $params := .observed.composite.resource.spec.parameters }}
 

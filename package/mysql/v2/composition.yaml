@@ -11,9 +11,8 @@ metadata:
     catalog.cluster.local/tags: "database,unmanaged,helm"
 spec:
   compositeTypeRef:
-    apiVersion: catalog.cluster.local/v1
-    kind: MySQLCompositeV2
-
+    apiVersion: catalog.cluster.local/v2
+    kind: MySQL
   writeConnectionSecretsToNamespace: crossplane-system
 
   mode: Pipeline
@@ -27,9 +26,10 @@ spec:
         source: Inline
         inline:
           template: |
-            {{ $kind := .observed.composite.resource.kind }}
-            {{ $xrName := .observed.composite.resource.metadata.name }}
-            {{ $namespace := .observed.composite.resource.metadata.namespace }}
+            {{ $xr := .observed.composite.resource }}
+            {{ $kind := $xr.kind }}
+            {{ $xrName := $xr.metadata.name }}
+            {{ $namespace := $xr.metadata.namespace }}
 
             {{ $params := .observed.composite.resource.spec.parameters }}
 

@@ -1,9 +1,10 @@
 apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
-  name: mydbs.catalog.cluster.local
+  name: mydbcompositesv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
+  scope: Namespaced
   metadata:
     labels:
       catalog.cluster.local/kind: MyDb
@@ -16,9 +17,9 @@ spec:
       catalog.cluster.local/tags: "database,unmanaged,helm"
   names:
     kind: MyDb
-    plural: mydbs
+    plural: mydbcompositesv2
   versions:
-    - name: v1
+    - name: v2
       served: true
       referenceable: true
       schema:

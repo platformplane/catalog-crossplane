@@ -4,6 +4,7 @@ metadata:
   name: elasticsearchcompositesv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
+  scope: Namespaced
   metadata:
     labels:
       catalog.cluster.local/kind: Elasticsearch
@@ -15,10 +16,10 @@ spec:
       catalog.cluster.local/url: "https://www.elastic.co/elasticsearch"
       catalog.cluster.local/tags: "storage,unmanaged,helm"
   names:
-    kind: ElasticsearchCompositeV2
+    kind: Elasticsearch
     plural: elasticsearchcompositesv2
   versions:
-    - name: v1
+    - name: v2
       served: true
       referenceable: true
       schema:

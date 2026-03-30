@@ -4,6 +4,7 @@ metadata:
   name: airflowcompositesv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
+  scope: Namespaced
   metadata:
     labels:
       catalog.cluster.local/kind: Airflow
@@ -15,10 +16,10 @@ spec:
       catalog.cluster.local/url: "https://airflow.apache.org/"
       catalog.cluster.local/tags: "data,unmanaged"
   names:
-    kind: AirflowCompositeV2
+    kind: Airflow
     plural: airflowcompositesv2
   versions:
-    - name: v1
+    - name: v2
       served: true
       referenceable: true
       schema:

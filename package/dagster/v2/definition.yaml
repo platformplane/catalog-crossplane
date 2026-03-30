@@ -4,6 +4,7 @@ metadata:
   name: dagstercompositesv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
+  scope: Namespaced
   metadata:
     labels:
       catalog.cluster.local/kind: Dagster
@@ -15,10 +16,10 @@ spec:
       catalog.cluster.local/url: "https://dagster.io"
       catalog.cluster.local/tags: "datascience,unmanaged,helm"
   names:
-    kind: DagsterCompositeV2
+    kind: Dagster
     plural: dagstercompositesv2
   versions:
-    - name: v1
+    - name: v2
       served: true
       referenceable: true
       schema:

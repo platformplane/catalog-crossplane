@@ -4,6 +4,7 @@ metadata:
   name: mysqlcompositesv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
+  scope: Namespaced
   metadata:
     labels:
       catalog.cluster.local/kind: MySQL
@@ -16,10 +17,10 @@ spec:
       catalog.cluster.local/url: "https://www.mysql.com/"
       catalog.cluster.local/tags: "database,unmanaged,helm"
   names:
-    kind: MySQLCompositeV2
+    kind: MySQL
     plural: mysqlcompositesv2
   versions:
-    - name: v1
+    - name: v2
       served: true
       referenceable: true
       schema:
