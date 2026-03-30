@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
-  name: airflowcompositesv2.catalog.cluster.local
+  name: airflowv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
   scope: Namespaced
@@ -17,7 +17,7 @@ spec:
       catalog.cluster.local/tags: "data,unmanaged"
   names:
     kind: Airflow
-    plural: airflowcompositesv2
+    plural: airflowv2
   versions:
     - name: v2
       served: true

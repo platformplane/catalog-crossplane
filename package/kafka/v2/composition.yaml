@@ -2,7 +2,7 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: kafkas-v2.catalog.cluster.local
+  name: kafkav2.catalog.cluster.local
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v2

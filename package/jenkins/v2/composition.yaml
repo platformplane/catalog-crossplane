@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: jenkinses-v2.catalog.cluster.local
+  name: jenkinsv2.catalog.cluster.local
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v2

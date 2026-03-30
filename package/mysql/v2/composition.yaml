@@ -2,7 +2,7 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: mysqls-v2.catalog.cluster.local
+  name: mysqlv2.catalog.cluster.local
   annotations:
     catalog.cluster.local/title: "MySQLV2"
     catalog.cluster.local/description: "Unmanaged MySQL instance running within the cluster."

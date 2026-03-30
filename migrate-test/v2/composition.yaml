@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: mydbs.catalog.cluster.local.v2
+  name: mydbv2.catalog.cluster.local
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v2

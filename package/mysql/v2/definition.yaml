@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
-  name: mysqlcompositesv2.catalog.cluster.local
+  name: mysqlv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
   scope: Namespaced
@@ -18,7 +18,7 @@ spec:
       catalog.cluster.local/tags: "database,unmanaged,helm"
   names:
     kind: MySQL
-    plural: mysqlcompositesv2
+    plural: mysqlv2
   versions:
     - name: v2
       served: true

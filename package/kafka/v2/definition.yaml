@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
-  name: kafkacompositesv2.catalog.cluster.local
+  name: kafkav2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
   scope: Namespaced
@@ -17,7 +17,7 @@ spec:
       catalog.cluster.local/tags: "unmanaged,helm"
   names:
     kind: Kafka
-    plural: kafkacompositesv2
+    plural: kafkav2
   versions:
     - name: v2
       served: true

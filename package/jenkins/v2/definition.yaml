@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
-  name: jenkinscompositesv2.catalog.cluster.local
+  name: jenkinsv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
   scope: Namespaced
@@ -17,7 +17,7 @@ spec:
       catalog.cluster.local/tags: "build,ci,unmanaged"
   names:
     kind: Jenkins
-    plural: jenkinscompositesv2
+    plural: jenkinsv2
   versions:
     - name: v2
       served: true

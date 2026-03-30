@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
-  name: rabbitmqcompositesv2.catalog.cluster.local
+  name: rabbitmqv2.catalog.cluster.local
 spec:
   group: catalog.cluster.local
   scope: Namespaced
@@ -17,7 +17,7 @@ spec:
       catalog.cluster.local/tags: "mq,unmanaged,helm"
   names:
     kind: RabbitMQ
-    plural: rabbitmqcompositesv2
+    plural: rabbitmqv2
   versions:
     - name: v2
       served: true
