@@ -7,7 +7,7 @@ spec:
   scope: Namespaced
   metadata:
     labels:
-      catalog.cluster.local/kind: MySQL
+      catalog.cluster.local/kind: MySQLV2
     annotations:
       catalog.cluster.local/title: "MySQL"
       catalog.cluster.local/description: "Unmanaged MySQL instance running within the cluster."
@@ -17,7 +17,7 @@ spec:
       catalog.cluster.local/url: "https://www.mysql.com/"
       catalog.cluster.local/tags: "database,unmanaged,helm"
   names:
-    kind: MySQL
+    kind: MySQLV2
     plural: mysqlv2
   versions:
     - name: v2

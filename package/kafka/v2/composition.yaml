@@ -6,7 +6,7 @@ metadata:
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v2
-    kind: Kafka
+    kind: KafkaV2
   writeConnectionSecretsToNamespace: crossplane-system
 
   mode: Pipeline

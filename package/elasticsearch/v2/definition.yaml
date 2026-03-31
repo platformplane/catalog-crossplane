@@ -7,7 +7,7 @@ spec:
   scope: Namespaced
   metadata:
     labels:
-      catalog.cluster.local/kind: Elasticsearch
+      catalog.cluster.local/kind: ElasticsearchV2
     annotations:
       catalog.cluster.local/title: "Elasticsearch"
       catalog.cluster.local/description: "Elasticsearch is a highly scalable open-source search and analytics engine. It allows you to store, search, and analyze large volumes of data quickly and in near real-time. With its distributed architecture and powerful querying capabilities, Elasticsearch is the perfect choice for building robust search and analytics applications."
@@ -16,7 +16,7 @@ spec:
       catalog.cluster.local/url: "https://www.elastic.co/elasticsearch"
       catalog.cluster.local/tags: "storage,unmanaged,helm"
   names:
-    kind: Elasticsearch
+    kind: ElasticsearchV2
     plural: elasticsearchv2
   versions:
     - name: v2

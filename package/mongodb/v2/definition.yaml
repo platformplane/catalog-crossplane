@@ -7,7 +7,7 @@ spec:
   scope: Namespaced
   metadata:
     labels:
-      catalog.cluster.local/kind: MongoDB
+      catalog.cluster.local/kind: MongoDBV2
     annotations:
       catalog.cluster.local/title: "MongoDB"
       catalog.cluster.local/description: "MongoDB is a popular NoSQL database that provides a flexible and scalable solution for storing and retrieving data. It is designed to handle large amounts of unstructured data, making it suitable for a wide range of applications."
@@ -16,7 +16,7 @@ spec:
       catalog.cluster.local/url: "https://www.mongodb.com"
       catalog.cluster.local/tags: "database,unmanaged,helm"
   names:
-    kind: MongoDB
+    kind: MongoDBV2
     plural: mongodbv2
   versions:
     - name: v2

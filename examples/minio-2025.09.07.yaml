@@ -1,5 +1,5 @@
 apiVersion: catalog.cluster.local/v2
-kind: MinIO
+kind: MinIOV2
 metadata:
   name: my-minio-2025-instance
   namespace: crossplane-v2-migration-tests

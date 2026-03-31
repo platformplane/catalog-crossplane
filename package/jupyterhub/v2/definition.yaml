@@ -7,7 +7,7 @@ spec:
   scope: Namespaced
   metadata:
     labels:
-      catalog.cluster.local/kind: JupyterHub
+      catalog.cluster.local/kind: JupyterHubV2
     annotations:
       catalog.cluster.local/title: "JupyterHub"
       catalog.cluster.local/description: "JupyterHub is an open-source tool for multi-user access to Jupyter Notebooks via a web browser."
@@ -16,7 +16,7 @@ spec:
       catalog.cluster.local/url: "https://jupyter.org/hub"
       catalog.cluster.local/tags: "datascience,unmanaged,helm"
   names:
-    kind: JupyterHub
+    kind: JupyterHubV2
     plural: jupyterhubv2
   versions:
     - name: v2

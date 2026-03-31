@@ -7,7 +7,7 @@ spec:
   scope: Namespaced
   metadata:
     labels:
-      catalog.cluster.local/kind: Airflow
+      catalog.cluster.local/kind: AirflowV2
     annotations:
       catalog.cluster.local/title: "Airflow"
       catalog.cluster.local/description: "Apache Airflow is an open-source platform for defining, scheduling, and monitoring workflows. Using Python, it manages task dependencies and integrates with various data sources, ideal for automating complex data pipelines."
@@ -16,7 +16,7 @@ spec:
       catalog.cluster.local/url: "https://airflow.apache.org/"
       catalog.cluster.local/tags: "data,unmanaged"
   names:
-    kind: Airflow
+    kind: AirflowV2
     plural: airflowv2
   versions:
     - name: v2

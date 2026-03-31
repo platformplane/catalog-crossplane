@@ -5,7 +5,7 @@ metadata:
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v2
-    kind: MongoDB
+    kind: MongoDBV2
   writeConnectionSecretsToNamespace: crossplane-system
 
   mode: Pipeline

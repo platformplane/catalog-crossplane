@@ -7,7 +7,7 @@ spec:
   scope: Namespaced
   metadata:
     labels:
-      catalog.cluster.local/kind: Redis
+      catalog.cluster.local/kind: RedisV2
     annotations:
       catalog.cluster.local/title: "Redis"
       catalog.cluster.local/description: "Redis is a fast and efficient in-memory data structure store. It provides a flexible key-value store with support for various data structures such as strings, hashes, lists, sets, and more. Redis is widely used for caching, session management, real-time analytics, pub/sub messaging, and other use cases that require high-performance data storage and retrieval."
@@ -16,7 +16,7 @@ spec:
       catalog.cluster.local/url: "https://redis.io/"
       catalog.cluster.local/tags: "database,unmanaged,helm"
   names:
-    kind: Redis
+    kind: RedisV2
     plural: redisv2
   versions:
     - name: v2

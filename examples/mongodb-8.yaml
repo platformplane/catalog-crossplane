@@ -1,5 +1,5 @@
 apiVersion: catalog.cluster.local/v2
-kind: MongoDB
+kind: MongoDBV2
 metadata:
   name: my-mongodb-instance
   namespace: crossplane-v2-migration-tests

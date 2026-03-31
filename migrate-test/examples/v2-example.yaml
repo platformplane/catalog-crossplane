@@ -1,5 +1,5 @@
 apiVersion: catalog.cluster.local/v2
-kind: MyDb
+kind: MyDbV2
 metadata:
   name: mydb-v2-example
 spec:

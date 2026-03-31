@@ -1,5 +1,5 @@
 apiVersion: catalog.cluster.local/v2
-kind: MySQL
+kind: MySQLV2
 metadata:
   name: mysql-sample
   namespace: crossplane-v2-migration-tests

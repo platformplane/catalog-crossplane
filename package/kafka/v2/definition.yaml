@@ -7,7 +7,7 @@ spec:
   scope: Namespaced
   metadata:
     labels:
-      catalog.cluster.local/kind: Kafka
+      catalog.cluster.local/kind: KafkaV2
     annotations:
       catalog.cluster.local/title: "Kafka"
       catalog.cluster.local/description: "Apache Kafka is a highly-scalable, distributed streaming platform that enables real-time data processing and messaging. It is designed to handle high-volume data streams from multiple sources, providing fault-tolerant storage and efficient data transfer. Kafka's publish-subscribe model supports both real-time and batch data processing, making it an indispensable tool for building complex data pipelines and distributed systems. Its durability, reliability, and extensibility make Kafka a favored choice for enterprises seeking to build event-driven architectures and applications that require efficient, real-time data integration and analytics."
@@ -16,7 +16,7 @@ spec:
       catalog.cluster.local/url: "https://kafka.apache.org/"
       catalog.cluster.local/tags: "unmanaged,helm"
   names:
-    kind: Kafka
+    kind: KafkaV2
     plural: kafkav2
   versions:
     - name: v2

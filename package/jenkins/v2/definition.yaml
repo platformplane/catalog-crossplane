@@ -7,7 +7,7 @@ spec:
   scope: Namespaced
   metadata:
     labels:
-      catalog.cluster.local/kind: Jenkins
+      catalog.cluster.local/kind: JenkinsV2
     annotations:
       catalog.cluster.local/title: "Jenkins"
       catalog.cluster.local/description: "Jenkins is an open-source automation server that enables developers to build, test, and deploy their software."
@@ -16,7 +16,7 @@ spec:
       catalog.cluster.local/url: "https://www.jenkins.io/"
       catalog.cluster.local/tags: "build,ci,unmanaged"
   names:
-    kind: Jenkins
+    kind: JenkinsV2
     plural: jenkinsv2
   versions:
     - name: v2

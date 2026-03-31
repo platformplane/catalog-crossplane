@@ -7,7 +7,7 @@ spec:
   scope: Namespaced
   metadata:
     labels:
-      catalog.cluster.local/kind: MyDb
+      catalog.cluster.local/kind: MyDbV2
     annotations:
       catalog.cluster.local/title: "MyDb"
       catalog.cluster.local/description: "Unmanaged MariaDB instance running within the cluster."
@@ -16,7 +16,7 @@ spec:
       catalog.cluster.local/url: "https://mariadb.org/"
       catalog.cluster.local/tags: "database,unmanaged,helm"
   names:
-    kind: MyDb
+    kind: MyDbV2
     plural: mydbv2
   versions:
     - name: v2

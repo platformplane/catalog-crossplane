@@ -7,7 +7,7 @@ spec:
   scope: Namespaced
   metadata:
     labels:
-      catalog.cluster.local/kind: RabbitMQ
+      catalog.cluster.local/kind: RabbitMQV2
     annotations:
       catalog.cluster.local/title: "RabbitMQ"
       catalog.cluster.local/description: "RabbitMQ is a powerful and flexible open-source message broker that enables efficient communication between distributed systems. It provides reliable message queuing, delivery acknowledgments, flexible routing, and support for multiple messaging protocols. RabbitMQ is widely used in modern software architectures to build scalable and resilient applications."
@@ -16,7 +16,7 @@ spec:
       catalog.cluster.local/url: "https://www.rabbitmq.com"
       catalog.cluster.local/tags: "mq,unmanaged,helm"
   names:
-    kind: RabbitMQ
+    kind: RabbitMQV2
     plural: rabbitmqv2
   versions:
     - name: v2

@@ -1,5 +1,5 @@
 apiVersion: catalog.cluster.local/v2
-kind: Elasticsearch
+kind: ElasticsearchV2
 metadata:
   name: elasticsearch-sample
   namespace: crossplane-v2-migration-tests

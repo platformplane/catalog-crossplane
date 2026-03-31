@@ -5,7 +5,7 @@ metadata:
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v2
-    kind: Jenkins
+    kind: JenkinsV2
   writeConnectionSecretsToNamespace: crossplane-system
 
   mode: Pipeline

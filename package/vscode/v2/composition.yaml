@@ -6,7 +6,7 @@ metadata:
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v2
-    kind: VSCode
+    kind: VSCodeV2
   writeConnectionSecretsToNamespace: crossplane-system
 
   mode: Pipeline

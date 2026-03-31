@@ -1,5 +1,5 @@
 apiVersion: catalog.cluster.local/v2
-kind: Kafka
+kind: KafkaV2
 metadata:
   name: kafka-sample
   namespace: crossplane-v2-migration-tests

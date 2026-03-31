@@ -6,7 +6,7 @@ metadata:
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v2
-    kind: JupyterHub
+    kind: JupyterHubV2
   writeConnectionSecretsToNamespace: crossplane-system
 
   mode: Pipeline

@@ -1,5 +1,5 @@
 apiVersion: catalog.cluster.local/v2
-kind: Dagster
+kind: DagsterV2
 metadata:
   name: dagster-sample
   namespace: crossplane-v2-migration-tests

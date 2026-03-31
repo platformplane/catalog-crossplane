@@ -1,5 +1,5 @@
 apiVersion: catalog.cluster.local/v2
-kind: Redis
+kind: RedisV2
 metadata:
   name: my-redis-instance
   namespace: crossplane-v2-migration-tests

@@ -7,7 +7,7 @@ spec:
   scope: Namespaced
   metadata:
     labels:
-      catalog.cluster.local/kind: MinIO
+      catalog.cluster.local/kind: MinIOV2
     annotations:
       catalog.cluster.local/title: "MinIO"
       catalog.cluster.local/description: "MinIO is a high-performance, distributed object storage system. It is designed for cloud-native applications and provides seamless access to data through a simple and scalable API. With its S3 compatibility, MinIO allows you to store and retrieve any amount of data from anywhere, making it the perfect choice for modern data-intensive applications."
@@ -16,7 +16,7 @@ spec:
       catalog.cluster.local/url: "https://min.io/"
       catalog.cluster.local/tags: "database,unmanaged,helm"
   names:
-    kind: MinIO
+    kind: MinIOV2
     plural: miniov2
   versions:
     - name: v2

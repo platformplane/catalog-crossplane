@@ -12,7 +12,7 @@ metadata:
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v2
-    kind: MySQL
+    kind: MySQLV2
   writeConnectionSecretsToNamespace: crossplane-system
 
   mode: Pipeline

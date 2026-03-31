@@ -7,7 +7,7 @@ spec:
   scope: Namespaced
   metadata:
     labels:
-      catalog.cluster.local/kind: Dagster
+      catalog.cluster.local/kind: DagsterV2
     annotations:
       catalog.cluster.local/title: "Dagster"
       catalog.cluster.local/description: "The data orchestrator for the whole development lifecycle, with integrated lineage and observability, a declarative programming model, and best-in-class testability."
@@ -16,7 +16,7 @@ spec:
       catalog.cluster.local/url: "https://dagster.io"
       catalog.cluster.local/tags: "datascience,unmanaged,helm"
   names:
-    kind: Dagster
+    kind: DagsterV2
     plural: dagsterv2
   versions:
     - name: v2

@@ -1,5 +1,5 @@
 apiVersion: catalog.cluster.local/v2
-kind: MariaDB
+kind: MariaDBV2
 metadata:
   name: my-mariadb-11-instance
   namespace: crossplane-v2-migration-tests

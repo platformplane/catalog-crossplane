@@ -1,5 +1,5 @@
 apiVersion: catalog.cluster.local/v2
-kind: RabbitMQ
+kind: RabbitMQV2
 metadata:
   name: my-rabbitmq-instance
   namespace: crossplane-v2-migration-tests

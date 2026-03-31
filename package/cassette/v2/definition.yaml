@@ -7,7 +7,7 @@ spec:
   scope: Namespaced
   metadata:
     labels:
-      catalog.cluster.local/kind: Cassette
+      catalog.cluster.local/kind: CassetteV2
     annotations:
       catalog.cluster.local/title: "Cassette"
       catalog.cluster.local/description: "Cassette is a simple web session recorder and player."
@@ -16,7 +16,7 @@ spec:
       catalog.cluster.local/url: "https://github.com/adrianliechti/cassette"
       catalog.cluster.local/tags: "web,unmanaged"
   names:
-    kind: Cassette
+    kind: CassetteV2
     plural: cassettev2
   versions:
     - name: v2

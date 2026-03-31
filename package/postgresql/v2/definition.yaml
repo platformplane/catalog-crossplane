@@ -7,7 +7,7 @@ spec:
   scope: Namespaced
   metadata:
     labels:
-      catalog.cluster.local/kind: PostgreSQL
+      catalog.cluster.local/kind: PostgreSQLV2
     annotations:
       catalog.cluster.local/title: "PostgreSQL"
       catalog.cluster.local/description: "PostgreSQL is a powerful, open-source relational database management system. It provides robust data integrity, advanced features, and excellent performance, making it a popular choice for applications of all sizes."
@@ -16,7 +16,7 @@ spec:
       catalog.cluster.local/url: "https://www.postgresql.org/"
       catalog.cluster.local/tags: "database,unmanaged,helm"
   names:
-    kind: PostgreSQL
+    kind: PostgreSQLV2
     plural: postgresqlv2
   versions:
     - name: v2
