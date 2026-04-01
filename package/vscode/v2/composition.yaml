@@ -2,11 +2,11 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: vscodev2.catalog.cluster.local
+  name: vscode.catalog.cluster.local
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v2
-    kind: VSCodeV2
+    kind: VSCode
   writeConnectionSecretsToNamespace: crossplane-system
 
   mode: Pipeline

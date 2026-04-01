@@ -1,5 +1,5 @@
 apiVersion: catalog.cluster.local/v2
-kind: VSCodeV2
+kind: VSCode
 metadata:
   name: vscode-python-sample
   namespace: crossplane-v2-migration-tests

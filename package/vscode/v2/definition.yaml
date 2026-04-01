@@ -1,13 +1,13 @@
 apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
-  name: vscodev2.catalog.cluster.local
+  name: vscode.catalog.cluster.local
 spec:
   group: catalog.cluster.local
   scope: Namespaced
   metadata:
     labels:
-      catalog.cluster.local/kind: VSCodeV2
+      catalog.cluster.local/kind: VSCode
     annotations:
       catalog.cluster.local/title: "VS Code Python"
       catalog.cluster.local/description: "Browser-based VS Code development environment backed by a Python devcontainer image."
@@ -16,8 +16,8 @@ spec:
       catalog.cluster.local/url: "https://code-server.dev/"
       catalog.cluster.local/tags: "developer-tools,workspace,python,unmanaged,kubernetes"
   names:
-    kind: VSCodeV2
-    plural: vscodev2
+    kind: VSCode
+    plural: vscode
   versions:
     - name: v2
       served: true

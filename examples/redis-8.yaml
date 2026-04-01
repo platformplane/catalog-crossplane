@@ -5,5 +5,5 @@ metadata:
   namespace: crossplane-v2-migration-tests
 spec:
   parameters:
-    size: "8Gi"      
+    size: "8Gi"
     version: "8"
