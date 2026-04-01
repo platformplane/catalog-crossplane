@@ -2,7 +2,7 @@ apiVersion: catalog.cluster.local/v2
 kind: JenkinsV2
 metadata:
   name: jenkins-public-sample
-  namespace: crossplane-v2-migration-tests
+  namespace: catalog-examples
 spec:
   parameters:
     ingress:

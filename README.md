@@ -11,8 +11,7 @@ Crossplane configuration package containing multiple basic services like a Postg
   - [\<catalog-item>](./package/redis/) Item-first catalog folders. Most existing items contain two manifest sets:
     - `v1/definition.yaml` and `v1/composition.yaml` keep the Crossplane v1 claim/composite APIs for already-deployed resources.
     - `v2/definition.yaml` and `v2/composition.yaml` define the Crossplane v2 namespaced XR API for new resources. The `apiVersion` stays `catalog.cluster.local/v2`; kind naming depends on the item.
-- [examples](./examples/) Ready-to-apply Crossplane v2 examples for the published catalog items.
-- [migrate-test](./migrate-test/) Minimal v1/v2 definitions, compositions, and examples for migration experiments. This folder is not part of the built package.
+- [examples](./examples/) Ready-to-apply Crossplane v2 examples for the published catalog items. They default to the `catalog-examples` namespace.
 - [future-package-items](./future-package-items/) Work-in-progress items that are intentionally kept outside the published package until they are ready.
 - [Dockerfile](Dockerfile) The Dockerfile uses the Crossplane CLI to build and push the Crossplane configuration package (OCI image) to a registry (may be useful for local testing).
 - [.github/workflows](./.github/workflows/build-publish-images.yml) The GitHub pipeline calculates a version number and builds the Crossplane package on every commit.

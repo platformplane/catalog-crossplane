@@ -2,7 +2,7 @@ apiVersion: catalog.cluster.local/v2
 kind: CassetteV2
 metadata:
   name: cassette-public-sample
-  namespace: crossplane-v2-migration-tests
+  namespace: catalog-examples
 spec:
   parameters:
     ingress:

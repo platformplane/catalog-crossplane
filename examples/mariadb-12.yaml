@@ -2,7 +2,7 @@ apiVersion: catalog.cluster.local/v2
 kind: MariaDBV2
 metadata:
   name: my-mariadb-12-instance
-  namespace: crossplane-v2-migration-tests
+  namespace: catalog-examples
 spec:
   parameters:
     size: "8Gi"

@@ -2,7 +2,7 @@ apiVersion: catalog.cluster.local/v2
 kind: DagsterV2
 metadata:
   name: dagster-sample
-  namespace: crossplane-v2-migration-tests
+  namespace: catalog-examples
 spec:
   parameters:
     ingress:

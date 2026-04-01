@@ -2,7 +2,7 @@ apiVersion: catalog.cluster.local/v2
 kind: JupyterHubV2
 metadata:
   name: jupyterhub-sample
-  namespace: crossplane-v2-migration-tests
+  namespace: catalog-examples
 spec:
   parameters:
     ingress:
