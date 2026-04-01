@@ -58,7 +58,7 @@ spec:
                 chart:
                   name: dagster
                   repository: https://dagster-io.github.io/helm
-                  version: 1.12.3
+                  version: 1.12.21
                 namespace: {{ $namespace }}
                 values:
                   fullnameOverride: {{ $xrName }}

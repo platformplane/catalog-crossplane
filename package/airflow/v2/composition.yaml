@@ -58,7 +58,7 @@ spec:
                 chart:
                   name: airflow
                   repository: https://airflow.apache.org
-                  version: 1.18.0
+                  version: 1.20.0
                 namespace: {{ $namespace }}
                 values:
                   labels:
@@ -66,9 +66,14 @@ spec:
                     catalog.cluster.local/name: {{ $xrName }}
                   fullnameOverride: {{ $xrName }}
                   useStandardNaming: true
+                  apiSecretKey: {{ dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "apiSecretKey" (randAlphaNum 32) .observed }}
                   apiServer:
                     podDisruptionBudget:
                       enabled: false
+                  jwtSecret: {{ dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "jwtSecret" (randAlphaNum 32) .observed }}
+                  postgresql:
+                    image:
+                      repository: bitnamilegacy/postgresql
                   scheduler:
                     podDisruptionBudget:
                       enabled: false
@@ -83,7 +88,7 @@ spec:
                       enabled: false
                   ingress:
                     enabled: true
-                    web:
+                    apiServer:
                       enabled: true
                       {{- if or ($params.ingress.public) (eq $params.ingress nil) }}
                       ingressClassName: nginx
@@ -113,7 +118,7 @@ spec:
             {{ else }}
             data:
               {{ if ne $values.ingress nil }}
-              host: {{ index $values.ingress.web.hosts 0 "name" | b64enc }}
+              host: {{ index $values.ingress.apiServer.hosts 0 "name" | b64enc }}
               {{ end }}
               username: {{ $values.webserver.defaultUser.username | b64enc }}
               password: {{ dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "webserver" "defaultUser" "password" "no value yet" .observed | b64enc }}

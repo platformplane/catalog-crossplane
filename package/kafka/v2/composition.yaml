@@ -32,9 +32,11 @@ spec:
             {{ $generatedPassword := randAlphaNum 32 | b64enc }}
             {{ $password := dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "kafka" "auth" "password" $generatedPassword .observed }}
 
-            {{ $versionMapping := dict "3" "0.1.35" }}
+            {{ $chartVersionMapping := dict "3" "0.2.0" }}
+            {{ $imageTagMapping := dict "3" "3.9.2" }}
             {{ $specVersion := $params.version | default "3" }}
-            {{ $version := index $versionMapping $specVersion }}
+            {{ $chartVersion := index $chartVersionMapping $specVersion }}
+            {{ $imageTag := index $imageTagMapping $specVersion }}
 
             apiVersion: helm.m.crossplane.io/v1beta1
             kind: Release
@@ -52,11 +54,13 @@ spec:
                 chart: # https://artifacthub.io/packages/helm/cagriekin/kafka
                   name: kafka
                   repository: https://cagriekin.github.io/charts
-                  version: {{ $version }}
+                  version: {{ $chartVersion }}
                 namespace: {{ $namespace }}
                 values:
                   fullnameOverride: {{ $xrName }}
                   kafka:
+                    image:
+                      tag: {{ $imageTag | quote }}
                     broker:
                       replicaCount: 1
                       podDisruptionBudget:

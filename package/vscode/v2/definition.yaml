@@ -39,7 +39,7 @@ spec:
                   properties:
                     workspaceSize:
                       type: string
-                      default: "10Gi"
+                      default: "8Gi"
                       description: Persistent workspace size.
                       pattern: ^(?<size>\d+(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?)$
                     pythonVersion:
@@ -49,6 +49,44 @@ spec:
                       enum:
                         - "3.11"
                         - "3.12"
+                    git:
+                      type: object
+                      default: {}
+                      description: Optional Git repository bootstrap and sync settings for the VS Code workspace.
+                      properties:
+                        repositoryUrl:
+                          type: string
+                          description: HTTPS Git repository URL to clone into the workspace on first start.
+                        branch:
+                          type: string
+                          default: "main"
+                          description: Git branch checked out and fast-forwarded when repository sync is enabled.
+                        syncOnStart:
+                          type: boolean
+                          default: true
+                          description: Pull the latest changes on pod start when the workspace repository is clean.
+                        auth:
+                          type: object
+                          default: {}
+                          description: Optional HTTP(S) credentials used for cloning and pushing to GitLab.
+                          properties:
+                            username:
+                              type: string
+                              description: GitLab username or deploy token username for HTTP(S) authentication.
+                            password:
+                              type: string
+                              description: GitLab password or personal access token for HTTP(S) authentication.
+                        user:
+                          type: object
+                          default: {}
+                          description: Optional Git author details configured in the workspace.
+                          properties:
+                            name:
+                              type: string
+                              description: Value written to git user.name.
+                            email:
+                              type: string
+                              description: Value written to git user.email.
                     ingress:
                       type: object
                       default: {}

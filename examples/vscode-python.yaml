@@ -7,5 +7,15 @@ spec:
   parameters:
     pythonVersion: "3.12"
     workspaceSize: "10Gi"
+    # git:
+    #   repositoryUrl: "https://gitlab.example.com/group/project.git"
+    #   branch: "main"
+    #   syncOnStart: true
+    #   auth:
+    #     username: "your-gitlab-user"
+    #     password: "glpat-..."
+    #   user:
+    #     name: "Your Name"
+    #     email: "you@example.com"
     ingress:
       public: true
