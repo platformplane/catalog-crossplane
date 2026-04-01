@@ -7,17 +7,19 @@ Crossplane configuration package containing multiple basic services like a Postg
 ## Repo Overview
 
 - [package](./package/) This is the single build root for the Crossplane configuration package that we publish:
-  - [configuration.yaml](./package/configuration.yaml) Package metadata and dependency constraints for the Crossplane v2.3.1-compatible package revision.
-  - [\<catalog-item>](./package/redis/) Item-first catalog folders. Each folder contains two explicit manifest sets:
-    - `v1/definition.yaml` and `v1/composition.yaml` keep the legacy Crossplane v1.20 claim/composite APIs owned by the package so already-deployed resources are not garbage-collected during upgrades.
-    - `v2/definition.yaml` and `v2/composition.yaml` define the Crossplane v2 API that should be used for all new catalog creations. The v2 resources use suffixed kinds such as `PostgreSQLV2`; `apiVersion` stays `catalog.cluster.local/v2`.
-- [v2](./v2/) Migration and testing helpers (examples, manual manifests, trace scripts). This folder is not part of the built package.
+  - [configuration.yaml](./package/configuration.yaml) Package metadata and dependency constraints for the published configuration package.
+  - [\<catalog-item>](./package/redis/) Item-first catalog folders. Most existing items contain two manifest sets:
+    - `v1/definition.yaml` and `v1/composition.yaml` keep the Crossplane v1 claim/composite APIs for already-deployed resources.
+    - `v2/definition.yaml` and `v2/composition.yaml` define the Crossplane v2 namespaced XR API for new resources. The `apiVersion` stays `catalog.cluster.local/v2`; kind naming depends on the item.
+- [examples](./examples/) Ready-to-apply Crossplane v2 examples for the published catalog items.
+- [migrate-test](./migrate-test/) Minimal v1/v2 definitions, compositions, and examples for migration experiments. This folder is not part of the built package.
+- [future-package-items](./future-package-items/) Work-in-progress items that are intentionally kept outside the published package until they are ready.
 - [Dockerfile](Dockerfile) The Dockerfile uses the Crossplane CLI to build and push the Crossplane configuration package (OCI image) to a registry (may be useful for local testing).
 - [.github/workflows](./.github/workflows/build-publish-images.yml) The GitHub pipeline calculates a version number and builds the Crossplane package on every commit.
 
 ## Update Strategy of Catalog Items
 
-Crossplane v1.20 support in this repository means that legacy `catalog.cluster.local/v1` resources remain part of the package ownership set after the cluster itself has been upgraded to Crossplane v2.3.1. New catalog items must be created from the `v2` manifests only, for example with `apiVersion: catalog.cluster.local/v2` and a suffixed v2 service `kind` such as `PostgreSQLV2`.
+Crossplane v1 resources remain part of the package ownership set so existing services continue to reconcile without being garbage-collected during upgrades. New catalog items must be created from the `v2` manifests only, for example with `apiVersion: catalog.cluster.local/v2`.
 
 We assume that minor versions can be updated without breaking changes. This means that the `spec.forProvider.chart.version` field in the Crossplane configuration can be updated within the same minor version (read the release notes anyways to be sure). Note that there is usually a version mapping table defined at the beginning of the inline template mapping the major product versions to the corresponding Helm chart version. Applying a new version of this Crossplane configuration including new default values for Helm charts will replace the affected Helm releases with the new version and therefore cause downtime and potentially issues for the customers! They can explicitly set the version (instead of relying on the default) to avoid this.
 
