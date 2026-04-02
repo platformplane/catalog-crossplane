@@ -94,3 +94,7 @@ spec:
               password: {{ $connectionDetails.password }}
               port: {{ $connectionDetails.port }}
             {{ end }}
+
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready
