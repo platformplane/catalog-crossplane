@@ -32,6 +32,7 @@ spec:
         source: Inline
         inline:
           template: |
+
             {{ $xr := .observed.composite.resource }}
             {{ $kind := $xr.kind }}
             {{ $xrName := $xr.metadata.name }}
@@ -179,35 +180,14 @@ spec:
                       fi
 
                       if [ -n "${GIT_AUTH_USERNAME:-}" ] && [ -n "${GIT_AUTH_PASSWORD:-}" ] && [ -n "${GIT_REPOSITORY_URL:-}" ]; then
-                        python - <<'PY' > /workspace/.git-credentials
-                        import os
-                        from urllib.parse import quote, urlsplit, urlunsplit
-
-                        repository_url = os.environ["GIT_REPOSITORY_URL"]
-                        username = os.environ["GIT_AUTH_USERNAME"]
-                        password = os.environ["GIT_AUTH_PASSWORD"]
-                        parts = urlsplit(repository_url)
-
-                        if parts.scheme not in ("http", "https") or not parts.hostname:
-                            raise SystemExit(0)
-
-                        netloc = parts.hostname
-                        if parts.port:
-                            netloc = f"{netloc}:{parts.port}"
-
-                        auth_netloc = f"{quote(username, safe='')}:{quote(password, safe='')}@{netloc}"
-                        print(urlunsplit((parts.scheme, auth_netloc, parts.path, "", "")))
-                        PY
-
-                        if [ -s /workspace/.git-credentials ]; then
-                          chmod 600 /workspace/.git-credentials
-                          git config --global credential.helper "store --file /workspace/.git-credentials"
-                          git config --global credential.useHttpPath true
-                        else
-                          rm -f /workspace/.git-credentials
-                          git config --global --unset-all credential.helper || true
-                          git config --global --unset-all credential.useHttpPath || true
-                        fi
+                        rm -f /workspace/.git-credentials
+                        git config --global credential.helper "store --file /workspace/.git-credentials"
+                        git config --global credential.useHttpPath true
+                        printf "url=%s\nusername=%s\npassword=%s\n\n" \
+                          "$GIT_REPOSITORY_URL" \
+                          "$GIT_AUTH_USERNAME" \
+                          "$GIT_AUTH_PASSWORD" | git credential approve
+                        chmod 600 /workspace/.git-credentials
                       else
                         rm -f /workspace/.git-credentials
                         git config --global --unset-all credential.helper || true
@@ -323,6 +303,14 @@ spec:
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: "deployment"
             spec:
+              readiness:
+                policy: DeriveFromCelQuery
+                celQuery: |
+                  has(object.status) &&
+                  has(object.status.observedGeneration) &&
+                  has(object.status.conditions) &&
+                  object.status.observedGeneration == object.metadata.generation &&
+                  object.status.conditions.exists(c, c.type == "Available" && c.status == "True")
               providerConfigRef:
                 kind: ClusterProviderConfig
                 name: provider-kubernetes

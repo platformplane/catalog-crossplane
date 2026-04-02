@@ -55,6 +55,7 @@ spec:
                 kind: ClusterProviderConfig
                 name: provider-helm
               forProvider:
+                wait: true
                 chart:
                   name: airflow
                   repository: https://airflow.apache.org

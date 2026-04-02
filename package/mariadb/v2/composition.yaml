@@ -45,6 +45,7 @@ spec:
                 kind: ClusterProviderConfig
                 name: provider-helm
               forProvider:
+                wait: true
                 chart:
                   name: mariadb
                   repository: oci://registry-1.docker.io/cloudpirates

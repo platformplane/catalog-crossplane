@@ -123,10 +123,86 @@ spec:
             apiVersion: kubernetes.m.crossplane.io/v1alpha1
             kind: Object
             metadata:
+              name: {{ $xrName }}-configmap
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "bootstrap-config"
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: ConfigMap
+                  metadata:
+                    name: {{ $xrName }}-bootstrap
+                    namespace: {{ $namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
+                      app.kubernetes.io/name: jenkins
+                      app.kubernetes.io/instance: {{ $xrName }}
+                  data:
+                    bootstrap.groovy: |
+                      import hudson.security.FullControlOnceLoggedInAuthorizationStrategy
+                      import hudson.security.HudsonPrivateSecurityRealm
+                      import jenkins.model.Jenkins
+                      import jenkins.model.JenkinsLocationConfiguration
+
+                      def jenkins = Jenkins.get()
+                      def adminUsername = System.getenv("ADMIN_USERNAME") ?: "admin"
+                      def adminPassword = System.getenv("ADMIN_PASSWORD")
+                      def baseUrl = System.getenv("BASE_URL")
+
+                      if (!adminPassword?.trim()) {
+                        throw new IllegalStateException("ADMIN_PASSWORD must be set")
+                      }
+
+                      def securityRealm = jenkins.getSecurityRealm()
+                      if (!(securityRealm instanceof HudsonPrivateSecurityRealm)) {
+                        securityRealm = new HudsonPrivateSecurityRealm(false)
+                        jenkins.setSecurityRealm(securityRealm)
+                      }
+
+                      def user = securityRealm.getUser(adminUsername)
+                      if (user == null) {
+                        securityRealm.createAccount(adminUsername, adminPassword)
+                        user = securityRealm.getUser(adminUsername)
+                      } else {
+                        user.addProperty(HudsonPrivateSecurityRealm.Details.fromPlainPassword(adminPassword))
+                        user.save()
+                      }
+
+                      def authorizationStrategy = jenkins.getAuthorizationStrategy()
+                      if (!(authorizationStrategy instanceof FullControlOnceLoggedInAuthorizationStrategy)) {
+                        def strategy = new FullControlOnceLoggedInAuthorizationStrategy()
+                        strategy.setAllowAnonymousRead(false)
+                        jenkins.setAuthorizationStrategy(strategy)
+                      }
+
+                      if (baseUrl?.trim()) {
+                        def location = JenkinsLocationConfiguration.get()
+                        location.setUrl(baseUrl)
+                        location.save()
+                      }
+
+                      jenkins.save()
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
               name: {{ $xrName }}-deployment
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: "deployment"
             spec:
+              readiness:
+                policy: DeriveFromCelQuery
+                celQuery: |
+                  has(object.status) &&
+                  has(object.status.observedGeneration) &&
+                  has(object.status.conditions) &&
+                  object.status.observedGeneration == object.metadata.generation &&
+                  object.status.conditions.exists(c, c.type == "Available" && c.status == "True")
               providerConfigRef:
                 kind: ClusterProviderConfig
                 name: provider-kubernetes
@@ -160,9 +236,11 @@ spec:
                         serviceAccountName: {{ $xrName }}
                         containers:
                           - name: jenkins
-                            image: adrianliechti/loop-jenkins
+                            image: jenkins/jenkins:lts-jdk17
                             imagePullPolicy: Always
                             env:
+                              - name: JENKINS_JAVA_OPTS
+                                value: "-Djenkins.install.runSetupWizard=false"
                               - name: BASE_URL
                                 value: https://{{ $host }}.{{ $zone }}
                               - name: ADMIN_USERNAME
@@ -185,6 +263,9 @@ spec:
                                 mountPath: /var/jenkins_home
                               - name: dind
                                 mountPath: /var/run/dind
+                              - name: bootstrap
+                                mountPath: /var/jenkins_home/init.groovy.d/bootstrap.groovy
+                                subPath: bootstrap.groovy
                             resources: {}
                           - name: docker
                             securityContext:
@@ -211,7 +292,10 @@ spec:
                         initContainers:
                           - name: init-workspace
                             image: busybox:stable
-                            command: ["chown", "1000:1000", "/var/jenkins_home"]
+                            command:
+                              - sh
+                              - -c
+                              - mkdir -p /var/jenkins_home/init.groovy.d && chown 1000:1000 /var/jenkins_home /var/jenkins_home/init.groovy.d
                             volumeMounts:
                               - name: data
                                 mountPath: /var/jenkins_home
@@ -221,6 +305,9 @@ spec:
                               claimName: {{ $xrName }}
                           - name: dind
                             emptyDir: {}
+                          - name: bootstrap
+                            configMap:
+                              name: {{ $xrName }}-bootstrap
             ---
             apiVersion: kubernetes.m.crossplane.io/v1alpha1
             kind: Object

@@ -45,6 +45,7 @@ spec:
                 kind: ClusterProviderConfig
                 name: provider-helm
               forProvider:
+                wait: true
                 chart: # https://artifacthub.io/packages/helm/sb-helm-charts/elasticsearch
                   name: elasticsearch
                   repository: https://scriptonbasestar-containers.github.io/sb-helm-charts

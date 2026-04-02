@@ -53,6 +53,7 @@ spec:
                 kind: ClusterProviderConfig
                 name: provider-helm
               forProvider:
+                wait: true
                 chart: # https://artifacthub.io/packages/helm/comet-mysql-helm/mysql
                   name: mysql
                   repository: https://comet-ml.github.io/comet-mysql-helm/

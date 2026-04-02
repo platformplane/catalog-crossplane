@@ -51,6 +51,7 @@ spec:
                 kind: ClusterProviderConfig
                 name: provider-helm
               forProvider:
+                wait: true
                 chart: # https://artifacthub.io/packages/helm/cagriekin/kafka
                   name: kafka
                   repository: https://cagriekin.github.io/charts

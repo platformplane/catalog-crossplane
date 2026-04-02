@@ -55,6 +55,7 @@ spec:
                 kind: ClusterProviderConfig
                 name: provider-helm
               forProvider:
+                wait: true
                 chart:
                   name: dagster
                   repository: https://dagster-io.github.io/helm

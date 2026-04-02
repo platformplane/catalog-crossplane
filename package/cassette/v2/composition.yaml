@@ -76,6 +76,14 @@ spec:
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: "deployment"
             spec:
+              readiness:
+                policy: DeriveFromCelQuery
+                celQuery: |
+                  has(object.status) &&
+                  has(object.status.observedGeneration) &&
+                  has(object.status.conditions) &&
+                  object.status.observedGeneration == object.metadata.generation &&
+                  object.status.conditions.exists(c, c.type == "Available" && c.status == "True")
               providerConfigRef:
                 kind: ClusterProviderConfig
                 name: provider-kubernetes
