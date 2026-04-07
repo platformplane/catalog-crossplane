@@ -11,11 +11,12 @@ spec:
     #   repositoryUrl: "https://gitlab.example.com/group/project.git"
     #   branch: "main"
     #   syncOnStart: true
-    #   auth:
-    #     username: "your-gitlab-user"
-    #     password: "glpat-..."
-    #   user:
-    #     name: "Your Name"
-    #     email: "you@example.com"
+    # Configure Git manually inside the browser workspace terminal, for example:
+    # git config --global user.name "Your Name"
+    # git config --global user.email "you@example.com"
+    # git config --global credential.username "your-gitlab-user"
+    # git config --global credential.helper store
+    # git clone https://gitlab.example.com/group/project.git
+    # Then enter your GitLab password or personal access token when prompted.
     ingress:
       public: true
