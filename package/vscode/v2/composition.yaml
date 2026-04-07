@@ -50,12 +50,8 @@ spec:
             {{ $gitBranch := dig "git" "branch" "main" $params }}
             {{ $gitSyncOnStart := dig "git" "syncOnStart" true $params }}
             {{ $gitSyncOnStartString := ternary "true" "false" $gitSyncOnStart }}
-            {{ $gitAuthUsername := dig "git" "auth" "username" "" $params }}
-            {{ $gitAuthPassword := dig "git" "auth" "password" "" $params }}
-            {{ $gitUserName := dig "git" "user" "name" "" $params }}
-            {{ $gitUserEmail := dig "git" "user" "email" "" $params }}
             {{ $gitWorkspacePath := ternary "/workspace/repository" "/workspace" (ne $gitRepositoryUrl "") }}
-            {{ $gitConfigHash := printf "%s|%s|%s|%s|%s|%s|%s" $gitRepositoryUrl $gitBranch $gitSyncOnStartString $gitAuthUsername $gitAuthPassword $gitUserName $gitUserEmail | sha256sum }}
+            {{ $gitConfigHash := printf "%s|%s|%s" $gitRepositoryUrl $gitBranch $gitSyncOnStartString | sha256sum }}
 
             apiVersion: kubernetes.m.crossplane.io/v1alpha1
             kind: Object
@@ -85,10 +81,6 @@ spec:
                     gitRepositoryUrl: {{ $gitRepositoryUrl | quote }}
                     gitBranch: {{ $gitBranch | quote }}
                     gitSyncOnStart: {{ $gitSyncOnStartString | quote }}
-                    gitAuthUsername: {{ $gitAuthUsername | quote }}
-                    gitAuthPassword: {{ $gitAuthPassword | quote }}
-                    gitUserName: {{ $gitUserName | quote }}
-                    gitUserEmail: {{ $gitUserEmail | quote }}
                     gitWorkspacePath: {{ $gitWorkspacePath | quote }}
             ---
             apiVersion: kubernetes.m.crossplane.io/v1alpha1
@@ -156,48 +148,27 @@ spec:
                         mkdir -p "$workspace_target"
                       fi
 
-                      if ! command -v curl >/dev/null 2>&1 || ! command -v git >/dev/null 2>&1; then
-                        export DEBIAN_FRONTEND=noninteractive
-                        apt-get update
-                        apt-get install -y --no-install-recommends curl git ca-certificates
-                        rm -rf /var/lib/apt/lists/*
-                      fi
+                      for required_cmd in curl git; do
+                        if ! command -v "$required_cmd" >/dev/null 2>&1; then
+                          echo "Required command '$required_cmd' is missing from the workspace image." >&2
+                          exit 1
+                        fi
+                      done
 
                       if [ ! -x /tools/code-server/bin/code-server ]; then
                         curl -fsSL https://code-server.dev/install.sh | sh -s -- --version 4.111.0 --method=standalone --prefix=/tools/code-server
                       fi
 
-                      if [ -n "${GIT_USER_NAME:-}" ]; then
-                        git config --global user.name "$GIT_USER_NAME"
-                      else
-                        git config --global --unset-all user.name || true
-                      fi
-
-                      if [ -n "${GIT_USER_EMAIL:-}" ]; then
-                        git config --global user.email "$GIT_USER_EMAIL"
-                      else
-                        git config --global --unset-all user.email || true
-                      fi
-
-                      if [ -n "${GIT_AUTH_USERNAME:-}" ] && [ -n "${GIT_AUTH_PASSWORD:-}" ] && [ -n "${GIT_REPOSITORY_URL:-}" ]; then
-                        rm -f /workspace/.git-credentials
-                        git config --global credential.helper "store --file /workspace/.git-credentials"
-                        git config --global credential.useHttpPath true
-                        printf "url=%s\nusername=%s\npassword=%s\n\n" \
-                          "$GIT_REPOSITORY_URL" \
-                          "$GIT_AUTH_USERNAME" \
-                          "$GIT_AUTH_PASSWORD" | git credential approve
-                        chmod 600 /workspace/.git-credentials
-                      else
-                        rm -f /workspace/.git-credentials
-                        git config --global --unset-all credential.helper || true
-                        git config --global --unset-all credential.useHttpPath || true
-                      fi
-
                       if [ -n "${GIT_REPOSITORY_URL:-}" ]; then
                         if [ -d "$workspace_target/.git" ]; then
                           git -C "$workspace_target" remote set-url origin "$GIT_REPOSITORY_URL"
-                          git -C "$workspace_target" fetch origin --prune
+                          remote_sync_available=false
+
+                          if git -C "$workspace_target" fetch origin --prune; then
+                            remote_sync_available=true
+                          else
+                            echo "Skipping remote fetch during workspace bootstrap. Configure Git credentials in the browser session if the repository requires authentication."
+                          fi
 
                           if [ -z "$(git -C "$workspace_target" status --porcelain)" ]; then
                             if git -C "$workspace_target" show-ref --verify --quiet "refs/heads/$GIT_BRANCH"; then
@@ -206,8 +177,10 @@ spec:
                               git -C "$workspace_target" checkout --track "origin/$GIT_BRANCH"
                             fi
 
-                            if [ "${GIT_SYNC_ON_START:-true}" = "true" ]; then
-                              git -C "$workspace_target" pull --ff-only origin "$GIT_BRANCH" || true
+                            if [ "$remote_sync_available" = "true" ] && [ "${GIT_SYNC_ON_START:-true}" = "true" ]; then
+                              if ! git -C "$workspace_target" pull --ff-only origin "$GIT_BRANCH"; then
+                                echo "Skipping git pull during workspace bootstrap. Configure Git credentials in the browser session if the repository requires authentication."
+                              fi
                             fi
                           else
                             echo "Skipping branch checkout and git pull because the workspace repository has local changes."
@@ -215,7 +188,11 @@ spec:
                         elif [ -n "$(find "$workspace_target" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]; then
                           echo "Skipping git clone because $workspace_target is not empty."
                         else
-                          git clone --branch "$GIT_BRANCH" --single-branch "$GIT_REPOSITORY_URL" "$workspace_target"
+                          if ! git clone --branch "$GIT_BRANCH" --single-branch "$GIT_REPOSITORY_URL" "$workspace_target"; then
+                            rm -rf "$workspace_target"
+                            mkdir -p "$workspace_target"
+                            echo "Skipping git clone during workspace bootstrap. Configure Git credentials in the browser session and clone manually if the repository requires authentication."
+                          fi
                         fi
                       else
                         mkdir -p /workspace/.devcontainer
@@ -237,7 +214,6 @@ spec:
                         fi
                       fi
 
-                      chown -R 1000:1000 /workspace
                     run.sh: |
                       #!/usr/bin/env bash
                       set -euo pipefail
@@ -345,10 +321,15 @@ spec:
                       spec:
                         securityContext:
                           fsGroup: 1000
+                          runAsUser: 1000
+                          runAsGroup: 1000
+                          runAsNonRoot: true
                         initContainers:
                           - name: bootstrap
                             image: {{ $pythonImage }}
                             imagePullPolicy: IfNotPresent
+                            securityContext:
+                              allowPrivilegeEscalation: false
                             command: ["/bin/bash", "/bootstrap/init.sh"]
                             env:
                               - name: GIT_REPOSITORY_URL
@@ -366,26 +347,6 @@ spec:
                                   secretKeyRef:
                                     name: {{ $xrName }}
                                     key: gitSyncOnStart
-                              - name: GIT_AUTH_USERNAME
-                                valueFrom:
-                                  secretKeyRef:
-                                    name: {{ $xrName }}
-                                    key: gitAuthUsername
-                              - name: GIT_AUTH_PASSWORD
-                                valueFrom:
-                                  secretKeyRef:
-                                    name: {{ $xrName }}
-                                    key: gitAuthPassword
-                              - name: GIT_USER_NAME
-                                valueFrom:
-                                  secretKeyRef:
-                                    name: {{ $xrName }}
-                                    key: gitUserName
-                              - name: GIT_USER_EMAIL
-                                valueFrom:
-                                  secretKeyRef:
-                                    name: {{ $xrName }}
-                                    key: gitUserEmail
                               - name: GIT_WORKSPACE_PATH
                                 valueFrom:
                                   secretKeyRef:
@@ -403,6 +364,7 @@ spec:
                             image: {{ $pythonImage }}
                             imagePullPolicy: IfNotPresent
                             securityContext:
+                              runAsNonRoot: true
                               runAsUser: 1000
                               runAsGroup: 1000
                               allowPrivilegeEscalation: false
@@ -428,26 +390,6 @@ spec:
                                   secretKeyRef:
                                     name: {{ $xrName }}
                                     key: gitSyncOnStart
-                              - name: GIT_AUTH_USERNAME
-                                valueFrom:
-                                  secretKeyRef:
-                                    name: {{ $xrName }}
-                                    key: gitAuthUsername
-                              - name: GIT_AUTH_PASSWORD
-                                valueFrom:
-                                  secretKeyRef:
-                                    name: {{ $xrName }}
-                                    key: gitAuthPassword
-                              - name: GIT_USER_NAME
-                                valueFrom:
-                                  secretKeyRef:
-                                    name: {{ $xrName }}
-                                    key: gitUserName
-                              - name: GIT_USER_EMAIL
-                                valueFrom:
-                                  secretKeyRef:
-                                    name: {{ $xrName }}
-                                    key: gitUserEmail
                               - name: GIT_WORKSPACE_PATH
                                 valueFrom:
                                   secretKeyRef:

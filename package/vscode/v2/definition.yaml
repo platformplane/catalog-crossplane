@@ -52,11 +52,17 @@ spec:
                     git:
                       type: object
                       default: {}
-                      description: Optional Git repository bootstrap and sync settings for the VS Code workspace.
+                      description: >-
+                        Optional Git repository bootstrap and sync settings for the VS Code workspace.
+                        Configure Git manually inside the browser session, for example:
+                        git config --global user.name "Your Name" &&
+                        git config --global user.email "you@example.com" &&
+                        git config --global credential.username "your-gitlab-user" &&
+                        git config --global credential.helper store.
                       properties:
                         repositoryUrl:
                           type: string
-                          description: HTTPS Git repository URL to clone into the workspace on first start.
+                          description: HTTPS Git repository URL to clone into the workspace on first start. Public repositories clone automatically; if a private repository requires authentication, open the browser workspace terminal, run git config --global credential.username "your-gitlab-user" and git config --global credential.helper store, then clone, pull, or push and enter your GitLab password or personal access token when prompted.
                         branch:
                           type: string
                           default: "main"
@@ -64,29 +70,7 @@ spec:
                         syncOnStart:
                           type: boolean
                           default: true
-                          description: Pull the latest changes on pod start when the workspace repository is clean.
-                        auth:
-                          type: object
-                          default: {}
-                          description: Optional HTTP(S) credentials used for cloning and pushing to GitLab.
-                          properties:
-                            username:
-                              type: string
-                              description: GitLab username or deploy token username for HTTP(S) authentication.
-                            password:
-                              type: string
-                              description: GitLab password or personal access token for HTTP(S) authentication.
-                        user:
-                          type: object
-                          default: {}
-                          description: Optional Git author details configured in the workspace.
-                          properties:
-                            name:
-                              type: string
-                              description: Value written to git user.name.
-                            email:
-                              type: string
-                              description: Value written to git user.email.
+                          description: Pull the latest changes on pod start when the workspace repository is clean and already authenticated inside the workspace. If authentication is missing, open the browser workspace terminal and configure credential.username plus credential.helper store before retrying.
                     ingress:
                       type: object
                       default: {}
