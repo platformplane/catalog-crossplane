@@ -1,7 +1,9 @@
-apiVersion: catalog.cluster.local/v1
-kind: MariaDB
+apiVersion: catalog.cluster.local/v2
+kind: MariaDBV2
 metadata:
-  name: mariadb-sample
+  name: my-mariadb-11-instance
+  namespace: catalog-examples
 spec:
-  size: 1Gi
-  version: "11"
+  parameters:
+    size: "8Gi"
+    version: "11"

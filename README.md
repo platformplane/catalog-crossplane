@@ -2,17 +2,23 @@
 
 Crossplane configuration package containing multiple basic services like a PostgreSQL database for the Platform Plane self-service catalog.
 
-![catalogv2ui](catalogv2ui.png)
+![catalogv2ui](./catalogv2ui.png)
 
 ## Repo Overview
 
-- [package](./package/) This is the "root" folder for the Crossplane package that we build here, it consists of:
-  - [configuration.yaml](./package/configuration.yaml) This yaml file (kind: Configuration) specifies that this is a Crossplane package, on which version of Crossplane it depends and which CRDs it provides.
-  - [<catalog-item>](./package/redis/) For every catalog item, there is a subfolder containing the Crossplane composition and definition files.
+- [package](./package/) This is the single build root for the Crossplane configuration package that we publish:
+  - [configuration.yaml](./package/configuration.yaml) Package metadata and dependency constraints for the published configuration package.
+  - [\<catalog-item>](./package/redis/) Item-first catalog folders. Most existing items contain two manifest sets:
+    - `v1/definition.yaml` and `v1/composition.yaml` keep the Crossplane v1 claim/composite APIs for already-deployed resources.
+    - `v2/definition.yaml` and `v2/composition.yaml` define the Crossplane v2 namespaced XR API for new resources. The `apiVersion` stays `catalog.cluster.local/v2`; kind naming depends on the item.
+- [examples](./examples/) Ready-to-apply Crossplane v2 examples for the published catalog items. They default to the `catalog-examples` namespace.
+- [future-package-items](./future-package-items/) Work-in-progress items that are intentionally kept outside the published package until they are ready.
 - [Dockerfile](Dockerfile) The Dockerfile uses the Crossplane CLI to build and push the Crossplane configuration package (OCI image) to a registry (may be useful for local testing).
-- [.github/workflows](./.github/workflows/build-publish-images.yaml) The GitHub pipeline calculates a version number and builds the Crossplane package on every commit.
+- [.github/workflows](./.github/workflows/build-publish-images.yml) The GitHub pipeline calculates a version number and builds the Crossplane package on every commit.
 
 ## Update Strategy of Catalog Items
+
+Crossplane v1 resources remain part of the package ownership set so existing services continue to reconcile without being garbage-collected during upgrades. New catalog items must be created from the `v2` manifests only, for example with `apiVersion: catalog.cluster.local/v2`.
 
 We assume that minor versions can be updated without breaking changes. This means that the `spec.forProvider.chart.version` field in the Crossplane configuration can be updated within the same minor version (read the release notes anyways to be sure). Note that there is usually a version mapping table defined at the beginning of the inline template mapping the major product versions to the corresponding Helm chart version. Applying a new version of this Crossplane configuration including new default values for Helm charts will replace the affected Helm releases with the new version and therefore cause downtime and potentially issues for the customers! They can explicitly set the version (instead of relying on the default) to avoid this.
 
@@ -93,8 +99,9 @@ In order that the catalog actually shows your items, the Crossplane definition w
 
 ## How to add a new catalog item
 
-- create a new subfolder in the `package` folder to develop your catalog item
-- add your Crossplane composition and definition files
+- create a new `package/<catalog-item>` subfolder
+- add two manifests:
+  - `definition.yaml` and `composition.yaml` for the API used by new catalog creations
 - verify that the pipeline builds the Dockerfile successfully
 - use your own platformplane space to test your catalog item by manually applying/deleting the composition and definition files
 - iterate until you are happy
@@ -161,21 +168,21 @@ code client.properties
 # paste the following content
 security.protocol=SASL_PLAINTEXT
 sasl.mechanism=PLAIN
-sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required \
+sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required \
     username="user" \
-    password="$(kubectl get secret kafka-user-passwords --namespace test -o jsonpath='{.data.client-passwords}' | base64 -d | cut -d , -f 1)";
+    password="$(kubectl get secret kafka-sample-kafka-secret --namespace test -o jsonpath='{.data.password}' | base64 -d)";
 # save the file and run the following commands
-kubectl run kafka-kafka-client --restart='Never' --image docker.io/bitnamilegacy/kafka:3.3.2-debian-11-r11 --namespace test --command -- sleep infinity
+kubectl run kafka-kafka-client --restart='Never' --image docker.io/apache/kafka:4.1.0 --namespace test --command -- sleep infinity
 kubectl cp --namespace test ./client.properties kafka-kafka-client:/tmp/client.properties
 kubectl exec --tty -i kafka-kafka-client --namespace test -- bash
 kafka-console-producer.sh \
             --producer.config /tmp/client.properties \
-            --broker-list kafka-sample:9092 \
+            --broker-list kafka-sample-kafka-broker-0.kafka-sample-kafka-broker.test.svc.cluster.local:9092 \
             --topic test
 # write some stuff to topic
 kafka-console-consumer.sh \
             --consumer.config /tmp/client.properties \
-            --bootstrap-server kafka-sample:9092 \
+            --bootstrap-server kafka-sample-kafka-broker-0.kafka-sample-kafka-broker.test.svc.cluster.local:9092 \
             --topic test --from-beginning
 # wait until topic content is shown
 ```

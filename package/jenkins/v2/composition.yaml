@@ -1,0 +1,439 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: jenkinsv2.catalog.cluster.local
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v2
+    kind: JenkinsV2
+  writeConnectionSecretsToNamespace: crossplane-system
+
+  mode: Pipeline
+  pipeline:
+    - step: get-environment-configs
+      functionRef:
+        name: crossplane-contrib-function-environment-configs
+      input:
+        apiVersion: environmentconfigs.fn.crossplane.io/v1beta1
+        kind: Input
+        spec:
+          environmentConfigs:
+            - type: Reference
+              ref:
+                name: environment
+
+    - step: jenkins
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{ $xr := .observed.composite.resource }}
+            {{ $kind := $xr.kind }}
+            {{ $xrName := $xr.metadata.name }}
+            {{ $namespace := $xr.metadata.namespace }}
+
+            {{ $params := .observed.composite.resource.spec.parameters }}
+
+            {{ $host := regexReplaceAll "[^a-z0-9-]" ($xrName | lower) "" }}
+            {{ $zone := index $.context "apiextensions.crossplane.io/environment" "zone" }}
+
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $xrName }}-secret
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "secret"
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: Secret
+                  metadata:
+                    name: {{ $xrName }}
+                    namespace: {{ $namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
+                      app.kubernetes.io/name: jenkins
+                      app.kubernetes.io/instance: {{ $xrName }}
+                  stringData:
+                    username: admin
+                    password: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" (randAlphaNum 12) .observed }}
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $xrName }}-serviceaccount
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "serviceaccount"
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: ServiceAccount
+                  metadata:
+                    name: {{ $xrName }}
+                    namespace: {{ $namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
+                      app.kubernetes.io/name: jenkins
+                      app.kubernetes.io/instance: {{ $xrName }}
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $xrName }}-clusterrolebinding
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "clusterrolebinding"
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: rbac.authorization.k8s.io/v1
+                  kind: ClusterRoleBinding
+                  metadata:
+                    name: {{ $xrName }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
+                      app.kubernetes.io/name: jenkins
+                      app.kubernetes.io/instance: {{ $xrName }}
+                  roleRef:
+                    apiGroup: rbac.authorization.k8s.io
+                    kind: ClusterRole
+                    name: cluster-admin
+                  subjects:
+                    - kind: ServiceAccount
+                      name: {{ $xrName }}
+                      namespace: {{ $namespace }}
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $xrName }}-configmap
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "bootstrap-config"
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: ConfigMap
+                  metadata:
+                    name: {{ $xrName }}-bootstrap
+                    namespace: {{ $namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
+                      app.kubernetes.io/name: jenkins
+                      app.kubernetes.io/instance: {{ $xrName }}
+                  data:
+                    bootstrap.groovy: |
+                      import hudson.security.FullControlOnceLoggedInAuthorizationStrategy
+                      import hudson.security.HudsonPrivateSecurityRealm
+                      import jenkins.model.Jenkins
+                      import jenkins.model.JenkinsLocationConfiguration
+
+                      def jenkins = Jenkins.get()
+                      def adminUsername = System.getenv("ADMIN_USERNAME") ?: "admin"
+                      def adminPassword = System.getenv("ADMIN_PASSWORD")
+                      def baseUrl = System.getenv("BASE_URL")
+
+                      if (!adminPassword?.trim()) {
+                        throw new IllegalStateException("ADMIN_PASSWORD must be set")
+                      }
+
+                      def securityRealm = jenkins.getSecurityRealm()
+                      if (!(securityRealm instanceof HudsonPrivateSecurityRealm)) {
+                        securityRealm = new HudsonPrivateSecurityRealm(false)
+                        jenkins.setSecurityRealm(securityRealm)
+                      }
+
+                      def user = securityRealm.getUser(adminUsername)
+                      if (user == null) {
+                        securityRealm.createAccount(adminUsername, adminPassword)
+                        user = securityRealm.getUser(adminUsername)
+                      } else {
+                        user.addProperty(HudsonPrivateSecurityRealm.Details.fromPlainPassword(adminPassword))
+                        user.save()
+                      }
+
+                      def authorizationStrategy = jenkins.getAuthorizationStrategy()
+                      if (!(authorizationStrategy instanceof FullControlOnceLoggedInAuthorizationStrategy)) {
+                        def strategy = new FullControlOnceLoggedInAuthorizationStrategy()
+                        strategy.setAllowAnonymousRead(false)
+                        jenkins.setAuthorizationStrategy(strategy)
+                      }
+
+                      if (baseUrl?.trim()) {
+                        def location = JenkinsLocationConfiguration.get()
+                        location.setUrl(baseUrl)
+                        location.save()
+                      }
+
+                      jenkins.save()
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $xrName }}-deployment
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "deployment"
+            spec:
+              readiness:
+                policy: DeriveFromCelQuery
+                celQuery: |
+                  has(object.status) &&
+                  has(object.status.observedGeneration) &&
+                  has(object.status.conditions) &&
+                  object.status.observedGeneration == object.metadata.generation &&
+                  object.status.conditions.exists(c, c.type == "Available" && c.status == "True")
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: apps/v1
+                  kind: Deployment
+                  metadata:
+                    name: {{ $xrName }}
+                    namespace: {{ $namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
+                      app.kubernetes.io/name: jenkins
+                      app.kubernetes.io/instance: {{ $xrName }}
+                  spec:
+                    selector:
+                      matchLabels:
+                        catalog.cluster.local/kind: {{ $kind }}
+                        catalog.cluster.local/name: {{ $xrName }}
+                        app.kubernetes.io/name: jenkins
+                        app.kubernetes.io/instance: {{ $xrName }}
+                    template:
+                      metadata:
+                        labels:
+                          catalog.cluster.local/kind: {{ $kind }}
+                          catalog.cluster.local/name: {{ $xrName }}
+                          app.kubernetes.io/name: jenkins
+                          app.kubernetes.io/instance: {{ $xrName }}
+                      spec:
+                        serviceAccountName: {{ $xrName }}
+                        containers:
+                          - name: jenkins
+                            image: jenkins/jenkins:lts-jdk17
+                            imagePullPolicy: Always
+                            env:
+                              - name: JENKINS_JAVA_OPTS
+                                value: "-Djenkins.install.runSetupWizard=false"
+                              - name: BASE_URL
+                                value: https://{{ $host }}.{{ $zone }}
+                              - name: ADMIN_USERNAME
+                                valueFrom:
+                                  secretKeyRef:
+                                    name: {{ $xrName }}
+                                    key: username
+                              - name: ADMIN_PASSWORD
+                                valueFrom:
+                                  secretKeyRef:
+                                    name: {{ $xrName }}
+                                    key: password
+                              - name: DOCKER_HOST
+                                value: "unix:///var/run/dind/docker.sock"
+                            ports:
+                              - containerPort: 8080
+                              - containerPort: 50000
+                            volumeMounts:
+                              - name: data
+                                mountPath: /var/jenkins_home
+                              - name: dind
+                                mountPath: /var/run/dind
+                              - name: bootstrap
+                                mountPath: /var/jenkins_home/init.groovy.d/bootstrap.groovy
+                                subPath: bootstrap.groovy
+                            resources: {}
+                          - name: docker
+                            securityContext:
+                              privileged: true
+                            image: "docker:26-dind"
+                            imagePullPolicy: Always
+                            args:
+                              - "--group"
+                              - "1000"
+                              - "--host"
+                              - "unix:///var/run/dind/docker.sock"
+                              - "--mtu"
+                              - "1440"
+                            ports:
+                              - name: docker
+                                containerPort: 2376
+                                protocol: TCP
+                            volumeMounts:
+                              - name: data
+                                mountPath: /var/jenkins_home
+                              - name: dind
+                                mountPath: /var/run/dind
+                            resources: {}
+                        initContainers:
+                          - name: init-workspace
+                            image: busybox:stable
+                            command:
+                              - sh
+                              - -c
+                              - mkdir -p /var/jenkins_home/init.groovy.d && chown 1000:1000 /var/jenkins_home /var/jenkins_home/init.groovy.d
+                            volumeMounts:
+                              - name: data
+                                mountPath: /var/jenkins_home
+                        volumes:
+                          - name: data
+                            persistentVolumeClaim:
+                              claimName: {{ $xrName }}
+                          - name: dind
+                            emptyDir: {}
+                          - name: bootstrap
+                            configMap:
+                              name: {{ $xrName }}-bootstrap
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $xrName }}-service
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "service"
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: Service
+                  metadata:
+                    name: {{ $xrName }}
+                    namespace: {{ $namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
+                      app.kubernetes.io/name: jenkins
+                      app.kubernetes.io/instance: {{ $xrName }}
+                  spec:
+                    type: ClusterIP
+                    selector:
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
+                      app.kubernetes.io/name: jenkins
+                      app.kubernetes.io/instance: {{ $xrName }}
+                    ports:
+                      - name: http
+                        port: 80
+                        targetPort: 8080
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $xrName }}-pvc
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "persistentvolumeclaim"
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  kind: PersistentVolumeClaim
+                  apiVersion: v1
+                  metadata:
+                    name: {{ $xrName }}
+                    namespace: {{ $namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
+                      app.kubernetes.io/name: jenkins
+                      app.kubernetes.io/instance: {{ $xrName }}
+                  spec:
+                    accessModes:
+                      - ReadWriteOnce
+                    resources:
+                      requests:
+                        storage: 8Gi
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $xrName }}-ingress
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "ingress"
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: networking.k8s.io/v1
+                  kind: Ingress
+                  metadata:
+                    name: {{ $xrName }}
+                    namespace: {{ $namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
+                      app.kubernetes.io/name: jenkins
+                      app.kubernetes.io/instance: {{ $xrName }}
+                    annotations:
+                      kubernetes.io/tls-acme: "true"
+                  spec:
+                    {{- if or ($params.ingress.public) (eq $params.ingress nil) }}
+                    ingressClassName: nginx
+                    {{- else }}
+                    ingressClassName: nginx-internal
+                    {{- end }}
+                    rules:
+                      - host: {{ $host }}.{{ $zone }}
+                        http:
+                          paths:
+                            - backend:
+                                service:
+                                  name: {{ $xrName }}
+                                  port:
+                                    number: 80
+                              path: /
+                              pathType: Prefix
+                    tls:
+                      - hosts:
+                          - {{ $host }}.{{ $zone }}
+                        secretName: {{ $xrName }}-tls
+            ---
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              name: {{ $xrName }}-connection
+              namespace: {{ $namespace }}
+              annotations:
+                {{ setResourceNameAnnotation "connection-secret" }}
+            {{ if eq $.observed.resources nil }}
+            data: {}
+            {{ else }}
+            data:
+              host: {{ printf "%s.%s" $host $zone | b64enc }}
+              username: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "username" "admin" .observed | b64enc }}
+              password: {{ dig "resources" "secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" "no value yet" .observed | b64enc }}
+            {{ end }}
+
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready

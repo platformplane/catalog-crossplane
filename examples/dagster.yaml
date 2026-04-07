@@ -1,7 +1,9 @@
-apiVersion: catalog.cluster.local/v1
-kind: Dagster
+apiVersion: catalog.cluster.local/v2
+kind: DagsterV2
 metadata:
   name: dagster-sample
+  namespace: catalog-examples
 spec:
-  ingress:
-    public: true
+  parameters:
+    ingress:
+      public: true

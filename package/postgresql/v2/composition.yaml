@@ -1,0 +1,111 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: postgresqlv2.catalog.cluster.local
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v2
+    kind: PostgreSQLV2
+  writeConnectionSecretsToNamespace: crossplane-system
+
+  mode: Pipeline
+  pipeline:
+    - step: postgres
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{ $xr := .observed.composite.resource }}
+            {{ $kind := $xr.kind }}
+            {{ $xrName := $xr.metadata.name }}
+            {{ $namespace := $xr.metadata.namespace }}
+
+            {{ $params := .observed.composite.resource.spec.parameters }}
+
+            {{ $size := $params.size | default "8Gi" }}
+
+            {{ $versionMapping := dict "18" "0.12.1" "17" "0.5.5" }}
+            {{ $specVersion := $params.version | default "18" }}
+            {{ $version := index $versionMapping $specVersion }}
+
+            apiVersion: helm.m.crossplane.io/v1beta1
+            kind: Release
+            metadata:
+              name: {{ $xrName }}
+              namespace: {{ $namespace }}
+              annotations:
+                crossplane.io/external-name: {{ $xrName }}
+                gotemplating.fn.crossplane.io/composition-resource-name: "helm-release"
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-helm
+              forProvider:
+                wait: true
+                chart: # https://artifacthub.io/packages/helm/cloudpirates/postgres
+                  name: postgres
+                  repository: oci://registry-1.docker.io/cloudpirates
+                  version: {{ $version }}
+                namespace: {{ $namespace }}
+                values:
+                  fullnameOverride: {{ $xrName  }}
+                  commonLabels:
+                    catalog.cluster.local/kind: {{ $kind }}
+                    catalog.cluster.local/name: {{ $xrName }}
+                  auth:
+                    database: postgres
+                  primary:
+                    persistence:
+                      size: {{ $size }}
+                    persistentVolumeClaimRetentionPolicy:
+                      enabled: true
+                      whenDeleted: Delete
+
+              connectionDetails:
+                - apiVersion: v1
+                  kind: Secret
+                  name: {{ $xrName }}
+                  namespace: {{ $namespace }}
+                  fieldPath: data.postgres-password
+                  toConnectionSecretKey: password
+
+                - apiVersion: v1
+                  kind: Service
+                  name: {{ $xrName }}
+                  namespace: {{ $namespace }}
+                  fieldPath: spec.ports[0].port
+                  toConnectionSecretKey: port
+
+              writeConnectionSecretToRef:
+                name: {{ $xrName }}-connection-secret
+            ---
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              name: {{ $xrName }}-connection
+              namespace: {{ $namespace }}
+              annotations:
+                {{ setResourceNameAnnotation "connection-secret" }}
+            {{ if eq $.observed.resources nil }}
+            data: {}
+            {{ else }}
+            {{- $helmSecret := (index $.observed.resources "helm-release").connectionDetails | default dict }}
+            {{- if and $helmSecret.password $helmSecret.port }}
+            data:
+              host: {{ printf "%s.%s" $xrName $namespace | b64enc }}
+              username: {{ "postgres" | b64enc }}
+              password: {{ $helmSecret.password }}
+              port: {{ $helmSecret.port }}
+              database: {{ dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "auth" "database" "postgres" .observed | b64enc }}
+            {{- else }}
+            data: {}
+            {{- end }}
+            {{ end }}
+
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready

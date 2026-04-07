@@ -1,9 +1,9 @@
 apiVersion: catalog.cluster.local/v2
-kind: ElasticsearchV2
+kind: MariaDBV2
 metadata:
-  name: elasticsearch-sample
+  name: my-mariadb-12-instance
   namespace: catalog-examples
 spec:
   parameters:
-    size: 1Gi
-    version: "8"
+    size: "8Gi"
+    version: "12"

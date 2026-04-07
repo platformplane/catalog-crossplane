@@ -1,7 +1,9 @@
-apiVersion: catalog.cluster.local/v1
-kind: Airflow
+apiVersion: catalog.cluster.local/v2
+kind: AirflowV2
 metadata:
   name: airflow-sample
+  namespace: catalog-examples
 spec:
-  ingress:
-    public: true
+  parameters:
+    ingress:
+      public: true

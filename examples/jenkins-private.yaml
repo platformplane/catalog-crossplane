@@ -1,7 +1,9 @@
-apiVersion: catalog.cluster.local/v1
-kind: Jenkins
+apiVersion: catalog.cluster.local/v2
+kind: JenkinsV2
 metadata:
   name: jenkins-private-sample
+  namespace: catalog-examples
 spec:
-  ingress:
-    public: false
+  parameters:
+    ingress:
+      public: false

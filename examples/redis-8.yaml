@@ -1,9 +1,9 @@
 apiVersion: catalog.cluster.local/v2
-kind: ElasticsearchV2
+kind: RedisV2
 metadata:
-  name: elasticsearch-sample
+  name: my-redis-instance
   namespace: catalog-examples
 spec:
   parameters:
-    size: 1Gi
+    size: "8Gi"
     version: "8"

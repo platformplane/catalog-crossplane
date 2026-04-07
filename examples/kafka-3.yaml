@@ -1,7 +1,9 @@
-apiVersion: catalog.cluster.local/v1
-kind: Kafka
+apiVersion: catalog.cluster.local/v2
+kind: KafkaV2
 metadata:
   name: kafka-sample
+  namespace: catalog-examples
 spec:
-  size: 1Gi
-  version: "3"
+  parameters:
+    size: 1Gi
+    version: "3"

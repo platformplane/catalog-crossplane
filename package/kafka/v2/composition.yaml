@@ -1,0 +1,132 @@
+# Composition Definition: https://doc.crds.dev/github.com/crossplane/crossplane/apiextensions.crossplane.io/Composition/v1@v1.15.0
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: kafkav2.catalog.cluster.local
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v2
+    kind: KafkaV2
+  writeConnectionSecretsToNamespace: crossplane-system
+
+  mode: Pipeline
+  pipeline:
+    - step: kafka
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{ $xr := .observed.composite.resource }}
+            {{ $kind := $xr.kind }}
+            {{ $xrName := $xr.metadata.name }}
+            {{ $namespace := $xr.metadata.namespace }}
+
+            {{ $params := .observed.composite.resource.spec.parameters }}
+
+            {{ $size := $params.size | default "8Gi" }}
+            {{ $username := dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "kafka" "auth" "username" "user" .observed }}
+            {{ $generatedPassword := randAlphaNum 32 | b64enc }}
+            {{ $password := dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "kafka" "auth" "password" $generatedPassword .observed }}
+
+            {{ $chartVersionMapping := dict "3" "0.2.0" }}
+            {{ $imageTagMapping := dict "3" "3.9.2" }}
+            {{ $specVersion := $params.version | default "3" }}
+            {{ $chartVersion := index $chartVersionMapping $specVersion }}
+            {{ $imageTag := index $imageTagMapping $specVersion }}
+
+            apiVersion: helm.m.crossplane.io/v1beta1
+            kind: Release
+            metadata:
+              name: {{ $xrName }}
+              namespace: {{ $namespace }}
+              annotations:
+                crossplane.io/external-name: {{ $xrName }}
+                gotemplating.fn.crossplane.io/composition-resource-name: "helm-release"
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-helm
+              forProvider:
+                wait: true
+                chart: # https://artifacthub.io/packages/helm/cagriekin/kafka
+                  name: kafka
+                  repository: https://cagriekin.github.io/charts
+                  version: {{ $chartVersion }}
+                namespace: {{ $namespace }}
+                values:
+                  fullnameOverride: {{ $xrName }}
+                  kafka:
+                    image:
+                      tag: {{ $imageTag | quote }}
+                    broker:
+                      replicaCount: 1
+                      podDisruptionBudget:
+                        enabled: false
+                      persistence:
+                        size: {{ $size }}
+                    controller:
+                      replicaCount: 1
+                      podDisruptionBudget:
+                        enabled: false
+                      persistence:
+                        size: {{ $size }}
+                    auth:
+                      username: {{ $username | quote }}
+                      password: {{ $password | quote }}
+                  exporters:
+                    kafka:
+                      enabled: false
+                      podDisruptionBudget:
+                        enabled: false
+                  networkPolicy:
+                    enabled: false
+
+              connectionDetails:
+                - apiVersion: v1
+                  kind: Secret
+                  name: {{ $xrName }}-kafka-secret
+                  namespace: {{ $namespace }}
+                  fieldPath: data.password
+                  toConnectionSecretKey: password
+
+                - apiVersion: v1
+                  kind: Service
+                  name: {{ $xrName }}-kafka-broker
+                  namespace: {{ $namespace }}
+                  fieldPath: spec.ports[0].port
+                  toConnectionSecretKey: port
+
+              writeConnectionSecretToRef:
+                name: {{ $xrName }}-connection-secret
+            ---
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              name: {{ $xrName }}-connection
+              namespace: {{ $namespace }}
+              annotations:
+                {{ setResourceNameAnnotation "connection-secret" }}
+            {{ if eq $.observed.resources nil }}
+            data: {}
+            {{ else }}
+            {{- $helmSecret := (index $.observed.resources "helm-release").connectionDetails | default dict }}
+            {{- if and $helmSecret.password $helmSecret.port }}
+            data:
+              host: {{ printf "%s-kafka-broker-0.%s-kafka-broker.%s.svc.cluster.local" $xrName $xrName $namespace | b64enc }}
+              username: {{ dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "kafka" "auth" "username" "user" .observed | b64enc }}
+              password: {{ $helmSecret.password }}
+              port: {{ $helmSecret.port }}
+              saslmechanism: {{ "PLAIN" | b64enc }}
+              securityprotocol: {{ "SASL_PLAINTEXT" | b64enc }}
+            {{- else }}
+            data: {}
+            {{- end }}
+            {{ end }}
+
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready
