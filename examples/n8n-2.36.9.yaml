@@ -1,0 +1,20 @@
+apiVersion: catalog.cluster.local/v2
+kind: N8n
+metadata:
+  name: n8n-sample
+  namespace: catalog-examples
+spec:
+  parameters:
+    size: 5Gi
+    version: "2.36.9"
+    timezone: Europe/Zurich
+    retention:
+      days: 14
+      maxExecutions: 10000
+    resourceProfile: small
+    maxConcurrentExecutions: 10
+    # smtp:
+    #   # Must contain N8N_SMTP_HOST and N8N_SMTP_SENDER; credentials are optional.
+    #   secretName: n8n-smtp
+    ingress:
+      public: true
