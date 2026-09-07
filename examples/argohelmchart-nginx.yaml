@@ -1,7 +1,7 @@
 apiVersion: catalog.cluster.local/v2
-kind: HelmChart
+kind: ArgoHelmChart
 metadata:
-  name: my-helmchart-nginx-instance
+  name: my-argohelmchart-nginx-instance
   namespace: catalog-examples
 spec:
   parameters:
@@ -9,7 +9,13 @@ spec:
       repository: oci://registry-1.docker.io/bitnamicharts
       name: nginx
       version: "18.2.5"
+    secrets:
+      - name: my-argohelmchart-nginx-instance-env
+        type: Opaque
+        data: |
+          UPSTREAM_TOKEN: replace-me
     values: |
       replicaCount: 1
       service:
         type: ClusterIP
+      extraEnvVarsSecret: my-argohelmchart-nginx-instance-env

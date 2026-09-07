@@ -1,11 +1,11 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: helmcharts.catalog.cluster.local
+  name: argohelmcharts.catalog.cluster.local
 spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v2
-    kind: HelmChart
+    kind: ArgoHelmChart
   writeConnectionSecretsToNamespace: crossplane-system
 
   mode: Pipeline
@@ -22,7 +22,7 @@ spec:
               ref:
                 name: environment
 
-    - step: helm-chart
+    - step: argo-helm-chart
       functionRef:
         name: crossplane-contrib-function-go-templating
       input:
@@ -39,6 +39,7 @@ spec:
             {{ $params := $xr.spec.parameters }}
             {{ $chart := $params.chart }}
             {{ $values := dig "values" "" $params }}
+            {{ $secrets := dig "secrets" (list) $params }}
             {{ $zone := index $.context "apiextensions.crossplane.io/environment" "zone" }}
 
             {{/* ArgoCD Applications all live in the single shared "argocd" namespace across every
@@ -114,6 +115,42 @@ spec:
                       syncOptions:
                         - CreateNamespace=true
 
+            {{/* Secrets the chart expects to already exist in its namespace, declared on the XR so
+                 the chart and its credentials are one catalog item. They are composed in the same
+                 reconcile as the Application, so ArgoCD can briefly sync a chart whose Secret has
+                 not landed yet; it retries on its own and the workload recovers once it has.
+                 fromYaml itself fails the whole render on malformed YAML, so only the shape of an
+                 already-parsed value is checked below: entries must form a non-empty flat mapping,
+                 and every value has to survive being written out as a string. */}}
+            {{ range $secret := $secrets }}
+            {{- $data := fromYaml $secret.data }}
+            {{- if or (not (kindIs "map" $data)) (not $data) }}
+            {{- fail (printf "secret %q: data must be YAML key/value pairs, at least one of them" $secret.name) }}
+            {{- end }}
+            ---
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              name: {{ $secret.name }}
+              namespace: {{ $namespace }}
+              labels:
+                catalog.cluster.local/kind: {{ $kind }}
+                catalog.cluster.local/name: {{ $xrName }}
+              annotations:
+                {{ setResourceNameAnnotation (printf "secret-%s" $secret.name) }}
+            type: {{ dig "type" "Opaque" $secret | quote }}
+            stringData:
+            {{- range $key, $value := $data }}
+            {{- if or (kindIs "map" $value) (kindIs "slice" $value) }}
+            {{- fail (printf "secret %q: key %q must be a single value, not a nested mapping or list" $secret.name $key) }}
+            {{- end }}
+            {{- if kindIs "invalid" $value }}
+            {{- fail (printf "secret %q: key %q has no value; write an empty string explicitly if that is intended" $secret.name $key) }}
+            {{- end }}
+              {{ $key }}: {{ $value | toString | quote }}
+            {{- end }}
+            {{ end }}
+
             ---
             apiVersion: v1
             kind: Secret
@@ -140,4 +177,3 @@ spec:
     - step: automatically-detect-ready-composed-resources
       functionRef:
         name: crossplane-contrib-function-auto-ready
-
