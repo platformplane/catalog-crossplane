@@ -1,0 +1,145 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: helmcharts.catalog.cluster.local
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v2
+    kind: HelmChart
+  writeConnectionSecretsToNamespace: crossplane-system
+
+  mode: Pipeline
+  pipeline:
+    - step: get-environment-configs
+      functionRef:
+        name: crossplane-contrib-function-environment-configs
+      input:
+        apiVersion: environmentconfigs.fn.crossplane.io/v1beta1
+        kind: Input
+        spec:
+          environmentConfigs:
+            - type: Reference
+              ref:
+                name: environment
+
+    - step: helm-chart
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+
+            {{ $xr := .observed.composite.resource }}
+            {{ $kind := $xr.kind }}
+            {{ $xrName := $xr.metadata.name }}
+            {{ $namespace := $xr.metadata.namespace }}
+            {{ $params := $xr.spec.parameters }}
+            {{ $chart := $params.chart }}
+            {{ $values := dig "values" dict $params }}
+            {{ $zone := index $.context "apiextensions.crossplane.io/environment" "zone" }}
+
+            {{/* ArgoCD Applications all live in the single shared "argocd" namespace across every
+                 tenant, so the name must be unique cluster-wide -- unlike a normal composed resource,
+                 which only needs to be unique within the XR's own namespace. Keep the readable
+                 "<namespace>-<name>" form when it fits, otherwise fall back to a stable hash suffix. */}}
+            {{ $rawAppName := printf "%s-%s" $namespace $xrName }}
+            {{ $appName := $rawAppName }}
+            {{ if gt (len $rawAppName) 53 }}
+            {{ $postfix := trunc 6 (sha256sum (printf "%s" $xr.metadata.uid)) }}
+            {{ $appName = printf "%s-%s" (trunc 46 $rawAppName | trimSuffix "-") $postfix }}
+            {{ end }}
+
+            {{/* State observed from the previous reconcile, used below for the connection secret. */}}
+            {{ $application := dig "resources" "argocd-application" "resource" "spec" "forProvider" "manifest" dict .observed }}
+            {{ $syncStatus := dig "status" "sync" "status" "" $application }}
+            {{ $healthStatus := dig "status" "health" "status" "" $application }}
+            {{/* Assumes ArgoCD runs with Applications restricted to its own control-plane namespace
+                 (the platform default). If "applications in any namespace" is ever enabled for this
+                 cluster, the UI route gains a namespace segment and this link needs updating. */}}
+            {{ $applicationURL := printf "https://argocd.%s/applications/%s" $zone $appName }}
+
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $appName }}-application
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "argocd-application"
+            spec:
+              readiness:
+                policy: DeriveFromCelQuery
+                celQuery: |
+                  has(object.status) &&
+                  has(object.status.sync) &&
+                  has(object.status.health) &&
+                  object.status.sync.status == "Synced" &&
+                  object.status.health.status == "Healthy"
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: argoproj.io/v1alpha1
+                  kind: Application
+                  metadata:
+                    name: {{ $appName }}
+                    namespace: argocd
+                    labels:
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
+                      catalog.cluster.local/namespace: {{ $namespace }}
+                    # Cascades deletion to every resource the Application manages once the XR (and
+                    # therefore this Object) is deleted, so tearing down the catalog item doesn't
+                    # leave the deployed chart's resources behind.
+                    finalizers:
+                      - resources-finalizer.argocd.argoproj.io
+                  spec:
+                    project: default
+                    source:
+                      repoURL: {{ $chart.repository | quote }}
+                      chart: {{ $chart.name | quote }}
+                      targetRevision: {{ $chart.version | quote }}
+                      helm:
+                        valuesObject:
+            {{ $values | toYaml | nindent 26 }}
+                    destination:
+                      server: https://kubernetes.default.svc
+                      namespace: {{ $namespace }}
+                    # Auto-sync: ArgoCD applies chart/value changes on its own (no manual "Sync"
+                    # click needed), self-heals drift back to this spec, and prunes resources that
+                    # a chart change removes.
+                    syncPolicy:
+                      automated:
+                        selfHeal: true
+                        prune: true
+                      syncOptions:
+                        - CreateNamespace=true
+
+            ---
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              name: {{ $xrName }}-connection
+              namespace: {{ $namespace }}
+              annotations:
+                {{ setResourceNameAnnotation "connection-secret" }}
+            data:
+              application: {{ $appName | b64enc }}
+              namespace: {{ $namespace | b64enc }}
+              chart: {{ $chart.name | b64enc }}
+              version: {{ $chart.version | b64enc }}
+              # Link to the ArgoCD Application so you can watch the sync/health status and the
+              # live resource tree instead of polling this secret.
+              url: {{ $applicationURL | b64enc }}
+            {{ if $syncStatus }}
+              sync-status: {{ $syncStatus | b64enc }}
+            {{ end }}
+            {{ if $healthStatus }}
+              health-status: {{ $healthStatus | b64enc }}
+            {{ end }}
+
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready
