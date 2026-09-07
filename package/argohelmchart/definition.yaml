@@ -66,10 +66,11 @@ spec:
                         - name
                         - version
                     values:
-                      type: object
+                      type: string
+                      format: textarea
                       title: "Values"
-                      description: "Helm values passed to the chart, equivalent to a values.yaml file. Left empty, the chart's own defaults apply."
-                      x-kubernetes-preserve-unknown-fields: true
+                      description: "Helm value overrides, as YAML in the same shape as the chart's own values.yaml (e.g. \"service:\\n  type: ClusterIP\"). Merged over the chart's defaults, so anything left out keeps its default. Left empty, the chart's own defaults apply as-is."
+                      maxLength: 65536
                   required:
                     - chart
               required:

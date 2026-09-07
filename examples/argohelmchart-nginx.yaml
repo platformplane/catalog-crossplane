@@ -9,7 +9,7 @@ spec:
       repository: oci://registry-1.docker.io/bitnamicharts
       name: nginx
       version: "18.2.5"
-    values:
+    values: |
       replicaCount: 1
       service:
         type: ClusterIP
