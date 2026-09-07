@@ -1,0 +1,76 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: helmcharts.catalog.cluster.local
+spec:
+  group: catalog.cluster.local
+  scope: Namespaced
+  metadata:
+    labels:
+      catalog.cluster.local/kind: HelmChart
+    annotations:
+      catalog.cluster.local/title: "Helm Chart"
+      catalog.cluster.local/description: "Deploy any Helm chart from a Helm repository or OCI registry. ArgoCD creates and continuously auto-syncs an Application for it, so the deployed resources always match the chart, version, and values you specify."
+      catalog.cluster.local/icon: "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgd2lkdGg9IjgwMHB4IiBoZWlnaHQ9IjgwMHB4IiBmaWxsPSJub25lIiBzdHJva2U9IiMwRjE2ODkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI5Ii8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMi4yIiBmaWxsPSIjMEYxNjg5IiBzdHJva2U9Im5vbmUiLz48bGluZSB4MT0iMTIiIHkxPSIzIiB4Mj0iMTIiIHkyPSI5LjQiLz48bGluZSB4MT0iMTIiIHkxPSIxNC42IiB4Mj0iMTIiIHkyPSIyMSIvPjxsaW5lIHgxPSIzIiB5MT0iMTIiIHgyPSI5LjQiIHkyPSIxMiIvPjxsaW5lIHgxPSIxNC42IiB5MT0iMTIiIHgyPSIyMSIgeTI9IjEyIi8+PGxpbmUgeDE9IjUuNSIgeTE9IjUuNSIgeDI9IjkuOSIgeTI9IjkuOSIvPjxsaW5lIHgxPSIxNC4xIiB5MT0iMTQuMSIgeDI9IjE4LjUiIHkyPSIxOC41Ii8+PGxpbmUgeDE9IjE4LjUiIHkxPSI1LjUiIHgyPSIxNC4xIiB5Mj0iOS45Ii8+PGxpbmUgeDE9IjkuOSIgeTE9IjE0LjEiIHgyPSI1LjUiIHkyPSIxOC41Ii8+PC9zdmc+Cg=="
+      catalog.cluster.local/maintainer: ""
+      catalog.cluster.local/url: "https://argo-cd.readthedocs.io/en/stable/user-guide/helm/"
+      catalog.cluster.local/tags: "helm,gitops,argocd,generic,deployment"
+  names:
+    kind: HelmChart
+    plural: helmcharts
+  versions:
+    - name: v2
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          description: Deploys a Helm chart via an ArgoCD Application with automated sync (auto-sync, self-heal, and prune).
+          type: object
+          properties:
+            spec:
+              description: Configuration for the Helm chart deployment.
+              type: object
+              properties:
+                crossplane:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+                parameters:
+                  type: object
+                  properties:
+                    chart:
+                      type: object
+                      title: "Chart"
+                      description: "Helm chart to deploy."
+                      properties:
+                        repository:
+                          type: string
+                          title: "Repository"
+                          description: "Chart repository URL. Use an https:// URL for a classic Helm repository, or an oci:// URL for an OCI registry."
+                          minLength: 1
+                          maxLength: 2048
+                          pattern: '^(https://|oci://)\S+$'
+                        name:
+                          type: string
+                          title: "Chart Name"
+                          description: "Name of the chart within the repository."
+                          minLength: 1
+                          maxLength: 253
+                        version:
+                          type: string
+                          title: "Chart Version"
+                          description: "Chart version to deploy. Change it to roll out a new version; ArgoCD re-syncs automatically."
+                          minLength: 1
+                          maxLength: 253
+                      required:
+                        - repository
+                        - name
+                        - version
+                    values:
+                      type: object
+                      title: "Values"
+                      description: "Helm values passed to the chart, equivalent to a values.yaml file. Left empty, the chart's own defaults apply."
+                      x-kubernetes-preserve-unknown-fields: true
+                  required:
+                    - chart
+              required:
+                - parameters
