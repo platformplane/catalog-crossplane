@@ -38,7 +38,7 @@ spec:
             {{ $namespace := $xr.metadata.namespace }}
             {{ $params := $xr.spec.parameters }}
             {{ $chart := $params.chart }}
-            {{ $values := dig "values" dict $params }}
+            {{ $values := dig "values" "" $params }}
             {{ $zone := index $.context "apiextensions.crossplane.io/environment" "zone" }}
 
             {{/* ArgoCD Applications all live in the single shared "argocd" namespace across every
@@ -73,9 +73,7 @@ spec:
                 celQuery: |
                   has(object.status) &&
                   has(object.status.sync) &&
-                  has(object.status.health) &&
-                  object.status.sync.status == "Synced" &&
-                  object.status.health.status == "Healthy"
+                  object.status.sync.status == "Synced"
               providerConfigRef:
                 kind: ClusterProviderConfig
                 name: provider-kubernetes
@@ -90,9 +88,6 @@ spec:
                       catalog.cluster.local/kind: {{ $kind }}
                       catalog.cluster.local/name: {{ $xrName }}
                       catalog.cluster.local/namespace: {{ $namespace }}
-                    # Cascades deletion to every resource the Application manages once the XR (and
-                    # therefore this Object) is deleted, so tearing down the catalog item doesn't
-                    # leave the deployed chart's resources behind.
                     finalizers:
                       - resources-finalizer.argocd.argoproj.io
                   spec:
@@ -101,9 +96,11 @@ spec:
                       repoURL: {{ $chart.repository | quote }}
                       chart: {{ $chart.name | quote }}
                       targetRevision: {{ $chart.version | quote }}
+                      {{ if $values }}
                       helm:
-                        valuesObject:
-            {{ $values | toYaml | nindent 26 }}
+                        values: |
+            {{ $values | nindent 26 }}
+                      {{ end }}
                     destination:
                       server: https://kubernetes.default.svc
                       namespace: {{ $namespace }}
@@ -143,3 +140,4 @@ spec:
     - step: automatically-detect-ready-composed-resources
       functionRef:
         name: crossplane-contrib-function-auto-ready
+
