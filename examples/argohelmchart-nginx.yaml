@@ -16,6 +16,8 @@ spec:
             value: replace-me
           - key: UPSTREAM_PORT
             value: "8443"
+    gateway:
+      enabled: true
     values: |
       replicaCount: 1
       service:
