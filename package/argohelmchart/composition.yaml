@@ -53,10 +53,34 @@ spec:
             {{ $appName = printf "%s-%s" (trunc 46 $rawAppName | trimSuffix "-") $postfix }}
             {{ end }}
 
-            {{/* State observed from the previous reconcile, used below for the connection secret. */}}
-            {{ $application := dig "resources" "argocd-application" "resource" "spec" "forProvider" "manifest" dict .observed }}
-            {{ $syncStatus := dig "status" "sync" "status" "" $application }}
-            {{ $healthStatus := dig "status" "health" "status" "" $application }}
+            {{/* Live Application state as of the previous reconcile. provider-kubernetes writes what
+                 it observed to status.atProvider.manifest; spec.forProvider.manifest is only the
+                 manifest we asked for and never carries a status of its own. */}}
+            {{ $appStatus := dig "resources" "argocd-application" "resource" "status" "atProvider" "manifest" "status" dict .observed }}
+            {{ $syncStatus := dig "sync" "status" "" $appStatus }}
+            {{ $healthStatus := dig "health" "status" "" $appStatus }}
+            {{ $revision := dig "sync" "revision" "" $appStatus }}
+
+            {{/* Why the chart is not where it should be, in the order ArgoCD reports it: a bad spec
+                 or a chart it cannot compare, then a sync that failed, then a workload that came up
+                 unhealthy. Stays empty while all is well -- Crossplane patches the XR status with
+                 server-side apply, so a message we stop emitting is removed from the XR again. */}}
+            {{ $problems := list }}
+            {{ range $condition := dig "conditions" (list) $appStatus }}
+            {{- if contains "Error" (dig "type" "" $condition) }}
+            {{- $problems = append $problems (printf "%s: %s" $condition.type (dig "message" "" $condition)) }}
+            {{- end }}
+            {{- end }}
+            {{ $syncPhase := dig "operationState" "phase" "" $appStatus }}
+            {{- if and $syncPhase (not (has $syncPhase (list "Succeeded" "Running"))) }}
+            {{- $problems = append $problems (printf "last sync %s: %s" $syncPhase (dig "operationState" "message" "" $appStatus)) }}
+            {{- end }}
+            {{ $healthMessage := dig "health" "message" "" $appStatus }}
+            {{- if and $healthMessage (ne $healthStatus "Healthy") }}
+            {{- $problems = append $problems $healthMessage }}
+            {{- end }}
+            {{ $message := $problems | uniq | join "; " | trunc 1024 }}
+
             {{/* Assumes ArgoCD runs with Applications restricted to its own control-plane namespace
                  (the platform default). If "applications in any namespace" is ever enabled for this
                  cluster, the UI route gains a namespace segment and this link needs updating. */}}
@@ -118,15 +142,8 @@ spec:
             {{/* Secrets the chart expects to already exist in its namespace, declared on the XR so
                  the chart and its credentials are one catalog item. They are composed in the same
                  reconcile as the Application, so ArgoCD can briefly sync a chart whose Secret has
-                 not landed yet; it retries on its own and the workload recovers once it has.
-                 fromYaml itself fails the whole render on malformed YAML, so only the shape of an
-                 already-parsed value is checked below: entries must form a non-empty flat mapping,
-                 and every value has to survive being written out as a string. */}}
+                 not landed yet; it retries on its own and the workload recovers once it has. */}}
             {{ range $secret := $secrets }}
-            {{- $data := fromYaml $secret.data }}
-            {{- if or (not (kindIs "map" $data)) (not $data) }}
-            {{- fail (printf "secret %q: data must be YAML key/value pairs, at least one of them" $secret.name) }}
-            {{- end }}
             ---
             apiVersion: v1
             kind: Secret
@@ -138,16 +155,10 @@ spec:
                 catalog.cluster.local/name: {{ $xrName }}
               annotations:
                 {{ setResourceNameAnnotation (printf "secret-%s" $secret.name) }}
-            type: {{ dig "type" "Opaque" $secret | quote }}
+            type: Opaque
             stringData:
-            {{- range $key, $value := $data }}
-            {{- if or (kindIs "map" $value) (kindIs "slice" $value) }}
-            {{- fail (printf "secret %q: key %q must be a single value, not a nested mapping or list" $secret.name $key) }}
-            {{- end }}
-            {{- if kindIs "invalid" $value }}
-            {{- fail (printf "secret %q: key %q has no value; write an empty string explicitly if that is intended" $secret.name $key) }}
-            {{- end }}
-              {{ $key }}: {{ $value | toString | quote }}
+            {{- range $entry := $secret.data }}
+              {{ $entry.key }}: {{ $entry.value | quote }}
             {{- end }}
             {{ end }}
 
@@ -164,15 +175,34 @@ spec:
               namespace: {{ $namespace | b64enc }}
               chart: {{ $chart.name | b64enc }}
               version: {{ $chart.version | b64enc }}
-              # Link to the ArgoCD Application so you can watch the sync/health status and the
-              # live resource tree instead of polling this secret.
-              url: {{ $applicationURL | b64enc }}
+              # Link to the ArgoCD Application, which holds the full sync log and the live
+              # resource tree. The XR's own status carries the sync state, health, deployed
+              # version, and the reason for a failed sync.
+              argocd-url: {{ $applicationURL | b64enc }}
             {{ if $syncStatus }}
               sync-status: {{ $syncStatus | b64enc }}
             {{ end }}
             {{ if $healthStatus }}
               health-status: {{ $healthStatus | b64enc }}
             {{ end }}
+
+            ---
+            apiVersion: {{ $xr.apiVersion }}
+            kind: {{ $xr.kind }}
+            status:
+              argocd-url: {{ $applicationURL | quote }}
+            {{- if $syncStatus }}
+              sync: {{ $syncStatus | quote }}
+            {{- end }}
+            {{- if $healthStatus }}
+              health: {{ $healthStatus | quote }}
+            {{- end }}
+            {{- if $revision }}
+              revision: {{ $revision | quote }}
+            {{- end }}
+            {{- if $message }}
+              message: {{ $message | quote }}
+            {{- end }}
 
     - step: automatically-detect-ready-composed-resources
       functionRef:
