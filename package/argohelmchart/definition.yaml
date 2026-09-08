@@ -10,7 +10,7 @@ spec:
       catalog.cluster.local/kind: ArgoHelmChart
     annotations:
       catalog.cluster.local/title: "Argo Helm Chart"
-      catalog.cluster.local/description: "Deploy any Helm chart from a Helm repository or OCI registry. ArgoCD creates and continuously auto-syncs an Application for it, so the deployed resources always match the chart, version, and values you specify. Secrets the chart needs can be defined alongside it, so chart and credentials ship as one unit."
+      catalog.cluster.local/description: "Deploy any Helm chart from a repository or OCI registry, auto-synced by ArgoCD. Optionally ship the Secrets it needs, and expose it publicly with one flag."
       catalog.cluster.local/icon: "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgd2lkdGg9IjgwMHB4IiBoZWlnaHQ9IjgwMHB4IiBmaWxsPSJub25lIiBzdHJva2U9IiMwRjE2ODkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI5Ii8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMi4yIiBmaWxsPSIjMEYxNjg5IiBzdHJva2U9Im5vbmUiLz48bGluZSB4MT0iMTIiIHkxPSIzIiB4Mj0iMTIiIHkyPSI5LjQiLz48bGluZSB4MT0iMTIiIHkxPSIxNC42IiB4Mj0iMTIiIHkyPSIyMSIvPjxsaW5lIHgxPSIzIiB5MT0iMTIiIHgyPSI5LjQiIHkyPSIxMiIvPjxsaW5lIHgxPSIxNC42IiB5MT0iMTIiIHgyPSIyMSIgeTI9IjEyIi8+PGxpbmUgeDE9IjUuNSIgeTE9IjUuNSIgeDI9IjkuOSIgeTI9IjkuOSIvPjxsaW5lIHgxPSIxNC4xIiB5MT0iMTQuMSIgeDI9IjE4LjUiIHkyPSIxOC41Ii8+PGxpbmUgeDE9IjE4LjUiIHkxPSI1LjUiIHgyPSIxNC4xIiB5Mj0iOS45Ii8+PGxpbmUgeDE9IjkuOSIgeTE9IjE0LjEiIHgyPSI1LjUiIHkyPSIxOC41Ii8+PC9zdmc+Cg=="
       catalog.cluster.local/maintainer: ""
       catalog.cluster.local/url: "https://argo-cd.readthedocs.io/en/stable/user-guide/helm/"
@@ -38,11 +38,11 @@ spec:
           priority: 1
       schema:
         openAPIV3Schema:
-          description: Deploys a Helm chart via an ArgoCD Application with automated sync (auto-sync, self-heal, and prune), optionally together with the Secrets the chart expects to find in its namespace.
+          description: Deploys a Helm chart via an auto-syncing ArgoCD Application.
           type: object
           properties:
             spec:
-              description: Configuration for the Helm chart deployment.
+              description: Helm chart deployment configuration.
               type: object
               properties:
                 crossplane:
@@ -54,25 +54,25 @@ spec:
                     chart:
                       type: object
                       title: "Chart"
-                      description: "Helm chart to deploy."
+                      description: "Chart to deploy."
                       properties:
                         repository:
                           type: string
                           title: "Repository"
-                          description: "Chart repository URL. Use an https:// URL for a classic Helm repository, or an oci:// URL for an OCI registry."
+                          description: "Chart repository URL: https:// or oci://."
                           minLength: 1
                           maxLength: 2048
                           pattern: '^(https://|oci://)\S+$'
                         name:
                           type: string
                           title: "Chart Name"
-                          description: "Name of the chart within the repository."
+                          description: "Chart name within the repository."
                           minLength: 1
                           maxLength: 253
                         version:
                           type: string
                           title: "Chart Version"
-                          description: "Chart version to deploy. Change it to roll out a new version; ArgoCD re-syncs automatically."
+                          description: "Chart version. Change it to roll out a new one."
                           minLength: 1
                           maxLength: 253
                       required:
@@ -82,7 +82,7 @@ spec:
                     secrets:
                       type: array
                       title: "Secrets"
-                      description: 'Secrets to create in this instance''s namespace, for charts that expect a Secret to already exist, so the chart and the credentials it needs ship as one item. Add a Secret, then add one entry per key it should hold. Point the chart at it from Values (for example "auth:\n  existingSecret: my-chart-auth"). Values are stored in plain text in this resource, so anyone who can read the resource can read them.'
+                      description: 'Secrets to create alongside the chart. Add a Secret, then one entry per key it should hold, and point the chart at it from Values (e.g. "auth:\n  existingSecret: my-chart-auth"). Stored in plain text.'
                       maxItems: 16
                       # Keyed by name, so Kubernetes itself rejects the same Secret name twice.
                       x-kubernetes-list-type: map
@@ -94,14 +94,14 @@ spec:
                           name:
                             type: string
                             title: "Secret Name"
-                            description: "Name of the Secret to create. Must not collide with a Secret the chart creates itself."
+                            description: "Secret name. Must not collide with one the chart creates itself."
                             minLength: 1
                             maxLength: 253
                             pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
                           data:
                             type: array
                             title: "Data"
-                            description: "The entries this Secret holds, one key and value per row."
+                            description: "This Secret's entries, one key/value per row."
                             minItems: 1
                             maxItems: 64
                             # Keyed by key, so the same key cannot be given twice in one Secret.
@@ -114,14 +114,14 @@ spec:
                                 key:
                                   type: string
                                   title: "Key"
-                                  description: "Name of this entry inside the Secret, such as password or api.key. Letters, digits, dashes, underscores and dots only."
+                                  description: "Entry key, e.g. password or api.key."
                                   minLength: 1
                                   maxLength: 253
                                   pattern: "^[-._a-zA-Z0-9]+$"
                                 value:
                                   type: string
                                   title: "Value"
-                                  description: "The value for this entry, written verbatim, so do not base64-encode it. Leave it empty for an entry the chart only needs to be present."
+                                  description: "Entry value, written verbatim (do not base64-encode)."
                                   maxLength: 32768
                               required:
                                 - key
@@ -129,39 +129,53 @@ spec:
                         required:
                           - name
                           - data
+                    gateway:
+                      type: object
+                      title: "Public Endpoint"
+                      default: {}
+                      properties:
+                        enabled:
+                          type: boolean
+                          default: false
+                          title: "Expose Publicly"
+                          description: 'Publish this instance at <instance name>.<platform domain>. Listener, certificate and route are set up automatically, including finding the chart''s HTTP port. Reachable from the internet -- turn off the chart''s own ingress/route to avoid a second address.'
                     values:
                       type: string
                       format: codearea
                       title: "Values"
                       # TODO: point this at the real HTTPRoute documentation once it is published.
-                      description: "Helm value overrides, as YAML in the same shape as the chart's own values.yaml (e.g. \"service:\\n  type: ClusterIP\"). Merged over the chart's defaults, so anything left out keeps its default. Left empty, the chart's own defaults apply as-is. To reach the chart from outside the cluster, give it an HTTPRoute -- see [the HTTPRoute documentation](https://example.com/docs/httproute)."
+                      description: "Helm value overrides, as YAML (e.g. \"service:\\n  type: ClusterIP\"). Merged over the chart's defaults. See [the HTTPRoute documentation](https://example.com/docs/httproute) for manual routing."
                       maxLength: 65536
                   required:
                     - chart
               required:
                 - parameters
             status:
-              description: Live state of the deployment, read back from the ArgoCD Application on every reconcile.
+              description: Live state, read from the ArgoCD Application.
               type: object
               properties:
                 sync:
                   type: string
                   title: "Sync Status"
-                  description: "Whether the deployed resources match the chart and values requested above: Synced, OutOfSync, or Unknown. ArgoCD re-syncs on its own, so OutOfSync is normally short-lived; when it is not, Message says what is in the way."
+                  description: "Synced, OutOfSync, or Unknown. See Message if stuck OutOfSync."
                 health:
                   type: string
                   title: "Health"
-                  description: "Health ArgoCD reports for the deployed resources as a whole: Healthy, Progressing, Degraded, Suspended, Missing, or Unknown."
+                  description: "Healthy, Progressing, Degraded, Suspended, Missing, or Unknown."
                 revision:
                   type: string
                   title: "Deployed Version"
-                  description: "Chart version ArgoCD last rolled out. It trails the requested chart version while a new one is still being applied."
+                  description: "Chart version last rolled out; trails the requested one during a rollout."
                 message:
                   type: string
                   title: "Message"
-                  description: "Why the deployment is not synced or not healthy, as ArgoCD reports it: a chart that cannot be pulled, values the chart rejects, or a workload that will not start. Empty while everything is synced and healthy."
+                  description: "Why sync or health is failing. Empty when all is well."
+                url:
+                  type: string
+                  title: "Public Endpoint"
+                  description: "Public address. Absent while not exposed or not yet ready."
                 argocd-url:
                   type: string
                   title: "ArgoCD Application"
-                  description: "Link to the ArgoCD Application, where the full sync log, error detail, and live resource tree are."
+                  description: "Link to the ArgoCD Application: sync log, errors, resource tree."
 
