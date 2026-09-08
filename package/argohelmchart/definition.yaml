@@ -22,6 +22,20 @@ spec:
     - name: v2
       served: true
       referenceable: true
+      additionalPrinterColumns:
+        - name: Sync
+          type: string
+          jsonPath: .status.sync
+        - name: Health
+          type: string
+          jsonPath: .status.health
+        - name: Version
+          type: string
+          jsonPath: .status.revision
+        - name: Message
+          type: string
+          jsonPath: .status.message
+          priority: 1
       schema:
         openAPIV3Schema:
           description: Deploys a Helm chart via an ArgoCD Application with automated sync (auto-sync, self-heal, and prune), optionally together with the Secrets the chart expects to find in its namespace.
@@ -68,45 +82,56 @@ spec:
                     secrets:
                       type: array
                       title: "Secrets"
-                      description: "Secrets to create in this instance's namespace, for charts that expect a Secret to already exist. Define it here and point the chart at it by name from Values (for example \"auth:\\n  existingSecret: my-chart-auth\"), so the chart and the credentials it needs ship as one item. Entries are stored in plain text in this resource, so anyone who can read the resource can read them."
+                      description: 'Secrets to create in this instance''s namespace, for charts that expect a Secret to already exist, so the chart and the credentials it needs ship as one item. Add a Secret, then add one entry per key it should hold. Point the chart at it from Values (for example "auth:\n  existingSecret: my-chart-auth"). Values are stored in plain text in this resource, so anyone who can read the resource can read them.'
                       maxItems: 16
+                      # Keyed by name, so Kubernetes itself rejects the same Secret name twice.
+                      x-kubernetes-list-type: map
+                      x-kubernetes-list-map-keys:
+                        - name
                       items:
                         type: object
                         properties:
                           name:
                             type: string
                             title: "Secret Name"
-                            description: "Name of the Secret to create. Must be unique within this namespace, and must not collide with a Secret the chart creates itself."
+                            description: "Name of the Secret to create. Must not collide with a Secret the chart creates itself."
                             minLength: 1
                             maxLength: 253
-                            pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
-                          type:
-                            type: string
-                            title: "Type"
-                            description: "Secret type. Opaque covers ordinary chart credentials; pick a typed variant when the chart expects one, such as an image pull secret or a TLS certificate."
-                            default: "Opaque"
-                            enum:
-                              - "Opaque"
-                              - "kubernetes.io/basic-auth"
-                              - "kubernetes.io/ssh-auth"
-                              - "kubernetes.io/tls"
-                              - "kubernetes.io/dockerconfigjson"
+                            pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
                           data:
-                            type: string
-                            format: textarea
+                            type: array
                             title: "Data"
-                            description: "Secret entries as YAML key/value pairs (e.g. \"password: s3cr3t\"). Written verbatim, so do not base64-encode the values. A typed Secret needs the keys Kubernetes requires for that type, such as \".dockerconfigjson\", or \"tls.crt\" and \"tls.key\"."
-                            minLength: 1
-                            maxLength: 65536
+                            description: "The entries this Secret holds, one key and value per row."
+                            minItems: 1
+                            maxItems: 64
+                            # Keyed by key, so the same key cannot be given twice in one Secret.
+                            x-kubernetes-list-type: map
+                            x-kubernetes-list-map-keys:
+                              - key
+                            items:
+                              type: object
+                              properties:
+                                key:
+                                  type: string
+                                  title: "Key"
+                                  description: "Name of this entry inside the Secret, such as password or api.key. Letters, digits, dashes, underscores and dots only."
+                                  minLength: 1
+                                  maxLength: 253
+                                  pattern: "^[-._a-zA-Z0-9]+$"
+                                value:
+                                  type: string
+                                  title: "Value"
+                                  description: "The value for this entry, written verbatim, so do not base64-encode it. Leave it empty for an entry the chart only needs to be present."
+                                  maxLength: 32768
+                              required:
+                                - key
+                                - value
                         required:
                           - name
                           - data
-                      x-kubernetes-validations:
-                        - rule: self.all(s, self.exists_one(o, o.name == s.name))
-                          message: each secret name may only be used once
                     values:
                       type: string
-                      format: textarea
+                      format: codearea
                       title: "Values"
                       # TODO: point this at the real HTTPRoute documentation once it is published.
                       description: "Helm value overrides, as YAML in the same shape as the chart's own values.yaml (e.g. \"service:\\n  type: ClusterIP\"). Merged over the chart's defaults, so anything left out keeps its default. Left empty, the chart's own defaults apply as-is. To reach the chart from outside the cluster, give it an HTTPRoute -- see [the HTTPRoute documentation](https://example.com/docs/httproute)."
@@ -115,3 +140,28 @@ spec:
                     - chart
               required:
                 - parameters
+            status:
+              description: Live state of the deployment, read back from the ArgoCD Application on every reconcile.
+              type: object
+              properties:
+                sync:
+                  type: string
+                  title: "Sync Status"
+                  description: "Whether the deployed resources match the chart and values requested above: Synced, OutOfSync, or Unknown. ArgoCD re-syncs on its own, so OutOfSync is normally short-lived; when it is not, Message says what is in the way."
+                health:
+                  type: string
+                  title: "Health"
+                  description: "Health ArgoCD reports for the deployed resources as a whole: Healthy, Progressing, Degraded, Suspended, Missing, or Unknown."
+                revision:
+                  type: string
+                  title: "Deployed Version"
+                  description: "Chart version ArgoCD last rolled out. It trails the requested chart version while a new one is still being applied."
+                message:
+                  type: string
+                  title: "Message"
+                  description: "Why the deployment is not synced or not healthy, as ArgoCD reports it: a chart that cannot be pulled, values the chart rejects, or a workload that will not start. Empty while everything is synced and healthy."
+                argocd-url:
+                  type: string
+                  title: "ArgoCD Application"
+                  description: "Link to the ArgoCD Application, where the full sync log, error detail, and live resource tree are."
+

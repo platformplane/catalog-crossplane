@@ -11,9 +11,11 @@ spec:
       version: "18.2.5"
     secrets:
       - name: my-argohelmchart-nginx-instance-env
-        type: Opaque
-        data: |
-          UPSTREAM_TOKEN: replace-me
+        data:
+          - key: UPSTREAM_TOKEN
+            value: replace-me
+          - key: UPSTREAM_PORT
+            value: "8443"
     values: |
       replicaCount: 1
       service:
