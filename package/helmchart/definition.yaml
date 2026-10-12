@@ -1,44 +1,45 @@
 apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
-  name: argohelmcharts.catalog.cluster.local
+  name: helmcharts.catalog.cluster.local
 spec:
   group: catalog.cluster.local
   scope: Namespaced
   metadata:
     labels:
-      catalog.cluster.local/kind: ArgoHelmChart
+      catalog.cluster.local/kind: HelmChart
     annotations:
-      catalog.cluster.local/title: "Argo Helm Chart"
-      catalog.cluster.local/description: "Deploy any Helm chart from a repository or OCI registry, auto-synced by ArgoCD. Optionally ship the Secrets it needs, and expose it publicly with one flag."
+      catalog.cluster.local/title: "Helm Chart"
+      catalog.cluster.local/description: "Deploy any Helm chart from a repository or OCI registry. Optionally ship the Secrets it needs, and expose it publicly with one flag."
       catalog.cluster.local/icon: "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgd2lkdGg9IjgwMHB4IiBoZWlnaHQ9IjgwMHB4IiBmaWxsPSJub25lIiBzdHJva2U9IiMwRjE2ODkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI5Ii8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMi4yIiBmaWxsPSIjMEYxNjg5IiBzdHJva2U9Im5vbmUiLz48bGluZSB4MT0iMTIiIHkxPSIzIiB4Mj0iMTIiIHkyPSI5LjQiLz48bGluZSB4MT0iMTIiIHkxPSIxNC42IiB4Mj0iMTIiIHkyPSIyMSIvPjxsaW5lIHgxPSIzIiB5MT0iMTIiIHgyPSI5LjQiIHkyPSIxMiIvPjxsaW5lIHgxPSIxNC42IiB5MT0iMTIiIHgyPSIyMSIgeTI9IjEyIi8+PGxpbmUgeDE9IjUuNSIgeTE9IjUuNSIgeDI9IjkuOSIgeTI9IjkuOSIvPjxsaW5lIHgxPSIxNC4xIiB5MT0iMTQuMSIgeDI9IjE4LjUiIHkyPSIxOC41Ii8+PGxpbmUgeDE9IjE4LjUiIHkxPSI1LjUiIHgyPSIxNC4xIiB5Mj0iOS45Ii8+PGxpbmUgeDE9IjkuOSIgeTE9IjE0LjEiIHgyPSI1LjUiIHkyPSIxOC41Ii8+PC9zdmc+Cg=="
       catalog.cluster.local/maintainer: ""
-      catalog.cluster.local/url: "https://argo-cd.readthedocs.io/en/stable/user-guide/helm/"
-      catalog.cluster.local/tags: "helm,gitops,argocd,argo,generic,deployment"
+      catalog.cluster.local/url: "https://helm.sh/docs/"
+      catalog.cluster.local/tags: "helm,generic,deployment"
   names:
-    kind: ArgoHelmChart
-    plural: argohelmcharts
+    kind: HelmChart
+    plural: helmcharts
   versions:
     - name: v2
       served: true
       referenceable: true
       additionalPrinterColumns:
-        - name: Sync
+        - name: State
           type: string
-          jsonPath: .status.sync
-        - name: Health
-          type: string
-          jsonPath: .status.health
+          jsonPath: .status.state
         - name: Version
           type: string
+          jsonPath: .status.version
+        - name: Revision
+          type: integer
           jsonPath: .status.revision
+          priority: 1
         - name: Message
           type: string
           jsonPath: .status.message
           priority: 1
       schema:
         openAPIV3Schema:
-          description: Deploys a Helm chart via an auto-syncing ArgoCD Application.
+          description: Deploys a Helm chart as a Helm release in the instance's namespace.
           type: object
           properties:
             spec:
@@ -139,6 +140,18 @@ spec:
                           default: false
                           title: "Expose Publicly"
                           description: 'Publish this instance at <instance name>.<platform domain>. Listener, certificate and route are set up automatically, including finding the chart''s HTTP port. Reachable from the internet -- turn off the chart''s own ingress/route to avoid a second address.'
+                        port:
+                          type: integer
+                          title: "Port"
+                          description: "Service port to publish. Leave empty to detect the chart's HTTP port; set it when detection picks the wrong one or none. Must serve plain HTTP."
+                          minimum: 1
+                          maximum: 65535
+                        service:
+                          type: string
+                          title: "Service"
+                          description: "Service to publish, by name. Leave empty to search the chart's Services; set it when several expose the chosen port."
+                          maxLength: 63
+                          pattern: "^[a-z]([-a-z0-9]*[a-z0-9])?$"
                     values:
                       type: string
                       format: codearea
@@ -151,31 +164,27 @@ spec:
               required:
                 - parameters
             status:
-              description: Live state, read from the ArgoCD Application.
+              description: Live state, read from the Helm release.
               type: object
               properties:
-                sync:
+                state:
                   type: string
-                  title: "Sync Status"
-                  description: "Synced, OutOfSync, or Unknown. See Message if stuck OutOfSync."
-                health:
-                  type: string
-                  title: "Health"
-                  description: "Healthy, Progressing, Degraded, Suspended, Missing, or Unknown."
-                revision:
+                  title: "State"
+                  description: "Helm release state: deployed, failed, pending-install, pending-upgrade, pending-rollback, or uninstalling. See Message if not deployed."
+                version:
                   type: string
                   title: "Deployed Version"
                   description: "Chart version last rolled out; trails the requested one during a rollout."
+                revision:
+                  type: integer
+                  title: "Revision"
+                  description: "Helm release revision; goes up with every install, upgrade or rollback."
                 message:
                   type: string
                   title: "Message"
-                  description: "Why sync or health is failing. Empty when all is well."
+                  description: "Why the release is failing. Empty when all is well."
                 url:
                   type: string
                   title: "Public Endpoint"
-                  description: "Public address. Absent while not exposed or not yet ready."
-                argocd-url:
-                  type: string
-                  title: "ArgoCD Application"
-                  description: "Link to the ArgoCD Application: sync log, errors, resource tree."
+                  description: "Public address. Absent while not exposed, while there is no route yet, or while the hostname is taken by another instance."
 
