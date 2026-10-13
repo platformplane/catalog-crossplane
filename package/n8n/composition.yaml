@@ -1,0 +1,280 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: n8n.catalog.cluster.local
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v2
+    kind: N8n
+  writeConnectionSecretsToNamespace: crossplane-system
+
+  mode: Pipeline
+  pipeline:
+    - step: get-environment-configs
+      functionRef:
+        name: crossplane-contrib-function-environment-configs
+      input:
+        apiVersion: environmentconfigs.fn.crossplane.io/v1beta1
+        kind: Input
+        spec:
+          environmentConfigs:
+            - type: Reference
+              ref:
+                name: environment
+
+    - step: n8n
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{ $xr := .observed.composite.resource }}
+            {{ $kind := $xr.kind }}
+            {{ $xrName := $xr.metadata.name }}
+            {{ $namespace := $xr.metadata.namespace }}
+
+            {{ $params := $xr.spec.parameters | default dict }}
+            {{ $size := dig "size" "5Gi" $params }}
+            {{ $n8nVersion := dig "version" "2.36.9" $params }}
+            {{ $timezone := dig "timezone" "UTC" $params }}
+            {{ $retentionDays := dig "retention" "days" 14 $params }}
+            {{ $retentionHours := mul $retentionDays 24 }}
+            {{ $maxExecutions := dig "retention" "maxExecutions" 10000 $params }}
+            {{ $maxConcurrentExecutions := dig "maxConcurrentExecutions" 10 $params }}
+            {{ $smtpSecretName := dig "smtp" "secretName" "" $params }}
+
+            {{ $resourceProfiles := dict
+              "small" (dict "requestCpu" "200m" "requestMemory" "512Mi" "limitCpu" "1" "limitMemory" "1Gi")
+              "medium" (dict "requestCpu" "500m" "requestMemory" "1Gi" "limitCpu" "2" "limitMemory" "2Gi")
+              "large" (dict "requestCpu" "1" "requestMemory" "2Gi" "limitCpu" "4" "limitMemory" "4Gi")
+            }}
+            {{ $resourceProfile := dig "resourceProfile" "small" $params }}
+            {{ $resources := index $resourceProfiles $resourceProfile }}
+            {{ $publicIngress := dig "ingress" "public" true $params }}
+
+            {{ $chartVersionMapping := dict "2.36.9" "1.11.0" }}
+            {{ $chartVersion := index $chartVersionMapping $n8nVersion }}
+
+            {{ $host := regexReplaceAll "[^a-z0-9-]" ($xrName | lower) "" }}
+            {{ $zone := index $.context "apiextensions.crossplane.io/environment" "zone" }}
+            {{ $hostname := printf "%s.%s" $host $zone }}
+            {{ $url := printf "https://%s" $hostname }}
+
+            {{ $ownerSecretName := printf "%s-owner" $xrName }}
+            {{ $ownerEmail := dig "resources" "owner-secret" "resource" "spec" "forProvider" "manifest" "stringData" "email" (printf "admin@%s" $hostname) .observed }}
+            {{ $ownerPassword := dig "resources" "owner-secret" "resource" "spec" "forProvider" "manifest" "stringData" "password" (randAlphaNum 20) .observed }}
+            {{ $ownerPasswordHash := dig "resources" "owner-secret" "resource" "spec" "forProvider" "manifest" "stringData" "passwordHash" "" .observed }}
+            {{- if not $ownerPasswordHash }}
+            {{ $ownerPasswordHash = bcrypt $ownerPassword }}
+            {{- end }}
+
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $ownerSecretName }}
+              annotations:
+                {{ setResourceNameAnnotation "owner-secret" }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: Secret
+                  metadata:
+                    name: {{ $ownerSecretName }}
+                    namespace: {{ $namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
+                  stringData:
+                    email: {{ $ownerEmail | quote }}
+                    password: {{ $ownerPassword | quote }}
+                    passwordHash: {{ $ownerPasswordHash | quote }}
+            ---
+
+            apiVersion: helm.m.crossplane.io/v1beta1
+            kind: Release
+            metadata:
+              name: {{ $xrName }}
+              namespace: {{ $namespace }}
+              annotations:
+                crossplane.io/external-name: {{ $xrName }}
+                gotemplating.fn.crossplane.io/composition-resource-name: "helm-release"
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-helm
+              forProvider:
+                wait: true
+                chart:
+                  name: n8n
+                  repository: oci://ghcr.io/n8n-io/n8n-helm-chart
+                  version: {{ $chartVersion }}
+                namespace: {{ $namespace }}
+                values:
+                  fullnameOverride: {{ $xrName }}
+                  image:
+                    tag: {{ $n8nVersion | quote }}
+                  commonLabels:
+                    catalog.cluster.local/kind: {{ $kind }}
+                    catalog.cluster.local/name: {{ $xrName }}
+                  queueMode:
+                    enabled: false
+                  database:
+                    type: sqlite
+                    useExternal: false
+                  redis:
+                    enabled: false
+                  persistence:
+                    enabled: true
+                    size: {{ $size }}
+                  strategy:
+                    type: Recreate
+                  pdb:
+                    enabled: false
+                  resources:
+                    main:
+                      requests:
+                        cpu: {{ index $resources "requestCpu" | quote }}
+                        memory: {{ index $resources "requestMemory" | quote }}
+                      limits:
+                        cpu: {{ index $resources "limitCpu" | quote }}
+                        memory: {{ index $resources "limitMemory" | quote }}
+                  serviceAccount:
+                    name: {{ $xrName }}
+                    automountServiceAccountToken: false
+                  secretRefs:
+                    env:
+                      N8N_ENCRYPTION_KEY: {{ dig "resources" "helm-release" "resource" "spec" "forProvider" "values" "secretRefs" "env" "N8N_ENCRYPTION_KEY" (randAlphaNum 64) .observed | quote }}
+                      N8N_HOST: {{ $hostname | quote }}
+                      N8N_PORT: "5678"
+                      N8N_PROTOCOL: "https"
+                  config:
+                    timezone: {{ $timezone | quote }}
+                    extraEnv:
+                      - name: GENERIC_TIMEZONE
+                        value: {{ $timezone | quote }}
+                      - name: N8N_PROXY_HOPS
+                        value: "1"
+                      - name: N8N_INSTANCE_OWNER_MANAGED_BY_ENV
+                        value: "true"
+                      - name: N8N_INSTANCE_OWNER_EMAIL
+                        valueFrom:
+                          secretKeyRef:
+                            name: {{ $ownerSecretName | quote }}
+                            key: email
+                      - name: N8N_INSTANCE_OWNER_FIRST_NAME
+                        value: Platform
+                      - name: N8N_INSTANCE_OWNER_LAST_NAME
+                        value: Admin
+                      - name: N8N_INSTANCE_OWNER_PASSWORD_HASH
+                        valueFrom:
+                          secretKeyRef:
+                            name: {{ $ownerSecretName | quote }}
+                            key: passwordHash
+                      {{- if $smtpSecretName }}
+                      - name: N8N_EMAIL_MODE
+                        value: smtp
+                      - name: N8N_SMTP_HOST
+                        valueFrom:
+                          secretKeyRef:
+                            name: {{ $smtpSecretName | quote }}
+                            key: N8N_SMTP_HOST
+                      - name: N8N_SMTP_SENDER
+                        valueFrom:
+                          secretKeyRef:
+                            name: {{ $smtpSecretName | quote }}
+                            key: N8N_SMTP_SENDER
+                      - name: N8N_SMTP_PORT
+                        valueFrom:
+                          secretKeyRef:
+                            name: {{ $smtpSecretName | quote }}
+                            key: N8N_SMTP_PORT
+                            optional: true
+                      - name: N8N_SMTP_USER
+                        valueFrom:
+                          secretKeyRef:
+                            name: {{ $smtpSecretName | quote }}
+                            key: N8N_SMTP_USER
+                            optional: true
+                      - name: N8N_SMTP_PASS
+                        valueFrom:
+                          secretKeyRef:
+                            name: {{ $smtpSecretName | quote }}
+                            key: N8N_SMTP_PASS
+                            optional: true
+                      - name: N8N_SMTP_SSL
+                        valueFrom:
+                          secretKeyRef:
+                            name: {{ $smtpSecretName | quote }}
+                            key: N8N_SMTP_SSL
+                            optional: true
+                      - name: N8N_SMTP_STARTTLS
+                        valueFrom:
+                          secretKeyRef:
+                            name: {{ $smtpSecretName | quote }}
+                            key: N8N_SMTP_STARTTLS
+                            optional: true
+                      - name: N8N_SMTP_OAUTH_SERVICE_CLIENT
+                        valueFrom:
+                          secretKeyRef:
+                            name: {{ $smtpSecretName | quote }}
+                            key: N8N_SMTP_OAUTH_SERVICE_CLIENT
+                            optional: true
+                      - name: N8N_SMTP_OAUTH_PRIVATE_KEY
+                        valueFrom:
+                          secretKeyRef:
+                            name: {{ $smtpSecretName | quote }}
+                            key: N8N_SMTP_OAUTH_PRIVATE_KEY
+                            optional: true
+                      {{- end }}
+                  executions:
+                    data:
+                      pruning:
+                        enabled: true
+                        maxAge: {{ $retentionHours }}
+                        maxCount: {{ $maxExecutions }}
+                    concurrency:
+                      productionLimit: {{ $maxConcurrentExecutions }}
+                  webhook:
+                    url: {{ $url | quote }}
+                  ingress:
+                    enabled: true
+                    {{- if $publicIngress }}
+                    className: nginx
+                    {{- else }}
+                    className: nginx-internal
+                    {{- end }}
+                    annotations:
+                      kubernetes.io/tls-acme: "true"
+                    hosts:
+                      - host: {{ $hostname }}
+                        paths:
+                          - path: /
+                            pathType: Prefix
+                    tls:
+                      - secretName: {{ $xrName }}-tls
+                        hosts:
+                          - {{ $hostname }}
+            ---
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              name: {{ $xrName }}-connection
+              namespace: {{ $namespace }}
+              annotations:
+                {{ setResourceNameAnnotation "connection-secret" }}
+            data:
+              email: {{ $ownerEmail | b64enc }}
+              host: {{ $hostname | b64enc }}
+              password: {{ $ownerPassword | b64enc }}
+              url: {{ $url | b64enc }}
+
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready
