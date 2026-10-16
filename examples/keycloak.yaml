@@ -1,0 +1,10 @@
+apiVersion: catalog.cluster.local/v2
+kind: Keycloak
+metadata:
+  name: keycloak-sample
+  namespace: catalog-examples
+spec:
+  parameters:
+    version: "26.8.1"
+    size: 1Gi
+    resourceProfile: small

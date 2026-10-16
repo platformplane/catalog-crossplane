@@ -1,0 +1,393 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: keycloaks.catalog.cluster.local
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v2
+    kind: Keycloak
+  writeConnectionSecretsToNamespace: crossplane-system
+
+  mode: Pipeline
+  pipeline:
+    - step: get-environment-configs
+      functionRef:
+        name: crossplane-contrib-function-environment-configs
+      input:
+        apiVersion: environmentconfigs.fn.crossplane.io/v1beta1
+        kind: Input
+        spec:
+          environmentConfigs:
+            - type: Reference
+              ref:
+                name: environment
+
+    - step: keycloak
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+
+            {{ $xr := .observed.composite.resource }}
+            {{ $kind := $xr.kind }}
+            {{ $xrName := $xr.metadata.name }}
+            {{ $namespace := $xr.metadata.namespace }}
+            {{ $params := $xr.spec.parameters | default dict }}
+            {{ $environment := index $.context "apiextensions.crossplane.io/environment" }}
+            {{ $zone := index $environment "zone" }}
+
+            {{/* The longest derived name, "<name>-db-headless", must stay a valid Service name, and
+                 "<name>-db" a valid Helm release name. */}}
+            {{ if gt (len $xrName) 40 }}
+            {{ fail (printf "instance name %q is too long: at most 40 characters" $xrName) }}
+            {{ end }}
+
+            {{ $keycloakVersion := dig "version" "26.8.1" $params }}
+            {{ $chartVersionMapping := dict "26.8.1" "7.4.0" }}
+            {{ $chartVersion := index $chartVersionMapping $keycloakVersion }}
+            {{ $size := dig "size" "1Gi" $params }}
+
+            {{ $resourceProfiles := dict
+              "small" (dict "requestCpu" "500m" "requestMemory" "1Gi" "limitCpu" "1" "limitMemory" "1Gi")
+              "medium" (dict "requestCpu" "1" "requestMemory" "2Gi" "limitCpu" "2" "limitMemory" "2Gi")
+              "large" (dict "requestCpu" "2" "requestMemory" "4Gi" "limitCpu" "4" "limitMemory" "4Gi")
+            }}
+            {{ $resources := index $resourceProfiles (dig "resourceProfile" "small" $params) }}
+
+            {{/* Always public: OIDC and SAML redirects need an address browsers can reach. */}}
+            {{ $host := regexReplaceAll "[^a-z0-9-]" ($xrName | lower) "" | trimAll "-" }}
+            {{ $hostname := printf "%s.%s" $host $zone }}
+            {{ $url := printf "https://%s" $hostname }}
+            {{ $gatewayName := dig "gatewayName" "default-gateway" $environment }}
+            {{ $gatewayNamespace := dig "gatewayNamespace" "envoy" $environment }}
+            {{ $certificateIssuer := dig "certificateIssuer" "letsencrypt" $environment }}
+
+            {{ $dbName := printf "%s-db" $xrName }}
+            {{ $credentialsSecretName := printf "%s-credentials" $xrName }}
+            {{ $listenerSetName := printf "%s-listenerset" $xrName }}
+            {{ $httpRouteName := printf "%s-httproute" $xrName }}
+
+            {{/* Generated once and read back from the live Object, so they survive reconciles. */}}
+            {{ $credentials := dig "resources" "credentials" "resource" "spec" "forProvider" "manifest" "stringData" dict .observed }}
+            {{ $dbPassword := dig "db-password" (randAlphaNum 32) $credentials }}
+            {{ $adminUsername := dig "admin-username" "admin" $credentials }}
+            {{ $adminPassword := dig "admin-password" (randAlphaNum 24) $credentials }}
+
+            {{/* Live state lives in status.atProvider.manifest; forProvider.manifest is only what we
+                 asked for. */}}
+            {{ $problems := list }}
+            {{ range $release := list "helm-release" "db-release" }}
+            {{- $releaseStatus := dig "resources" $release "resource" "status" dict $.observed }}
+            {{- range $condition := dig "conditions" (list) $releaseStatus }}
+            {{- if and (ne (dig "status" "" $condition) "True") (dig "message" "" $condition) }}
+            {{- $problems = append $problems (printf "%s %s: %s" $release $condition.type $condition.message) }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+
+            {{/* Listeners are matched by hostname across every namespace on the shared gateway, so the
+                 name can be taken by another namespace's instance of the same name. */}}
+            {{ $listenerConflict := false }}
+            {{ $listenerSetStatus := dig "resources" "listener-set" "resource" "status" "atProvider" "manifest" "status" dict .observed }}
+            {{ range $listener := dig "listeners" (list) $listenerSetStatus }}
+            {{- range $condition := dig "conditions" (list) $listener }}
+            {{- if and (eq (dig "type" "" $condition) "Conflicted") (eq (dig "status" "" $condition) "True") }}
+            {{- $listenerConflict = true }}
+            {{- else if and (has (dig "type" "" $condition) (list "Accepted" "Programmed" "ResolvedRefs")) (ne (dig "status" "" $condition) "True") }}
+            {{- $problems = append $problems (printf "listener %s: %s" $condition.type (dig "message" "" $condition)) }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{ if $listenerConflict }}
+            {{ $problems = append $problems (printf "hostname %s is already used by another instance on the platform gateway; rename this instance to get its own" $hostname) }}
+            {{ end }}
+
+            {{/* Accepted doesn't mean the backend resolves -- check that too. */}}
+            {{ $routeAccepted := false }}
+            {{ $routeStatus := dig "resources" "http-route" "resource" "status" "atProvider" "manifest" "status" dict .observed }}
+            {{ range $parent := dig "parents" (list) $routeStatus }}
+            {{- range $condition := dig "conditions" (list) $parent }}
+            {{- if and (eq (dig "type" "" $condition) "Accepted") (eq (dig "status" "" $condition) "True") }}
+            {{- $routeAccepted = true }}
+            {{- else if and (has (dig "type" "" $condition) (list "Accepted" "ResolvedRefs")) (ne (dig "status" "" $condition) "True") }}
+            {{- $problems = append $problems (printf "route %s: %s" $condition.type (dig "message" "" $condition)) }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+
+            {{ $endpointLive := and $routeAccepted (not $listenerConflict) }}
+            {{ $message := $problems | uniq | join "; " | trunc 1024 }}
+
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $credentialsSecretName }}
+              annotations:
+                {{ setResourceNameAnnotation "credentials" }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: Secret
+                  metadata:
+                    name: {{ $credentialsSecretName }}
+                    namespace: {{ $namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
+                  type: Opaque
+                  stringData:
+                    db-password: {{ $dbPassword | quote }}
+                    admin-username: {{ $adminUsername | quote }}
+                    admin-password: {{ $adminPassword | quote }}
+            ---
+            apiVersion: helm.m.crossplane.io/v1beta1
+            kind: Release
+            metadata:
+              name: {{ $dbName }}
+              namespace: {{ $namespace }}
+              annotations:
+                crossplane.io/external-name: {{ $dbName }}
+                gotemplating.fn.crossplane.io/composition-resource-name: "db-release"
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-helm
+              forProvider:
+                wait: true
+                chart: # https://artifacthub.io/packages/helm/cloudpirates/postgres
+                  name: postgres
+                  repository: oci://registry-1.docker.io/cloudpirates
+                  version: 0.12.1
+                namespace: {{ $namespace }}
+                values:
+                  fullnameOverride: {{ $dbName }}
+                  commonLabels:
+                    catalog.cluster.local/kind: {{ $kind }}
+                    catalog.cluster.local/name: {{ $xrName }}
+                  auth:
+                    username: keycloak
+                    database: keycloak
+                    existingSecret: {{ $credentialsSecretName }}
+                    secretKeys:
+                      adminPasswordKey: db-password
+                  persistence:
+                    size: {{ $size }}
+                  persistentVolumeClaimRetentionPolicy:
+                    enabled: true
+                    whenDeleted: Delete
+                  resources:
+                    requests:
+                      cpu: 50m
+                      memory: 128Mi
+                    limits:
+                      memory: 512Mi
+            ---
+            apiVersion: helm.m.crossplane.io/v1beta1
+            kind: Release
+            metadata:
+              name: {{ $xrName }}
+              namespace: {{ $namespace }}
+              annotations:
+                crossplane.io/external-name: {{ $xrName }}
+                gotemplating.fn.crossplane.io/composition-resource-name: "helm-release"
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-helm
+              forProvider:
+                wait: true
+                chart: # https://artifacthub.io/packages/helm/codecentric/keycloakx
+                  name: keycloakx
+                  repository: https://codecentric.github.io/helm-charts
+                  version: {{ $chartVersion }}
+                namespace: {{ $namespace }}
+                values:
+                  fullnameOverride: {{ $xrName }}
+                  commonLabels:
+                    catalog.cluster.local/kind: {{ $kind }}
+                    catalog.cluster.local/name: {{ $xrName }}
+                  image:
+                    tag: {{ $keycloakVersion | quote }}
+                  args:
+                    - start
+                  serviceAccount:
+                    automountServiceAccountToken: false
+                  http:
+                    relativePath: /
+                  # One replica, so no cluster cache to discover peers for.
+                  cache:
+                    stack: custom
+                  proxy:
+                    enabled: true
+                    mode: xforwarded
+                  database:
+                    vendor: postgres
+                    hostname: {{ $dbName }}
+                    port: 5432
+                    database: keycloak
+                    username: keycloak
+                    existingSecret: {{ $credentialsSecretName }}
+                    existingSecretKey: db-password
+                  dbchecker:
+                    enabled: true
+                  resources:
+                    requests:
+                      cpu: {{ index $resources "requestCpu" | quote }}
+                      memory: {{ index $resources "requestMemory" | quote }}
+                    limits:
+                      cpu: {{ index $resources "limitCpu" | quote }}
+                      memory: {{ index $resources "limitMemory" | quote }}
+                  extraEnv: |
+                    - name: KC_HOSTNAME
+                      value: {{ $url | quote }}
+                    - name: KC_CACHE
+                      value: local
+                    # Only used on first start, while no admin exists yet.
+                    - name: KC_BOOTSTRAP_ADMIN_USERNAME
+                      valueFrom:
+                        secretKeyRef:
+                          name: {{ $credentialsSecretName }}
+                          key: admin-username
+                    - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+                      valueFrom:
+                        secretKeyRef:
+                          name: {{ $credentialsSecretName }}
+                          key: admin-password
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $listenerSetName }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "listener-set"
+            spec:
+              readiness:
+                policy: DeriveFromCelQuery
+                celQuery: |
+                  has(object.status) &&
+                  has(object.status.conditions) &&
+                  object.status.conditions.exists(c, c.type == "Programmed" && c.status == "True")
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: gateway.networking.k8s.io/v1
+                  kind: ListenerSet
+                  metadata:
+                    name: {{ $listenerSetName }}
+                    namespace: {{ $namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
+                    annotations:
+                      # cert-manager issues the listener's certificate into the Secret below.
+                      cert-manager.io/cluster-issuer: {{ $certificateIssuer | quote }}
+                  spec:
+                    parentRef:
+                      group: gateway.networking.k8s.io
+                      kind: Gateway
+                      name: {{ $gatewayName | quote }}
+                      namespace: {{ $gatewayNamespace | quote }}
+                    listeners:
+                      - name: https
+                        hostname: {{ $hostname | quote }}
+                        port: 443
+                        protocol: HTTPS
+                        allowedRoutes:
+                          namespaces:
+                            from: Same
+                        tls:
+                          mode: Terminate
+                          certificateRefs:
+                            - group: ""
+                              kind: Secret
+                              name: {{ printf "%s-tls" $xrName | quote }}
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $httpRouteName }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: "http-route"
+            spec:
+              readiness:
+                policy: DeriveFromCelQuery
+                celQuery: |
+                  has(object.status) &&
+                  has(object.status.parents) &&
+                  object.status.parents.exists(p,
+                    has(p.conditions) &&
+                    p.conditions.exists(c, c.type == "Accepted" && c.status == "True"))
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: gateway.networking.k8s.io/v1
+                  kind: HTTPRoute
+                  metadata:
+                    name: {{ $httpRouteName }}
+                    namespace: {{ $namespace }}
+                    labels:
+                      catalog.cluster.local/kind: {{ $kind }}
+                      catalog.cluster.local/name: {{ $xrName }}
+                  spec:
+                    parentRefs:
+                      - group: gateway.networking.k8s.io
+                        kind: ListenerSet
+                        name: {{ $listenerSetName }}
+                    hostnames:
+                      - {{ $hostname | quote }}
+                    rules:
+                      - backendRefs:
+                          - group: ""
+                            kind: Service
+                            name: {{ printf "%s-http" $xrName | quote }}
+                            port: 80
+            ---
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              name: {{ $xrName }}-connection
+              namespace: {{ $namespace }}
+              annotations:
+                {{ setResourceNameAnnotation "connection-secret" }}
+            data:
+              username: {{ $adminUsername | b64enc }}
+              password: {{ $adminPassword | b64enc }}
+              {{- if $endpointLive }}
+              host: {{ $hostname | b64enc }}
+              url: {{ $url | b64enc }}
+              adminUrl: {{ printf "%s/admin/master/console/" $url | b64enc }}
+              {{- end }}
+            ---
+            apiVersion: {{ $xr.apiVersion }}
+            kind: {{ $xr.kind }}
+            {{- if not $endpointLive }}
+            metadata:
+              annotations:
+                # No public endpoint (yet), so the XR is not Ready either.
+                gotemplating.fn.crossplane.io/ready: "False"
+            {{- end }}
+            {{- if or $endpointLive $message }}
+            status:
+              {{- if $endpointLive }}
+              url: {{ $url | quote }}
+              {{- end }}
+              {{- if $message }}
+              message: {{ $message | quote }}
+              {{- end }}
+            {{- end }}
+
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready

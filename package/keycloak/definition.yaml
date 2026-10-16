@@ -1,0 +1,86 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: keycloaks.catalog.cluster.local
+spec:
+  group: catalog.cluster.local
+  scope: Namespaced
+  metadata:
+    labels:
+      catalog.cluster.local/kind: Keycloak
+    annotations:
+      catalog.cluster.local/title: "Keycloak"
+      catalog.cluster.local/description: "Keycloak identity and access management: single sign-on with OpenID Connect and SAML, user federation and identity brokering. Realms, clients, users and email are configured in the Keycloak admin console."
+      catalog.cluster.local/icon: "PHN2ZyBmaWxsPSIjNEQ0RDREIiB2aWV3Qm94PSIwIDAgMjQgMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0ibTE4Ljc0MiAxLjE4Mi0xMi40OTMuMDAyQzQuMTU1IDQuNzg0IDIuMDc5IDguMzkzIDAgMTIuMDAyYzIuMDcxIDMuNjEyIDQuMTYyIDcuMjE0IDYuMjUyIDEwLjgxNmwxMi40OS0uMDA0IDMuMDg5LTUuNDA0aDIuMTU4di0uMDAySDI0TDIzLjk5NiA2LjU5aC0yLjE2OHpNOC4zMjcgNC43OTJoMi4wODFsMS4wNCAxLjgtMy4xMiA1LjQxMyAzLjExNyA1LjQwMy0xLjAzNSAxLjgxSDguMzI3YTIwNDcuNTY2IDIwNDcuNTY2IDAgMCAwLTQuMTY4LTcuMjA0QzUuNTQ3IDkuNjA2IDYuOTM3IDcuMiA4LjMyNyA0Ljc5MlptNi4yNDEgMCAyLjA4Ni4wMDNjMS4zOTMgMi40MDUgMi43OCA0LjgxMyA0LjE2NiA3LjIyMmwtNC4xNjcgNy4yaC0yLjA4Yy0uMzgyLS41NjItMS4wMzgtMS44MDgtMS4wMzgtMS44MDhsMy4xMjMtNS40MDUtMy4xMjQtNS40MTN6Ii8+PC9zdmc+"
+      catalog.cluster.local/maintainer: ""
+      catalog.cluster.local/url: "https://www.keycloak.org/"
+      catalog.cluster.local/tags: "identity,sso,oidc,saml,unmanaged,helm"
+  names:
+    kind: Keycloak
+    plural: keycloaks
+  versions:
+    - name: v2
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - name: Version
+          type: string
+          jsonPath: .spec.parameters.version
+        - name: URL
+          type: string
+          jsonPath: .status.url
+        - name: Message
+          type: string
+          jsonPath: .status.message
+          priority: 1
+      schema:
+        openAPIV3Schema:
+          description: Keycloak server with a small bundled PostgreSQL database, published at <instance name>.<platform domain>. Everything Keycloak can configure itself is left to its admin console.
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                crossplane:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+                parameters:
+                  type: object
+                  default: {}
+                  properties:
+                    version:
+                      type: string
+                      title: "Version"
+                      description: "Keycloak version."
+                      default: "26.8.1"
+                      enum:
+                        - "26.8.1"
+                    size:
+                      type: string
+                      title: "Storage Size"
+                      description: "Database volume size. Can be increased later, not decreased."
+                      default: "1Gi"
+                      pattern: ^(?<size>\d+(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?)$
+                    resourceProfile:
+                      type: string
+                      title: "Resource Profile"
+                      description: "Keycloak server size: small 0.5-1 CPU, 1 GiB RAM; medium 1-2 CPU, 2 GiB RAM; large 2-4 CPU, 4 GiB RAM."
+                      default: "small"
+                      enum:
+                        - small
+                        - medium
+                        - large
+              required:
+                - parameters
+            status:
+              description: Live state, read from the composed resources.
+              type: object
+              properties:
+                url:
+                  type: string
+                  title: "URL"
+                  description: "Public address. Absent until the listener and route are live, or while the hostname is taken by another instance."
+                message:
+                  type: string
+                  title: "Message"
+                  description: "Why the instance is not working. Empty when all is well."
