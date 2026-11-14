@@ -6,7 +6,7 @@ metadata:
 spec:
   parameters:
     size: 5Gi
-    version: "2.36.9"
+    version: "2.47.7"
     timezone: Europe/Zurich
     retention:
       days: 14

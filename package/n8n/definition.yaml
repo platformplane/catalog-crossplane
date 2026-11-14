@@ -10,11 +10,11 @@ spec:
       catalog.cluster.local/kind: N8n
     annotations:
       catalog.cluster.local/title: "n8n"
-      catalog.cluster.local/description: "n8n is a workflow automation platform for connecting applications, APIs, and data with low-code workflows."
+      catalog.cluster.local/description: "n8n is a workflow automation platform for connecting applications, APIs, and data with low-code workflows. Includes the sandbox for n8n Assistant and AI agents; add your model provider API key in the n8n AI settings."
       catalog.cluster.local/icon: "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MSAyMCI+PHBhdGggZmlsbD0iI0VBNEI3MSIgZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik00MC4yMzczIDRDNDAuMjM3MyA2LjIwOTE1IDM4LjQ0NjQgOCAzNi4yMzczIDhDMzQuMzczNSA4IDMyLjgwNzQgNi43MjUyNSAzMi4zNjMzIDVIMjYuNzc4N0MyNS44MDEgNSAyNC45NjY2IDUuNzA2ODUgMjQuODA1OSA2LjY3MTJMMjQuNjQxNSA3LjY1NzZDMjQuNDg1NCA4LjU5NDE1IDI0LjAxMTYgOS40MDkyNSAyMy4zNDE3IDEwQzI0LjAxMTYgMTAuNTkwNyAyNC40ODU0IDExLjQwNTggMjQuNjQxNSAxMi4zNDI0TDI0LjgwNTkgMTMuMzI4OEMyNC45NjY2IDE0LjI5MzEgMjUuODAxIDE1IDI2Ljc3ODcgMTVIMjguMzYzM0MyOC44MDc0IDEzLjI3NDcgMzAuMzczNSAxMiAzMi4yMzczIDEyQzM0LjQ0NjQgMTIgMzYuMjM3MyAxMy43OTA4IDM2LjIzNzMgMTZDMzYuMjM3MyAxOC4yMDkyIDM0LjQ0NjQgMjAgMzIuMjM3MyAyMEMzMC4zNzM1IDIwIDI4LjgwNzQgMTguNzI1MyAyOC4zNjMzIDE3SDI2Ljc3ODdDMjQuODIzMyAxNyAyMy4xNTQ2IDE1LjU4NjQgMjIuODMzMSAxMy42NTc2TDIyLjY2ODcgMTIuNjcxMkMyMi41MDggMTEuNzA2OSAyMS42NzM2IDExIDIwLjY5NTkgMTFIMTkuMDY0NUMxOC41NjUyIDEyLjY0IDE3LjA0MDYgMTMuODMzNCAxNS4yMzczIDEzLjgzMzRDMTMuNDM0IDEzLjgzMzQgMTEuOTA5NCAxMi42NCAxMS40MTAxIDExSDkuMDY0NDlDOC41NjUxOSAxMi42NCA3LjA0MDU5IDEzLjgzMzQgNS4yMzczIDEzLjgzMzRDMy4wMjgxNyAxMy44MzM0IDEuMjM3MyAxMi4wNDI0IDEuMjM3MyA5LjgzMzM1QzEuMjM3MyA3LjYyNDIgMy4wMjgxNyA1LjgzMzM1IDUuMjM3MyA1LjgzMzM1QzcuMTYwNjkgNS44MzMzNSA4Ljc2Njk5IDcuMTkwODUgOS4xNTAzOSA5SDExLjMyNDJDMTEuNzA3NiA3LjE5MDg1IDEzLjMxMzkgNS44MzMzNSAxNS4yMzczIDUuODMzMzVDMTcuMTYwNyA1LjgzMzM1IDE4Ljc2NyA3LjE5MDg1IDE5LjE1MDQgOUgyMC42OTU5QzIxLjY3MzYgOSAyMi41MDggOC4yOTMxNSAyMi42Njg3IDcuMzI4OEwyMi44MzMxIDYuMzQyNEMyMy4xNTQ2IDQuNDEzNjUgMjQuODIzMyAzIDI2Ljc3ODcgM0gzMi4zNjMzQzMyLjgwNzQgMS4yNzQ3OCAzNC4zNzM1IDAgMzYuMjM3MyAwQzM4LjQ0NjQgMCA0MC4yMzczIDEuNzkwODYgNDAuMjM3MyA0Wk0zOC4yMzczIDRDMzguMjM3MyA1LjEwNDU1IDM3LjM0MTkgNiAzNi4yMzczIDZDMzUuMTMyNyA2IDM0LjIzNzMgNS4xMDQ1NSAzNC4yMzczIDRDMzQuMjM3MyAyLjg5NTQzIDM1LjEzMjcgMiAzNi4yMzczIDJDMzcuMzQxOSAyIDM4LjIzNzMgMi44OTU0MyAzOC4yMzczIDRaTTUuMjM3MyAxMS44MzM0QzYuMzQxODkgMTEuODMzNCA3LjIzNzI5IDEwLjkzNzkgNy4yMzcyOSA5LjgzMzM1QzcuMjM3MjkgOC43Mjg3NSA2LjM0MTg5IDcuODMzMzUgNS4yMzczIDcuODMzMzVDNC4xMzI3MyA3LjgzMzM1IDMuMjM3MyA4LjcyODc1IDMuMjM3MyA5LjgzMzM1QzMuMjM3MyAxMC45Mzc5IDQuMTMyNzMgMTEuODMzNCA1LjIzNzMgMTEuODMzNFpNMTUuMjM3MyAxMS44MzM0QzE2LjM0MTkgMTEuODMzNCAxNy4yMzczIDEwLjkzNzkgMTcuMjM3MyA5LjgzMzM1QzE3LjIzNzMgOC43Mjg3NSAxNi4zNDE5IDcuODMzMzUgMTUuMjM3MyA3LjgzMzM1QzE0LjEzMjcgNy44MzMzNSAxMy4yMzczIDguNzI4NzUgMTMuMjM3MyA5LjgzMzM1QzEzLjIzNzMgMTAuOTM3OSAxNC4xMzI3IDExLjgzMzQgMTUuMjM3MyAxMS44MzM0Wk0zMi4yMzczIDE4QzMzLjM0MTkgMTggMzQuMjM3MyAxNy4xMDQ1IDM0LjIzNzMgMTZDMzQuMjM3MyAxNC44OTU0IDMzLjM0MTkgMTQgMzIuMjM3MyAxNEMzMS4xMzI3IDE0IDMwLjIzNzMgMTQuODk1NCAzMC4yMzczIDE2QzMwLjIzNzMgMTcuMTA0NSAzMS4xMzI3IDE4IDMyLjIzNzMgMThaCiIvPjwvc3ZnPg=="
       catalog.cluster.local/maintainer: ""
       catalog.cluster.local/url: "https://n8n.io/"
-      catalog.cluster.local/tags: "automation,workflow,low-code,unmanaged,helm"
+      catalog.cluster.local/tags: "automation,workflow,low-code,ai,unmanaged,helm"
   names:
     kind: N8n
     plural: n8n
@@ -45,10 +45,10 @@ spec:
                       pattern: ^(?<size>\d+(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?)$
                     version:
                       type: string
-                      default: "2.36.9"
+                      default: "2.47.7"
                       description: n8n version
                       enum:
-                        - "2.36.9"
+                        - "2.47.7"
                     timezone:
                       type: string
                       default: "UTC"
