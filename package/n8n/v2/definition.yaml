@@ -4,6 +4,7 @@ metadata:
   name: n8n.catalog.cluster.local
 spec:
   group: catalog.cluster.local
+  defaultCompositionUpdatePolicy: Manual
   scope: Namespaced
   metadata:
     labels:
@@ -114,3 +115,4 @@ spec:
         - name: URL
           type: string
           jsonPath: .status.url
+
