@@ -32,17 +32,23 @@ spec:
         inline:
           template: |
             {{ $xr := .observed.composite.resource }}
-            {{ $kind := $xr.kind }}
             {{ $xrName := $xr.metadata.name }}
             {{ $namespace := $xr.metadata.namespace }}
             {{/* Every parameter has an XRD default, so only the optional SMTP secret needs a fallback. */}}
             {{ $p := $xr.spec.parameters }}
             {{ $smtpSecretName := dig "smtp" "secretName" "" $p }}
 
-            {{ $resources := index (dict
-              "small" (dict "requestCpu" "200m" "requestMemory" "512Mi" "limitCpu" "1" "limitMemory" "1Gi")
-              "medium" (dict "requestCpu" "500m" "requestMemory" "1Gi" "limitCpu" "2" "limitMemory" "2Gi")
-              "large" (dict "requestCpu" "1" "requestMemory" "2Gi" "limitCpu" "4" "limitMemory" "4Gi")
+            {{/* "main" is the n8n container, "runner" the sidecar that executes Code nodes. */}}
+            {{ $profile := index (dict
+              "small" (dict
+                "main" (dict "requests" (dict "cpu" "200m" "memory" "512Mi") "limits" (dict "cpu" "1" "memory" "1Gi"))
+                "runner" (dict "requests" (dict "cpu" "100m" "memory" "256Mi") "limits" (dict "cpu" "500m" "memory" "512Mi")))
+              "medium" (dict
+                "main" (dict "requests" (dict "cpu" "500m" "memory" "1Gi") "limits" (dict "cpu" "2" "memory" "2Gi"))
+                "runner" (dict "requests" (dict "cpu" "250m" "memory" "512Mi") "limits" (dict "cpu" "1" "memory" "1Gi")))
+              "large" (dict
+                "main" (dict "requests" (dict "cpu" "1" "memory" "2Gi") "limits" (dict "cpu" "4" "memory" "4Gi"))
+                "runner" (dict "requests" (dict "cpu" "500m" "memory" "1Gi") "limits" (dict "cpu" "2" "memory" "2Gi")))
             ) $p.resourceProfile }}
 
             {{ $host := regexReplaceAll "[^a-z0-9-]" ($xrName | lower) "" }}
@@ -67,7 +73,42 @@ spec:
             {{ if not $ownerPasswordHash }}{{ $ownerPasswordHash = bcrypt $ownerPassword }}{{ end }}
 
             {{ $sandboxName := printf "%s-sandbox" $xrName }}
-            {{ $labels := dict "catalog.cluster.local/kind" $kind "catalog.cluster.local/name" $xrName }}
+            {{ $labels := dict "catalog.cluster.local/kind" $xr.kind "catalog.cluster.local/name" $xrName }}
+
+            {{/* Private CA for the sandbox service's mTLS between its API and runner. */}}
+            {{ range $ca := list
+              (dict "kind" "Issuer" "name" (printf "%s-selfsigned" $sandboxName) "spec" (dict "selfSigned" dict))
+              (dict "kind" "Certificate" "name" (printf "%s-ca" $sandboxName) "spec" (dict
+                "isCA" true
+                "commonName" (printf "%s-ca" $sandboxName)
+                "secretName" (printf "%s-ca" $sandboxName)
+                "duration" "87600h"
+                "privateKey" (dict "algorithm" "ECDSA" "size" 256)
+                "issuerRef" (dict "kind" "Issuer" "name" (printf "%s-selfsigned" $sandboxName))))
+              (dict "kind" "Issuer" "name" (printf "%s-ca" $sandboxName) "spec" (dict "ca" (dict "secretName" (printf "%s-ca" $sandboxName))))
+            }}
+            {{ $resourceName := printf "%s-%s" $ca.name ($ca.kind | lower) }}
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $resourceName }}
+              annotations:
+                {{ setResourceNameAnnotation (trimPrefix (printf "%s-" $xrName) $resourceName) }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: cert-manager.io/v1
+                  kind: {{ $ca.kind }}
+                  metadata:
+                    name: {{ $ca.name }}
+                    namespace: {{ $namespace }}
+                    labels: {{ $labels | toJson }}
+                  spec: {{ $ca.spec | toJson }}
+            ---
+            {{ end }}
 
             apiVersion: kubernetes.m.crossplane.io/v1alpha1
             kind: Object
@@ -121,8 +162,6 @@ spec:
                   database:
                     type: sqlite
                     useExternal: false
-                  redis:
-                    enabled: false
                   persistence:
                     enabled: true
                     size: {{ $p.size }}
@@ -131,13 +170,7 @@ spec:
                   pdb:
                     enabled: false
                   resources:
-                    main:
-                      requests:
-                        cpu: {{ $resources.requestCpu | quote }}
-                        memory: {{ $resources.requestMemory | quote }}
-                      limits:
-                        cpu: {{ $resources.limitCpu | quote }}
-                        memory: {{ $resources.limitMemory | quote }}
+                    main: {{ $profile.main | toJson }}
                   serviceAccount:
                     name: {{ $xrName }}
                     automountServiceAccountToken: false
@@ -146,12 +179,17 @@ spec:
                     enabled: true
                     authToken:
                       value: {{ $runnersAuthToken | quote }}
+                    resources: {{ $profile.runner | toJson }}
+                    customConfig:
+                      enabled: true
+                      configMapName: {{ $xrName }}-task-runners
                   secretRefs:
                     env:
                       N8N_ENCRYPTION_KEY: {{ $encryptionKey | quote }}
                       N8N_HOST: {{ $hostname | quote }}
-                      N8N_PORT: "5678"
                       N8N_PROTOCOL: "https"
+                      # Kept in this release's Secret so the n8n pod does not wait on the sandbox release.
+                      N8N_SANDBOX_SERVICE_API_KEY: {{ $sandboxApiKey | quote }}
                   config:
                     timezone: {{ $p.timezone | quote }}
                     extraEnv:
@@ -188,8 +226,8 @@ spec:
                       - name: N8N_SANDBOX_SERVICE_API_KEY
                         valueFrom:
                           secretKeyRef:
-                            name: {{ printf "%s-auth" $sandboxName | quote }}
-                            key: api-keys
+                            name: {{ $xrName | quote }}
+                            key: N8N_SANDBOX_SERVICE_API_KEY
                       {{- if $smtpSecretName }}
                       - name: N8N_EMAIL_MODE
                         value: smtp
@@ -200,18 +238,21 @@ spec:
                   executions:
                     data:
                       pruning:
-                        enabled: true
                         maxAge: {{ mul $p.retention.days 24 }}
                         maxCount: {{ $p.retention.maxExecutions | int }}
                     concurrency:
                       productionLimit: {{ $p.maxConcurrentExecutions | int }}
-                  webhook:
-                    url: {{ $url | quote }}
                   ingress:
                     enabled: true
                     className: {{ ternary "nginx" "nginx-internal" $p.ingress.public }}
                     annotations:
                       kubernetes.io/tls-acme: "true"
+                      # Form-trigger uploads go up to n8n's 200 MiB default.
+                      nginx.ingress.kubernetes.io/proxy-body-size: 200m
+                      # n8n pings the editor's push connection every 60s, the nginx default timeout,
+                      # and production webhooks can wait for long-running workflows to finish.
+                      nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+                      nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
                     hosts:
                       - host: {{ $hostname }}
                         paths:
@@ -221,36 +262,33 @@ spec:
                       - secretName: {{ $xrName }}-tls
                         hosts:
                           - {{ $hostname }}
-                  # Private CA for the sandbox service's mTLS between its API and runner.
+                  # The runners image's own launcher config (keep it in sync with the n8n version), with
+                  # wider module allowlists: JavaScript only allows crypto by default and Python no
+                  # standard-library module at all. Process, file-system and socket modules stay blocked.
                   extraObjects:
-                    - apiVersion: cert-manager.io/v1
-                      kind: Issuer
+                    - apiVersion: v1
+                      kind: ConfigMap
                       metadata:
-                        name: {{ $sandboxName }}-selfsigned
-                      spec:
-                        selfSigned: {}
-                    - apiVersion: cert-manager.io/v1
-                      kind: Certificate
-                      metadata:
-                        name: {{ $sandboxName }}-ca
-                      spec:
-                        isCA: true
-                        commonName: {{ $sandboxName }}-ca
-                        secretName: {{ $sandboxName }}-ca
-                        duration: 87600h
-                        privateKey:
-                          algorithm: ECDSA
-                          size: 256
-                        issuerRef:
-                          kind: Issuer
-                          name: {{ $sandboxName }}-selfsigned
-                    - apiVersion: cert-manager.io/v1
-                      kind: Issuer
-                      metadata:
-                        name: {{ $sandboxName }}-ca
-                      spec:
-                        ca:
-                          secretName: {{ $sandboxName }}-ca
+                        name: {{ $xrName }}-task-runners
+                      data:
+                        n8n-task-runners.json: |
+                          {"task-runners":[
+                            {"runner-type":"javascript","workdir":"/home/runner","command":"/usr/local/bin/node",
+                             "args":["--disallow-code-generation-from-strings","--disable-proto=delete","--no-experimental-webstorage","/opt/runners/task-runner-javascript/dist/start.js"],
+                             "health-check-server-port":"5681",
+                             "allowed-env":["PATH","GENERIC_TIMEZONE","NODE_OPTIONS","NODE_PATH","N8N_RUNNERS_AUTO_SHUTDOWN_TIMEOUT","N8N_RUNNERS_GRACEFUL_SHUTDOWN_TIMEOUT","N8N_RUNNERS_SHUTDOWN_FORCE_KILL_MARGIN","N8N_RUNNERS_TASK_TIMEOUT","N8N_RUNNERS_MAX_CONCURRENCY","N8N_SENTRY_DSN","N8N_VERSION","ENVIRONMENT","DEPLOYMENT_NAME","HOME"],
+                             "env-overrides":{
+                               "NODE_FUNCTION_ALLOW_BUILTIN":"assert,buffer,crypto,events,path,querystring,string_decoder,url,util,zlib",
+                               "NODE_FUNCTION_ALLOW_EXTERNAL":"moment",
+                               "N8N_RUNNERS_HEALTH_CHECK_SERVER_HOST":"0.0.0.0"}},
+                            {"runner-type":"python","workdir":"/home/runner","command":"/opt/runners/task-runner-python/.venv/bin/python",
+                             "args":["-I","-B","-X","disable_remote_debug","-m","src.main"],
+                             "health-check-server-port":"5682",
+                             "allowed-env":["PATH","N8N_RUNNERS_LAUNCHER_LOG_LEVEL","N8N_RUNNERS_AUTO_SHUTDOWN_TIMEOUT","N8N_RUNNERS_GRACEFUL_SHUTDOWN_TIMEOUT","N8N_RUNNERS_TASK_TIMEOUT","N8N_RUNNERS_MAX_CONCURRENCY","N8N_SENTRY_DSN","N8N_VERSION","ENVIRONMENT","DEPLOYMENT_NAME"],
+                             "env-overrides":{
+                               "N8N_RUNNERS_STDLIB_ALLOW":"base64,binascii,bisect,calendar,collections,copy,csv,dataclasses,datetime,decimal,difflib,enum,fractions,functools,gzip,hashlib,heapq,hmac,html,ipaddress,itertools,json,math,operator,pprint,random,re,secrets,statistics,string,textwrap,time,typing,unicodedata,urllib,uuid,xml,zlib,zoneinfo",
+                               "N8N_RUNNERS_EXTERNAL_ALLOW":""}}
+                          ]}
             ---
             apiVersion: helm.m.crossplane.io/v1beta1
             kind: Release
@@ -332,6 +370,11 @@ spec:
               host: {{ $hostname | b64enc }}
               password: {{ $ownerPassword | b64enc }}
               url: {{ $url | b64enc }}
+            ---
+            apiVersion: catalog.cluster.local/v2
+            kind: N8n
+            status:
+              url: {{ $url | quote }}
 
     - step: automatically-detect-ready-composed-resources
       functionRef:

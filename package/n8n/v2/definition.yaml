@@ -52,7 +52,6 @@ spec:
                     timezone:
                       type: string
                       default: "UTC"
-                      minLength: 1
                       pattern: ^(UTC|[A-Za-z][A-Za-z0-9._+-]*(/[A-Za-z0-9._+-]+)+)$
                       description: Canonical IANA timezone for the instance and scheduled workflows (for example, Europe/Zurich)
                     retention:
@@ -72,7 +71,7 @@ spec:
                     resourceProfile:
                       type: string
                       default: small
-                      description: "CPU and memory allocation for the n8n instance. small Max: 1 CPU, 1Gi RAM; medium Max: 2 CPU, 2Gi RAM; large Max: 4 CPU, 4Gi RAM."
+                      description: "CPU and memory allocation for n8n and its Code node runner. small Max: 1.5 CPU, 1.5Gi RAM; medium Max: 3 CPU, 3Gi RAM; large Max: 6 CPU, 6Gi RAM."
                       enum:
                         - small
                         - medium
@@ -92,7 +91,6 @@ spec:
                       properties:
                         secretName:
                           type: string
-                          minLength: 1
                           maxLength: 253
                           pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                           description: >-
@@ -106,3 +104,13 @@ spec:
                           type: boolean
                           default: true
                           description: Expose public endpoint (Be aware that your application will be publicly available on the internet.)
+            status:
+              type: object
+              properties:
+                url:
+                  type: string
+                  description: Address of the n8n editor
+      additionalPrinterColumns:
+        - name: URL
+          type: string
+          jsonPath: .status.url
