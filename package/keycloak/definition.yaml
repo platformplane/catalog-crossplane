@@ -4,6 +4,7 @@ metadata:
   name: keycloaks.catalog.cluster.local
 spec:
   group: catalog.cluster.local
+  defaultCompositionUpdatePolicy: Manual
   scope: Namespaced
   metadata:
     labels:
@@ -38,12 +39,16 @@ spec:
           description: Keycloak server with a small bundled PostgreSQL database, published at <instance name>.<platform domain>. Everything Keycloak can configure itself is left to its admin console.
           type: object
           properties:
+            metadata:
+              type: object
+              properties:
+                name:
+                  type: string
+                  # Derived names ("<name>-db-headless", the database StatefulSet) must stay valid.
+                  maxLength: 40
             spec:
               type: object
               properties:
-                crossplane:
-                  type: object
-                  x-kubernetes-preserve-unknown-fields: true
                 parameters:
                   type: object
                   default: {}
@@ -51,10 +56,10 @@ spec:
                     version:
                       type: string
                       title: "Version"
-                      description: "Keycloak version."
-                      default: "26.8.1"
+                      description: "Keycloak major version. Instances keep the patch release they were created with."
+                      default: "26"
                       enum:
-                        - "26.8.1"
+                        - "26"
                     size:
                       type: string
                       title: "Storage Size"
@@ -64,7 +69,7 @@ spec:
                     resourceProfile:
                       type: string
                       title: "Resource Profile"
-                      description: "Keycloak server size: small 0.5-1 CPU, 1 GiB RAM; medium 1-2 CPU, 2 GiB RAM; large 2-4 CPU, 4 GiB RAM."
+                      description: "Keycloak server size: small 0.5-1 CPU, 1.5 GiB RAM; medium 1-2 CPU, 2 GiB RAM; large 2-4 CPU, 4 GiB RAM."
                       default: "small"
                       enum:
                         - small

@@ -95,6 +95,27 @@ The encoded part is basically a docker config.json file:
 }
 ```
 
+### Crossplane RBAC for directly composed resources
+
+Crossplane v2 composes plain Kubernetes resources directly, without provider-kubernetes, but only for types its service account may manage. Built-in types like Secrets are covered. For anything else, the platform must grant access with a ClusterRole that carries the aggregation label. A configuration package can't ship RBAC itself.
+
+The [Keycloak](./package/keycloak/) item composes Gateway API resources for its public endpoint, so it needs:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: crossplane-catalog-gateway-api
+  labels:
+    rbac.crossplane.io/aggregate-to-crossplane: "true"
+rules:
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["listenersets", "httproutes"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+```
+
+Without it, Keycloak instances fail to compose their listener and route, and never get a public URL.
+
 In order that the catalog actually shows your items, the Crossplane definition will need a specif label and some specific annotations (e.g. containing an encoded .svc catalog icon, description, etc.). Please refer to the existing items in the `package` folder for examples.
 
 ## How to add a new catalog item

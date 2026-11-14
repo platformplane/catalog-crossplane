@@ -5,6 +5,6 @@ metadata:
   namespace: catalog-examples
 spec:
   parameters:
-    version: "26.8.1"
+    version: "26"
     size: 1Gi
     resourceProfile: small

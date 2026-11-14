@@ -6,25 +6,19 @@ spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v2
     kind: Keycloak
-  writeConnectionSecretsToNamespace: crossplane-system
 
   mode: Pipeline
   pipeline:
-    - step: get-environment-configs
-      functionRef:
-        name: crossplane-contrib-function-environment-configs
-      input:
-        apiVersion: environmentconfigs.fn.crossplane.io/v1beta1
-        kind: Input
-        spec:
-          environmentConfigs:
-            - type: Reference
-              ref:
-                name: environment
-
     - step: keycloak
       functionRef:
         name: crossplane-contrib-function-go-templating
+      # Fetched by Crossplane before the first call.
+      requirements:
+        requiredResources:
+          - requirementName: environment
+            apiVersion: apiextensions.crossplane.io/v1beta1
+            kind: EnvironmentConfig
+            name: environment
       input:
         apiVersion: gotemplating.fn.crossplane.io/v1beta1
         kind: GoTemplate
@@ -37,24 +31,27 @@ spec:
             {{ $xrName := $xr.metadata.name }}
             {{ $namespace := $xr.metadata.namespace }}
             {{ $params := $xr.spec.parameters | default dict }}
-            {{ $environment := index $.context "apiextensions.crossplane.io/environment" }}
-            {{ $zone := index $environment "zone" }}
-
-            {{/* The longest derived name, "<name>-db-headless", must stay a valid Service name, and
-                 "<name>-db" a valid Helm release name. */}}
-            {{ if gt (len $xrName) 40 }}
-            {{ fail (printf "instance name %q is too long: at most 40 characters" $xrName) }}
+            {{ $environment := dict }}
+            {{ with getExtraResources . "environment" }}{{ $environment = dig "resource" "data" (dict) (first .) }}{{ end }}
+            {{ $zone := dig "zone" "" $environment }}
+            {{ if not $zone }}
+            {{ fail "no platform zone configured, so Keycloak cannot get its public address" }}
             {{ end }}
 
-            {{ $keycloakVersion := dig "version" "26.8.1" $params }}
-            {{ $chartVersionMapping := dict "26.8.1" "7.4.0" }}
-            {{ $chartVersion := index $chartVersionMapping $keycloakVersion }}
+            {{/* Major version -> Keycloak image and keycloakx chart. Patch and chart bumps go behind the
+                 existing key; running instances stay on their pinned CompositionRevision. */}}
+            {{ $versions := dict
+              "26" (dict "image" "26.8.2" "chart" "7.4.0")
+            }}
+            {{ $version := index $versions (dig "version" "26" $params) }}
             {{ $size := dig "size" "1Gi" $params }}
 
+            {{/* Requests = limits for memory: Keycloak sizes its heap at 70% of the limit and needs
+                 ~1.25 GiB at rest. */}}
             {{ $resourceProfiles := dict
-              "small" (dict "requestCpu" "500m" "requestMemory" "1Gi" "limitCpu" "1" "limitMemory" "1Gi")
-              "medium" (dict "requestCpu" "1" "requestMemory" "2Gi" "limitCpu" "2" "limitMemory" "2Gi")
-              "large" (dict "requestCpu" "2" "requestMemory" "4Gi" "limitCpu" "4" "limitMemory" "4Gi")
+              "small" (dict "requestCpu" "500m" "limitCpu" "1" "memory" "1536Mi")
+              "medium" (dict "requestCpu" "1" "limitCpu" "2" "memory" "2Gi")
+              "large" (dict "requestCpu" "2" "limitCpu" "4" "memory" "4Gi")
             }}
             {{ $resources := index $resourceProfiles (dig "resourceProfile" "small" $params) }}
 
@@ -69,18 +66,16 @@ spec:
             {{ $dbName := printf "%s-db" $xrName }}
             {{ $credentialsSecretName := printf "%s-credentials" $xrName }}
             {{ $listenerSetName := printf "%s-listenerset" $xrName }}
-            {{ $httpRouteName := printf "%s-httproute" $xrName }}
 
-            {{/* Generated once and read back from the live Object, so they survive reconciles. */}}
-            {{ $credentials := dig "resources" "credentials" "resource" "spec" "forProvider" "manifest" "stringData" dict .observed }}
-            {{ $dbPassword := dig "db-password" (randAlphaNum 32) $credentials }}
-            {{ $adminUsername := dig "admin-username" "admin" $credentials }}
-            {{ $adminPassword := dig "admin-password" (randAlphaNum 24) $credentials }}
+            {{/* Generated once, then read back from the live Secret so they survive reconciles. */}}
+            {{ $credentials := dig "resources" "credentials" "resource" "data" dict .observed }}
+            {{ $dbPassword := dig "db-password" (randAlphaNum 32 | b64enc) $credentials }}
+            {{ $adminUsername := dig "admin-username" ("admin" | b64enc) $credentials }}
+            {{ $adminPassword := dig "admin-password" (randAlphaNum 24 | b64enc) $credentials }}
 
-            {{/* Live state lives in status.atProvider.manifest; forProvider.manifest is only what we
-                 asked for. */}}
+            {{/* Status message. XR status is server-side applied, so resolved problems clear themselves. */}}
             {{ $problems := list }}
-            {{ range $release := list "helm-release" "db-release" }}
+            {{ range $release := list "keycloak" "database" }}
             {{- $releaseStatus := dig "resources" $release "resource" "status" dict $.observed }}
             {{- range $condition := dig "conditions" (list) $releaseStatus }}
             {{- if and (ne (dig "status" "" $condition) "True") (dig "message" "" $condition) }}
@@ -89,10 +84,13 @@ spec:
             {{- end }}
             {{- end }}
 
-            {{/* Listeners are matched by hostname across every namespace on the shared gateway, so the
-                 name can be taken by another namespace's instance of the same name. */}}
+            {{/* Listener hostnames are unique across the shared gateway; a taken one is Conflicted. */}}
+            {{ $listenerProgrammed := false }}
             {{ $listenerConflict := false }}
-            {{ $listenerSetStatus := dig "resources" "listener-set" "resource" "status" "atProvider" "manifest" "status" dict .observed }}
+            {{ $listenerSetStatus := dig "resources" "listener-set" "resource" "status" dict .observed }}
+            {{ range $condition := dig "conditions" (list) $listenerSetStatus }}
+            {{- if and (eq (dig "type" "" $condition) "Programmed") (eq (dig "status" "" $condition) "True") }}{{ $listenerProgrammed = true }}{{ end }}
+            {{- end }}
             {{ range $listener := dig "listeners" (list) $listenerSetStatus }}
             {{- range $condition := dig "conditions" (list) $listener }}
             {{- if and (eq (dig "type" "" $condition) "Conflicted") (eq (dig "status" "" $condition) "True") }}
@@ -103,12 +101,12 @@ spec:
             {{- end }}
             {{- end }}
             {{ if $listenerConflict }}
-            {{ $problems = append $problems (printf "hostname %s is already used by another instance on the platform gateway; rename this instance to get its own" $hostname) }}
+            {{ $problems = append $problems (printf "hostname %s is taken by another instance; rename this one" $hostname) }}
             {{ end }}
 
             {{/* Accepted doesn't mean the backend resolves -- check that too. */}}
             {{ $routeAccepted := false }}
-            {{ $routeStatus := dig "resources" "http-route" "resource" "status" "atProvider" "manifest" "status" dict .observed }}
+            {{ $routeStatus := dig "resources" "http-route" "resource" "status" dict .observed }}
             {{ range $parent := dig "parents" (list) $routeStatus }}
             {{- range $condition := dig "conditions" (list) $parent }}
             {{- if and (eq (dig "type" "" $condition) "Accepted") (eq (dig "status" "" $condition) "True") }}
@@ -122,40 +120,27 @@ spec:
             {{ $endpointLive := and $routeAccepted (not $listenerConflict) }}
             {{ $message := $problems | uniq | join "; " | trunc 1024 }}
 
-            apiVersion: kubernetes.m.crossplane.io/v1alpha1
-            kind: Object
+            apiVersion: v1
+            kind: Secret
             metadata:
               name: {{ $credentialsSecretName }}
+              labels:
+                catalog.cluster.local/kind: {{ $kind }}
+                catalog.cluster.local/name: {{ $xrName }}
               annotations:
                 {{ setResourceNameAnnotation "credentials" }}
-            spec:
-              providerConfigRef:
-                kind: ClusterProviderConfig
-                name: provider-kubernetes
-              forProvider:
-                manifest:
-                  apiVersion: v1
-                  kind: Secret
-                  metadata:
-                    name: {{ $credentialsSecretName }}
-                    namespace: {{ $namespace }}
-                    labels:
-                      catalog.cluster.local/kind: {{ $kind }}
-                      catalog.cluster.local/name: {{ $xrName }}
-                  type: Opaque
-                  stringData:
-                    db-password: {{ $dbPassword | quote }}
-                    admin-username: {{ $adminUsername | quote }}
-                    admin-password: {{ $adminPassword | quote }}
+            type: Opaque
+            data:
+              db-password: {{ $dbPassword }}
+              admin-username: {{ $adminUsername }}
+              admin-password: {{ $adminPassword }}
             ---
             apiVersion: helm.m.crossplane.io/v1beta1
             kind: Release
             metadata:
               name: {{ $dbName }}
-              namespace: {{ $namespace }}
               annotations:
-                crossplane.io/external-name: {{ $dbName }}
-                gotemplating.fn.crossplane.io/composition-resource-name: "db-release"
+                {{ setResourceNameAnnotation "database" }}
             spec:
               providerConfigRef:
                 kind: ClusterProviderConfig
@@ -165,7 +150,7 @@ spec:
                 chart: # https://artifacthub.io/packages/helm/cloudpirates/postgres
                   name: postgres
                   repository: oci://registry-1.docker.io/cloudpirates
-                  version: 0.12.1
+                  version: 0.22.0
                 namespace: {{ $namespace }}
                 values:
                   fullnameOverride: {{ $dbName }}
@@ -194,20 +179,19 @@ spec:
             kind: Release
             metadata:
               name: {{ $xrName }}
-              namespace: {{ $namespace }}
               annotations:
-                crossplane.io/external-name: {{ $xrName }}
-                gotemplating.fn.crossplane.io/composition-resource-name: "helm-release"
+                {{ setResourceNameAnnotation "keycloak" }}
             spec:
               providerConfigRef:
                 kind: ClusterProviderConfig
                 name: provider-helm
               forProvider:
+                # Ready only once Keycloak itself is.
                 wait: true
                 chart: # https://artifacthub.io/packages/helm/codecentric/keycloakx
                   name: keycloakx
                   repository: https://codecentric.github.io/helm-charts
-                  version: {{ $chartVersion }}
+                  version: {{ $version.chart }}
                 namespace: {{ $namespace }}
                 values:
                   fullnameOverride: {{ $xrName }}
@@ -215,7 +199,7 @@ spec:
                     catalog.cluster.local/kind: {{ $kind }}
                     catalog.cluster.local/name: {{ $xrName }}
                   image:
-                    tag: {{ $keycloakVersion | quote }}
+                    tag: {{ $version.image | quote }}
                   args:
                     - start
                   serviceAccount:
@@ -226,7 +210,6 @@ spec:
                   cache:
                     stack: custom
                   proxy:
-                    enabled: true
                     mode: xforwarded
                   database:
                     vendor: postgres
@@ -236,15 +219,16 @@ spec:
                     username: keycloak
                     existingSecret: {{ $credentialsSecretName }}
                     existingSecretKey: db-password
+                  # Waits for the database, which starts alongside.
                   dbchecker:
                     enabled: true
                   resources:
                     requests:
-                      cpu: {{ index $resources "requestCpu" | quote }}
-                      memory: {{ index $resources "requestMemory" | quote }}
+                      cpu: {{ $resources.requestCpu | quote }}
+                      memory: {{ $resources.memory | quote }}
                     limits:
-                      cpu: {{ index $resources "limitCpu" | quote }}
-                      memory: {{ index $resources "limitMemory" | quote }}
+                      cpu: {{ $resources.limitCpu | quote }}
+                      memory: {{ $resources.memory | quote }}
                   extraEnv: |
                     - name: KC_HOSTNAME
                       value: {{ $url | quote }}
@@ -262,108 +246,73 @@ spec:
                           name: {{ $credentialsSecretName }}
                           key: admin-password
             ---
-            apiVersion: kubernetes.m.crossplane.io/v1alpha1
-            kind: Object
+            {{/* Composed directly (needs Crossplane RBAC for Gateway API, see README). */}}
+            apiVersion: gateway.networking.k8s.io/v1
+            kind: ListenerSet
             metadata:
               name: {{ $listenerSetName }}
+              labels:
+                catalog.cluster.local/kind: {{ $kind }}
+                catalog.cluster.local/name: {{ $xrName }}
               annotations:
-                gotemplating.fn.crossplane.io/composition-resource-name: "listener-set"
+                {{ setResourceNameAnnotation "listener-set" }}
+                gotemplating.fn.crossplane.io/ready: {{ ternary "True" "False" $listenerProgrammed | quote }}
+                # cert-manager issues the listener's certificate into the TLS Secret.
+                cert-manager.io/cluster-issuer: {{ $certificateIssuer | quote }}
             spec:
-              readiness:
-                policy: DeriveFromCelQuery
-                celQuery: |
-                  has(object.status) &&
-                  has(object.status.conditions) &&
-                  object.status.conditions.exists(c, c.type == "Programmed" && c.status == "True")
-              providerConfigRef:
-                kind: ClusterProviderConfig
-                name: provider-kubernetes
-              forProvider:
-                manifest:
-                  apiVersion: gateway.networking.k8s.io/v1
-                  kind: ListenerSet
-                  metadata:
-                    name: {{ $listenerSetName }}
-                    namespace: {{ $namespace }}
-                    labels:
-                      catalog.cluster.local/kind: {{ $kind }}
-                      catalog.cluster.local/name: {{ $xrName }}
-                    annotations:
-                      # cert-manager issues the listener's certificate into the Secret below.
-                      cert-manager.io/cluster-issuer: {{ $certificateIssuer | quote }}
-                  spec:
-                    parentRef:
-                      group: gateway.networking.k8s.io
-                      kind: Gateway
-                      name: {{ $gatewayName | quote }}
-                      namespace: {{ $gatewayNamespace | quote }}
-                    listeners:
-                      - name: https
-                        hostname: {{ $hostname | quote }}
-                        port: 443
-                        protocol: HTTPS
-                        allowedRoutes:
-                          namespaces:
-                            from: Same
-                        tls:
-                          mode: Terminate
-                          certificateRefs:
-                            - group: ""
-                              kind: Secret
-                              name: {{ printf "%s-tls" $xrName | quote }}
+              parentRef:
+                group: gateway.networking.k8s.io
+                kind: Gateway
+                name: {{ $gatewayName | quote }}
+                namespace: {{ $gatewayNamespace | quote }}
+              listeners:
+                - name: https
+                  hostname: {{ $hostname | quote }}
+                  port: 443
+                  protocol: HTTPS
+                  allowedRoutes:
+                    namespaces:
+                      from: Same
+                  tls:
+                    mode: Terminate
+                    certificateRefs:
+                      - group: ""
+                        kind: Secret
+                        name: {{ printf "%s-tls" $xrName | quote }}
             ---
-            apiVersion: kubernetes.m.crossplane.io/v1alpha1
-            kind: Object
+            apiVersion: gateway.networking.k8s.io/v1
+            kind: HTTPRoute
             metadata:
-              name: {{ $httpRouteName }}
+              name: {{ printf "%s-httproute" $xrName }}
+              labels:
+                catalog.cluster.local/kind: {{ $kind }}
+                catalog.cluster.local/name: {{ $xrName }}
               annotations:
-                gotemplating.fn.crossplane.io/composition-resource-name: "http-route"
+                {{ setResourceNameAnnotation "http-route" }}
+                gotemplating.fn.crossplane.io/ready: {{ ternary "True" "False" $routeAccepted | quote }}
             spec:
-              readiness:
-                policy: DeriveFromCelQuery
-                celQuery: |
-                  has(object.status) &&
-                  has(object.status.parents) &&
-                  object.status.parents.exists(p,
-                    has(p.conditions) &&
-                    p.conditions.exists(c, c.type == "Accepted" && c.status == "True"))
-              providerConfigRef:
-                kind: ClusterProviderConfig
-                name: provider-kubernetes
-              forProvider:
-                manifest:
-                  apiVersion: gateway.networking.k8s.io/v1
-                  kind: HTTPRoute
-                  metadata:
-                    name: {{ $httpRouteName }}
-                    namespace: {{ $namespace }}
-                    labels:
-                      catalog.cluster.local/kind: {{ $kind }}
-                      catalog.cluster.local/name: {{ $xrName }}
-                  spec:
-                    parentRefs:
-                      - group: gateway.networking.k8s.io
-                        kind: ListenerSet
-                        name: {{ $listenerSetName }}
-                    hostnames:
-                      - {{ $hostname | quote }}
-                    rules:
-                      - backendRefs:
-                          - group: ""
-                            kind: Service
-                            name: {{ printf "%s-http" $xrName | quote }}
-                            port: 80
+              parentRefs:
+                - group: gateway.networking.k8s.io
+                  kind: ListenerSet
+                  name: {{ $listenerSetName }}
+              hostnames:
+                - {{ $hostname | quote }}
+              rules:
+                - backendRefs:
+                    - group: ""
+                      kind: Service
+                      name: {{ printf "%s-http" $xrName | quote }}
+                      port: 80
             ---
             apiVersion: v1
             kind: Secret
             metadata:
               name: {{ $xrName }}-connection
-              namespace: {{ $namespace }}
               annotations:
                 {{ setResourceNameAnnotation "connection-secret" }}
             data:
-              username: {{ $adminUsername | b64enc }}
-              password: {{ $adminPassword | b64enc }}
+              username: {{ $adminUsername }}
+              password: {{ $adminPassword }}
               {{- if $endpointLive }}
               host: {{ $hostname | b64enc }}
               url: {{ $url | b64enc }}
