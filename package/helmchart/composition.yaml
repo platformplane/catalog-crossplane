@@ -6,25 +6,19 @@ spec:
   compositeTypeRef:
     apiVersion: catalog.cluster.local/v2
     kind: HelmChart
-  writeConnectionSecretsToNamespace: crossplane-system
 
   mode: Pipeline
   pipeline:
-    - step: get-environment-configs
-      functionRef:
-        name: crossplane-contrib-function-environment-configs
-      input:
-        apiVersion: environmentconfigs.fn.crossplane.io/v1beta1
-        kind: Input
-        spec:
-          environmentConfigs:
-            - type: Reference
-              ref:
-                name: environment
-
     - step: helm-chart
       functionRef:
         name: crossplane-contrib-function-go-templating
+      # Fetched by Crossplane before the first call.
+      requirements:
+        requiredResources:
+          - requirementName: environment
+            apiVersion: apiextensions.crossplane.io/v1beta1
+            kind: EnvironmentConfig
+            name: environment
       input:
         apiVersion: gotemplating.fn.crossplane.io/v1beta1
         kind: GoTemplate
@@ -40,17 +34,18 @@ spec:
             {{ $chart := $params.chart }}
             {{ $values := dig "values" "" $params }}
             {{ $secrets := dig "secrets" (list) $params }}
-            {{ $environment := index $.context "apiextensions.crossplane.io/environment" }}
-            {{ $zone := index $environment "zone" }}
+            {{ $environment := dict }}
+            {{ with getExtraResources . "environment" }}{{ $environment = dig "resource" "data" (dict) (first .) }}{{ end }}
+            {{ $zone := dig "zone" "" $environment }}
 
-            {{/* Public endpoint: a listener on the platform's shared gateway, not one of its own.
-                 Gateway and cert issuer come from the environment. */}}
+            {{/* Public endpoint: a listener on the shared platform gateway. */}}
             {{ $gatewayEnabled := dig "gateway" "enabled" false $params }}
-            {{/* Derived, never given: instance name + platform domain, which already resolves to
-                 the gateway. */}}
+            {{ if and $gatewayEnabled (not $zone) }}
+            {{ fail "no platform zone configured, so the instance cannot be exposed publicly" }}
+            {{ end }}
+            {{/* Hostname = instance name + platform domain (already resolves to the gateway). */}}
             {{ $host := regexReplaceAll "[^a-z0-9-]" ($xrName | lower) "" | trimAll "-" }}
-            {{/* A DNS label holds at most 63 characters; shorten with a hash past that. Hashed from
-                 namespace/name rather than the uid, so the address survives recreating the XR. */}}
+            {{/* DNS labels max 63 chars: shorten with a hash of namespace/name (stable across recreation). */}}
             {{ if gt (len $host) 63 }}
             {{ $host = printf "%s-%s" (trunc 56 $host | trimSuffix "-") (trunc 6 (sha256sum (printf "%s/%s" $namespace $xrName))) }}
             {{ end }}
@@ -63,49 +58,53 @@ spec:
             {{ $gatewayNamespace := dig "gatewayNamespace" "envoy" $environment }}
             {{ $certificateIssuer := dig "certificateIssuer" "letsencrypt" $environment }}
 
-            {{/* Helm caps release names at 53 characters; shorten with a hash past that, hashed
-                 like the hostname so the name survives recreating the XR. */}}
+            {{/* Helm release names max 53 chars: shorten the same way. */}}
             {{ $releaseName := $xrName }}
             {{ if gt (len $releaseName) 53 }}
             {{ $releaseName = printf "%s-%s" (trunc 46 $xrName | trimSuffix "-") (trunc 6 (sha256sum (printf "%s/%s" $namespace $xrName))) }}
             {{ end }}
             {{ $valuesSecretName := printf "%s-values" $xrName }}
+            {{ $connectionSecretName := printf "%s-connection" $xrName }}
 
-            {{/* Optional backend override. Either one narrows discovery; both together pin it. */}}
+            {{/* User Secrets must not reuse names composed here (the TLS one belongs to cert-manager). */}}
+            {{ $reservedSecretNames := dict $valuesSecretName "values" $connectionSecretName "connection details" $tlsSecretName "TLS certificate" }}
+            {{ range $secret := $secrets }}
+            {{- if hasKey $reservedSecretNames $secret.name }}
+            {{- fail (printf "Secret name %q is reserved for this instance's %s" $secret.name (get $reservedSecretNames $secret.name)) }}
+            {{- end }}
+            {{- end }}
+
+            {{/* Optional backend override: either narrows discovery, both pin it. */}}
             {{ $wantService := dig "gateway" "service" "" $params }}
             {{ $wantPort := dig "gateway" "port" 0 $params | int }}
 
-            {{/* The backend the live route points at, so a working route is neither switched nor
-                 dropped just because discovery sees something different this reconcile. */}}
+            {{/* Backend of the live route, so a working route isn't switched or dropped needlessly. */}}
             {{ $previousBackend := dict }}
-            {{ $previousRules := dig "resources" "http-route" "resource" "spec" "forProvider" "manifest" "spec" "rules" (list) .observed }}
+            {{ $previousRules := dig "resources" "http-route" "resource" "spec" "rules" (list) .observed }}
             {{ if $previousRules }}{{ $previousBackend = dig "backendRefs" (list) (first $previousRules) | first | default (dict) }}{{ end }}
             {{ $previousService := dig "name" "" $previousBackend }}
             {{ $previousPort := dig "port" 0 $previousBackend | int }}
 
-            {{/* Find the chart's Service via the release-name label Helm applies to everything it
-                 installs, or by name when one is given. Fetched by the ExtraResources requirement
-                 below; appears one reconcile after the chart's Service does. */}}
+            {{/* Candidate Services, fetched by the ExtraResources requirement below
+                 (available one reconcile after they exist). */}}
             {{ $servicesByName := dict }}
             {{ range $item := default (list) (getExtraResources . "chart-services") }}
             {{- $service := $item.resource }}
-            {{/* Not namespaced by the function's label selector, so filter here. */}}
+            {{/* Guard for function-go-templating < v0.13.0, which ignores the namespace on label selectors. */}}
             {{- if eq (dig "metadata" "namespace" "" $service) $namespace }}
             {{- $_ := set $servicesByName $service.metadata.name $service }}
             {{- end }}
             {{- end }}
 
-            {{/* Sorted, so ties resolve the same way every time, with the Service named after the
-                 release first. */}}
+            {{/* Deterministic order; the Service named after the release first. */}}
             {{ $serviceNames := keys $servicesByName | sortAlpha }}
             {{ if hasKey $servicesByName $releaseName }}{{ $serviceNames = prepend (without $serviceNames $releaseName) $releaseName }}{{ end }}
 
-            {{/* Rank the HTTP port: appProtocol http, then name "http", then prefixed "http", then
-                 80/8080, then a front-door word, then the only port there is. Lowest rank wins,
-                 lowest port number breaks ties. Words match by hyphen segment ("query" in
-                 "http-query", not "ui" in "fluid"). TLS, back-office and data-store ports are never
-                 picked by discovery -- publishing one is worse than no route, and an explicit port
-                 still reaches them. A generic "tcp" name or a headless Service is a last resort. */}}
+            {{/* Port ranking (lowest wins, lower port breaks ties):
+                   1 appProtocol http, 2 name "http", 3 name "http*", 4 port 80, 5 port 8080,
+                   6 front-door word, 7 only TCP port; +50 for a "tcp" name or headless Service.
+                 Never discovered (an explicit Port still works): TLS, back-office, data-store ports.
+                 Words match by hyphen segment. */}}
             {{ $frontDoorWords := list "console" "web" "ui" "gui" "dashboard" "frontend" "portal" "query" "app" }}
             {{ $backOfficeWords := list "metrics" "telemetry" "otlp" "zipkin" "thrift" "trft" "binary" "grpc" "admin" "debug" "pprof" "health" "probe" "gossip" "peer" "replication" "internal" "sidecar" "management" "webhook" "prometheus" "servicemonitor" "exporter" "reloader" "memberlist" "discovery" }}
             {{ $dataStoreWords := list "postgresql" "postgres" "mysql" "mariadb" "redis" "sentinel" "mongodb" "mongo" "amqp" "kafka" "memcached" "zookeeper" "cassandra" "cql" }}
@@ -134,8 +133,7 @@ spec:
             {{- if has $word $backOfficeWords }}{{ $backOffice = true }}{{ end }}
             {{- if has $word $dataStoreWords }}{{ $dataStore = true }}{{ end }}
             {{- end }}
-            {{/* The gateway terminates TLS and can't reach a TLS port without a BackendTLSPolicy.
-                 Note "https" also starts with "http". */}}
+            {{/* The gateway terminates TLS; it can't reach a TLS backend. ("https" also starts with "http".) */}}
             {{- $tlsPort := or (eq $portName "https") (hasPrefix "https-" $portName) (has $appProtocol (list "https" "kubernetes.io/wss")) (eq $portNumber 443) }}
             {{- $rank := 99 }}
             {{- if $wantPort }}
@@ -161,23 +159,24 @@ spec:
             {{- end }}
             {{ $backendFound := ne $bestRank 99 }}
 
-            {{/* Stick with the live backend while it still qualifies; only a last-resort pick gives
-                 way, once a proper one shows up (e.g. the chart's main Service syncs later). If
-                 nothing qualifies, e.g. the Service is briefly gone during an upgrade, hold the
-                 route rather than delete it and take the endpoint down. */}}
+            {{/* Keep the live backend while it qualifies (a last-resort one yields to a proper one).
+                 If nothing qualifies, hold the route instead of taking the endpoint down. */}}
             {{ $routeHeld := and $gatewayEnabled $previousService (not $backendFound) }}
             {{ if or $routeHeld (and (ne $previousRank 99) (or (lt $previousRank 50) (ge $bestRank 50))) }}
             {{ $routeService = $previousService }}
             {{ $routePort = $previousPort }}
             {{ end }}
 
-            {{ $routeReady := and $gatewayEnabled $routeService }}
+            {{ $composeRoute := and $gatewayEnabled $routeService }}
 
-            {{/* Listeners are matched by hostname across every namespace on the shared gateway; a
-                 name taken by another instance leaves this one Conflicted. */}}
+            {{/* Listener hostnames are unique across the shared gateway; a taken one is Conflicted. */}}
             {{ $listenerConflict := false }}
             {{ $listenerProblems := list }}
-            {{ $listenerSetStatus := dig "resources" "listener-set" "resource" "status" "atProvider" "manifest" "status" dict .observed }}
+            {{ $listenerSetStatus := dig "resources" "listener-set" "resource" "status" dict .observed }}
+            {{ $listenerSetProgrammed := false }}
+            {{ range $condition := dig "conditions" (list) $listenerSetStatus }}
+            {{- if and (eq (dig "type" "" $condition) "Programmed") (eq (dig "status" "" $condition) "True") }}{{ $listenerSetProgrammed = true }}{{ end }}
+            {{- end }}
             {{ range $listener := dig "listeners" (list) $listenerSetStatus }}
             {{- range $condition := dig "conditions" (list) $listener }}
             {{- if and (eq (dig "type" "" $condition) "Conflicted") (eq (dig "status" "" $condition) "True") }}
@@ -189,22 +188,14 @@ spec:
             {{- end }}
 
             {{/* Only advertise an address that serves this instance. */}}
-            {{ $endpointLive := and $routeReady (not $listenerConflict) }}
+            {{ $endpointLive := and $composeRoute (not $listenerConflict) }}
 
-            {{/* Live state is status.atProvider.manifest; forProvider.manifest is only what we
-                 asked for and has no status. */}}
             {{ $releaseStatus := dig "resources" "helm-release" "resource" "status" dict .observed }}
             {{ $releaseState := dig "atProvider" "state" "" $releaseStatus }}
             {{ $revision := dig "atProvider" "revision" 0 $releaseStatus | int }}
-            {{/* The release carries no chart version, but once it is deployed and in step with the
-                 spec, the requested version is the one running. Until then keep the last one seen. */}}
-            {{ $version := dig "status" "version" "" $xr }}
-            {{ if and (eq $releaseState "deployed") (dig "synced" false $releaseStatus) }}
-            {{ $version = $chart.version }}
-            {{ end }}
+            {{ $version := dig "atProvider" "version" "" $releaseStatus }}
 
-            {{/* Collects why the release is failing. Status is server-side applied, so a message
-                 stopped here disappears from the XR too. */}}
+            {{/* Status message. Status is server-side applied, so dropped problems clear themselves. */}}
             {{ $problems := list }}
             {{ range $condition := dig "conditions" (list) $releaseStatus }}
             {{- if and (ne (dig "status" "" $condition) "True") (dig "message" "" $condition) }}
@@ -216,7 +207,7 @@ spec:
             {{- end }}
             {{- if $gatewayEnabled }}
             {{- if $listenerConflict }}
-            {{- $problems = append $problems (printf "hostname %s is already used by another instance on the platform gateway; rename this instance to get its own" $hostname) }}
+            {{- $problems = append $problems (printf "hostname %s is taken by another instance; rename this one" $hostname) }}
             {{- else }}
             {{- $problems = concat $problems $listenerProblems }}
             {{- end }}
@@ -224,19 +215,21 @@ spec:
             {{- $wanted := list }}
             {{- if $wantService }}{{ $wanted = append $wanted (printf "Service %s" $wantService) }}{{ end }}
             {{- if $wantPort }}{{ $wanted = append $wanted (printf "port %d" $wantPort) }}{{ end }}
-            {{- $problems = append $problems (printf "nothing matches the Public Endpoint settings (%s), so the endpoint has nothing to route to" (join ", " $wanted)) }}
+            {{- $problems = append $problems (printf "no backend matches %s" (join ", " $wanted)) }}
             {{- else if not $backendFound }}
-            {{- $problems = append $problems "no Service with an HTTP port found for this chart yet, so the endpoint has nothing to route to; set Port (and Service) under Public Endpoint to pick one" }}
+            {{- $problems = append $problems "no HTTP Service found; set Public Endpoint Port or Service" }}
             {{- end }}
             {{- if $routeHeld }}
-            {{- $problems = append $problems (printf "backend %s:%d no longer matches; keeping the existing route until it is back or the Public Endpoint settings point elsewhere" $routeService $routePort) }}
+            {{- $problems = append $problems (printf "backend %s:%d gone; keeping the existing route" $routeService $routePort) }}
             {{- end }}
             {{- end }}
 
-            {{/* Accepted doesn't mean the backend resolves -- check that too. */}}
-            {{ $routeStatus := dig "resources" "http-route" "resource" "status" "atProvider" "manifest" "status" dict .observed }}
+            {{/* Accepted doesn't imply the backend resolves; check both. */}}
+            {{ $routeStatus := dig "resources" "http-route" "resource" "status" dict .observed }}
+            {{ $routeAccepted := false }}
             {{ range $parent := dig "parents" (list) $routeStatus }}
             {{- range $condition := dig "conditions" (list) $parent }}
+            {{- if and (eq (dig "type" "" $condition) "Accepted") (eq (dig "status" "" $condition) "True") }}{{ $routeAccepted = true }}{{ end }}
             {{- if and (has (dig "type" "" $condition) (list "Accepted" "ResolvedRefs")) (ne (dig "status" "" $condition) "True") }}
             {{- $problems = append $problems (printf "route %s: %s" $condition.type (dig "message" "" $condition)) }}
             {{- end }}
@@ -245,8 +238,7 @@ spec:
 
             {{ $message := $problems | uniq | join "; " | trunc 1024 }}
 
-            {{/* Values go through a Secret rather than inline, so they stay the YAML string the
-                 user wrote (no parsing in the template) and may hold credentials. */}}
+            {{/* Values in a Secret: may hold credentials. JSON-quoted, so any input stays one valid string. */}}
             {{ if $values }}
             apiVersion: v1
             kind: Secret
@@ -260,8 +252,7 @@ spec:
                 {{ setResourceNameAnnotation "values" }}
             type: Opaque
             stringData:
-              values.yaml: |
-            {{ $values | nindent 16 }}
+              values.yaml: {{ $values | toJson }}
             ---
             {{ end }}
             apiVersion: helm.m.crossplane.io/v1beta1
@@ -274,13 +265,13 @@ spec:
                 catalog.cluster.local/name: {{ $xrName }}
               annotations:
                 crossplane.io/external-name: {{ $releaseName }}
-                gotemplating.fn.crossplane.io/composition-resource-name: "helm-release"
+                {{ setResourceNameAnnotation "helm-release" }}
             spec:
               providerConfigRef:
                 kind: ClusterProviderConfig
                 name: provider-helm
               forProvider:
-                # Ready only once the chart's workloads are, so State reflects their health.
+                # Ready only once the chart's workloads are.
                 wait: true
                 chart:
                   repository: {{ $chart.repository | quote }}
@@ -294,7 +285,7 @@ spec:
                       key: values.yaml
                 {{- end }}
 
-            {{/* Secrets the chart expects to exist, so chart and credentials ship as one item. */}}
+            {{/* User Secrets. Keys quoted: YAML 1.1 would turn "on" or "010" into "true" or "8". */}}
             {{ range $secret := $secrets }}
             ---
             apiVersion: v1
@@ -310,127 +301,113 @@ spec:
             type: Opaque
             stringData:
             {{- range $entry := $secret.data }}
-              {{ $entry.key }}: {{ $entry.value | quote }}
+              {{ $entry.key | quote }}: {{ $entry.value | quote }}
             {{- end }}
+            ---
+            {{/* Keeps the Secret until the release is uninstalled. */}}
+            apiVersion: protection.crossplane.io/v1beta1
+            kind: Usage
+            metadata:
+              name: {{ printf "%s-usage" (regexReplaceAll "[-.]+$" (trunc 247 $secret.name) "") }}
+              namespace: {{ $namespace }}
+              labels:
+                catalog.cluster.local/kind: {{ $kind }}
+                catalog.cluster.local/name: {{ $xrName }}
+              annotations:
+                {{ setResourceNameAnnotation (printf "usage-%s" $secret.name) }}
+            spec:
+              replayDeletion: true
+              of:
+                apiVersion: v1
+                kind: Secret
+                resourceRef:
+                  name: {{ $secret.name }}
+              by:
+                apiVersion: helm.m.crossplane.io/v1beta1
+                kind: Release
+                resourceRef:
+                  name: {{ $releaseName }}
             {{ end }}
 
             {{ if $gatewayEnabled }}
             ---
-            {{/* Fetches the named Service, or else the Services Helm labelled with this
-                 instance's release name. */}}
+            {{/* The named Service, else Services labelled with the release name; this namespace only. */}}
             apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
             kind: ExtraResources
             requirements:
-            {{- if $wantService }}
               chart-services:
                 apiVersion: v1
                 kind: Service
-                matchName: {{ $wantService | quote }}
                 namespace: {{ $namespace | quote }}
+            {{- if $wantService }}
+                matchName: {{ $wantService | quote }}
             {{- else }}
-              chart-services:
-                apiVersion: v1
-                kind: Service
                 matchLabels:
                   app.kubernetes.io/instance: {{ $releaseName | quote }}
             {{- end }}
 
             ---
-            apiVersion: kubernetes.m.crossplane.io/v1alpha1
-            kind: Object
+            {{/* Composed directly (needs Crossplane RBAC for the Gateway API, see README). */}}
+            apiVersion: gateway.networking.k8s.io/v1
+            kind: ListenerSet
             metadata:
               name: {{ $listenerSetName }}
+              namespace: {{ $namespace }}
+              labels:
+                catalog.cluster.local/kind: {{ $kind }}
+                catalog.cluster.local/name: {{ $xrName }}
               annotations:
-                gotemplating.fn.crossplane.io/composition-resource-name: "listener-set"
+                {{ setResourceNameAnnotation "listener-set" }}
+                gotemplating.fn.crossplane.io/ready: {{ ternary "True" "False" $listenerSetProgrammed | quote }}
+                # cert-manager issues the certificate into the TLS Secret.
+                cert-manager.io/cluster-issuer: {{ $certificateIssuer | quote }}
             spec:
-              readiness:
-                policy: DeriveFromCelQuery
-                celQuery: |
-                  has(object.status) &&
-                  has(object.status.conditions) &&
-                  object.status.conditions.exists(c, c.type == "Programmed" && c.status == "True")
-              providerConfigRef:
-                kind: ClusterProviderConfig
-                name: provider-kubernetes
-              forProvider:
-                manifest:
-                  apiVersion: gateway.networking.k8s.io/v1
-                  kind: ListenerSet
-                  metadata:
-                    name: {{ $listenerSetName }}
-                    namespace: {{ $namespace }}
-                    labels:
-                      catalog.cluster.local/kind: {{ $kind }}
-                      catalog.cluster.local/name: {{ $xrName }}
-                    annotations:
-                      # cert-manager issues the listener's certificate into the Secret below.
-                      cert-manager.io/cluster-issuer: {{ $certificateIssuer | quote }}
-                  spec:
-                    parentRef:
-                      group: gateway.networking.k8s.io
-                      kind: Gateway
-                      name: {{ $gatewayName | quote }}
-                      namespace: {{ $gatewayNamespace | quote }}
-                    listeners:
-                      - name: https
-                        hostname: {{ $hostname | quote }}
-                        port: 443
-                        protocol: HTTPS
-                        allowedRoutes:
-                          namespaces:
-                            # Only routes in this instance's own namespace may attach to it.
-                            from: Same
-                        tls:
-                          mode: Terminate
-                          certificateRefs:
-                            - group: ""
-                              kind: Secret
-                              name: {{ $tlsSecretName | quote }}
+              parentRef:
+                group: gateway.networking.k8s.io
+                kind: Gateway
+                name: {{ $gatewayName | quote }}
+                namespace: {{ $gatewayNamespace | quote }}
+              listeners:
+                - name: https
+                  hostname: {{ $hostname | quote }}
+                  port: 443
+                  protocol: HTTPS
+                  allowedRoutes:
+                    namespaces:
+                      from: Same
+                  tls:
+                    mode: Terminate
+                    certificateRefs:
+                      - group: ""
+                        kind: Secret
+                        name: {{ $tlsSecretName | quote }}
 
-            {{ if $routeReady }}
+            {{ if $composeRoute }}
             ---
-            {{/* Composed here, not shipped with the chart, so it can't drift from the listener. */}}
-            apiVersion: kubernetes.m.crossplane.io/v1alpha1
-            kind: Object
+            apiVersion: gateway.networking.k8s.io/v1
+            kind: HTTPRoute
             metadata:
               name: {{ $httpRouteName }}
+              namespace: {{ $namespace }}
+              labels:
+                catalog.cluster.local/kind: {{ $kind }}
+                catalog.cluster.local/name: {{ $xrName }}
               annotations:
-                gotemplating.fn.crossplane.io/composition-resource-name: "http-route"
+                {{ setResourceNameAnnotation "http-route" }}
+                gotemplating.fn.crossplane.io/ready: {{ ternary "True" "False" $routeAccepted | quote }}
             spec:
-              readiness:
-                policy: DeriveFromCelQuery
-                celQuery: |
-                  has(object.status) &&
-                  has(object.status.parents) &&
-                  object.status.parents.exists(p,
-                    has(p.conditions) &&
-                    p.conditions.exists(c, c.type == "Accepted" && c.status == "True"))
-              providerConfigRef:
-                kind: ClusterProviderConfig
-                name: provider-kubernetes
-              forProvider:
-                manifest:
-                  apiVersion: gateway.networking.k8s.io/v1
-                  kind: HTTPRoute
-                  metadata:
-                    name: {{ $httpRouteName }}
-                    namespace: {{ $namespace }}
-                    labels:
-                      catalog.cluster.local/kind: {{ $kind }}
-                      catalog.cluster.local/name: {{ $xrName }}
-                  spec:
-                    parentRefs:
-                      - group: gateway.networking.k8s.io
-                        kind: ListenerSet
-                        name: {{ $listenerSetName }}
-                    hostnames:
-                      - {{ $hostname | quote }}
-                    rules:
-                      - backendRefs:
-                          - group: ""
-                            kind: Service
-                            name: {{ $routeService | quote }}
-                            port: {{ $routePort }}
+              parentRefs:
+                - group: gateway.networking.k8s.io
+                  kind: ListenerSet
+                  name: {{ $listenerSetName }}
+              hostnames:
+                - {{ $hostname | quote }}
+              rules:
+                - backendRefs:
+                    - group: ""
+                      kind: Service
+                      name: {{ $routeService | quote }}
+                      port: {{ $routePort }}
             {{ end }}
             {{ end }}
 
@@ -438,7 +415,7 @@ spec:
             apiVersion: v1
             kind: Secret
             metadata:
-              name: {{ $xrName }}-connection
+              name: {{ $connectionSecretName }}
               namespace: {{ $namespace }}
               annotations:
                 {{ setResourceNameAnnotation "connection-secret" }}
@@ -461,7 +438,7 @@ spec:
             {{- if and $gatewayEnabled (not $endpointLive) }}
             metadata:
               annotations:
-                # Asked for an endpoint and there is none (yet), so the XR is not Ready either.
+                # Endpoint requested but not live: not Ready.
                 gotemplating.fn.crossplane.io/ready: "False"
             {{- end }}
             {{- if or $endpointLive $releaseState $version $revision $message }}
@@ -486,4 +463,3 @@ spec:
     - step: automatically-detect-ready-composed-resources
       functionRef:
         name: crossplane-contrib-function-auto-ready
-

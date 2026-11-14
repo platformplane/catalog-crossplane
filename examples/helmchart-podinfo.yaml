@@ -1,0 +1,38 @@
+apiVersion: catalog.cluster.local/v2
+kind: HelmChart
+metadata:
+  # podinfo names its Service after the release when the release name contains "podinfo".
+  name: my-helmchart-podinfo
+  namespace: catalog-examples
+spec:
+  parameters:
+    chart:
+      repository: oci://ghcr.io/stefanprodan/charts
+      name: podinfo
+      version: "6.17.0"
+    secrets:
+      - name: my-helmchart-podinfo-env
+        data:
+          - key: UPSTREAM_TOKEN
+            value: replace-me
+          - key: UPSTREAM_PORT
+            value: "8443"
+    gateway:
+      enabled: true
+      # podinfo doesn't label its Service with app.kubernetes.io/instance, so name it.
+      service: my-helmchart-podinfo
+    values: |
+      replicaCount: 1
+      ui:
+        message: Deployed by the HelmChart catalog item
+      extraEnvs:
+        - name: UPSTREAM_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: my-helmchart-podinfo-env
+              key: UPSTREAM_TOKEN
+        - name: UPSTREAM_PORT
+          valueFrom:
+            secretKeyRef:
+              name: my-helmchart-podinfo-env
+              key: UPSTREAM_PORT

@@ -4,13 +4,14 @@ metadata:
   name: helmcharts.catalog.cluster.local
 spec:
   group: catalog.cluster.local
+  defaultCompositionUpdatePolicy: Manual
   scope: Namespaced
   metadata:
     labels:
       catalog.cluster.local/kind: HelmChart
     annotations:
       catalog.cluster.local/title: "Helm Chart"
-      catalog.cluster.local/description: "Deploy any Helm chart from a repository or OCI registry. Optionally ship the Secrets it needs, and expose it publicly with one flag."
+      catalog.cluster.local/description: "Deploy any Helm chart, with optional Secrets and a public HTTPS endpoint."
       catalog.cluster.local/icon: "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgd2lkdGg9IjgwMHB4IiBoZWlnaHQ9IjgwMHB4IiBmaWxsPSJub25lIiBzdHJva2U9IiMwRjE2ODkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI5Ii8+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMi4yIiBmaWxsPSIjMEYxNjg5IiBzdHJva2U9Im5vbmUiLz48bGluZSB4MT0iMTIiIHkxPSIzIiB4Mj0iMTIiIHkyPSI5LjQiLz48bGluZSB4MT0iMTIiIHkxPSIxNC42IiB4Mj0iMTIiIHkyPSIyMSIvPjxsaW5lIHgxPSIzIiB5MT0iMTIiIHgyPSI5LjQiIHkyPSIxMiIvPjxsaW5lIHgxPSIxNC42IiB5MT0iMTIiIHgyPSIyMSIgeTI9IjEyIi8+PGxpbmUgeDE9IjUuNSIgeTE9IjUuNSIgeDI9IjkuOSIgeTI9IjkuOSIvPjxsaW5lIHgxPSIxNC4xIiB5MT0iMTQuMSIgeDI9IjE4LjUiIHkyPSIxOC41Ii8+PGxpbmUgeDE9IjE4LjUiIHkxPSI1LjUiIHgyPSIxNC4xIiB5Mj0iOS45Ii8+PGxpbmUgeDE9IjkuOSIgeTE9IjE0LjEiIHgyPSI1LjUiIHkyPSIxOC41Ii8+PC9zdmc+Cg=="
       catalog.cluster.local/maintainer: ""
       catalog.cluster.local/url: "https://helm.sh/docs/"
@@ -39,11 +40,11 @@ spec:
           priority: 1
       schema:
         openAPIV3Schema:
-          description: Deploys a Helm chart as a Helm release in the instance's namespace.
+          description: A Helm release in this namespace.
           type: object
           properties:
             spec:
-              description: Helm chart deployment configuration.
+              description: Release configuration.
               type: object
               properties:
                 crossplane:
@@ -60,20 +61,20 @@ spec:
                         repository:
                           type: string
                           title: "Repository"
-                          description: "Chart repository URL: https:// or oci://."
+                          description: "https:// or oci:// URL."
                           minLength: 1
                           maxLength: 2048
                           pattern: '^(https://|oci://)\S+$'
                         name:
                           type: string
                           title: "Chart Name"
-                          description: "Chart name within the repository."
+                          description: "Chart name in the repository."
                           minLength: 1
                           maxLength: 253
                         version:
                           type: string
                           title: "Chart Version"
-                          description: "Chart version. Change it to roll out a new one."
+                          description: "Chart version to install."
                           minLength: 1
                           maxLength: 253
                       required:
@@ -83,9 +84,9 @@ spec:
                     secrets:
                       type: array
                       title: "Secrets"
-                      description: 'Secrets to create alongside the chart. Add a Secret, then one entry per key it should hold, and point the chart at it from Values (e.g. "auth:\n  existingSecret: my-chart-auth"). Stored in plain text.'
+                      description: "Secrets the chart needs. Reference them from Values, e.g. existingSecret: my-secret. Stored in plain text."
                       maxItems: 16
-                      # Keyed by name, so Kubernetes itself rejects the same Secret name twice.
+                      # Rejects duplicate names.
                       x-kubernetes-list-type: map
                       x-kubernetes-list-map-keys:
                         - name
@@ -95,17 +96,17 @@ spec:
                           name:
                             type: string
                             title: "Secret Name"
-                            description: "Secret name. Must not collide with one the chart creates itself."
+                            description: "Must differ from Secrets the chart creates and from <instance>-values, -connection and -tls."
                             minLength: 1
                             maxLength: 253
                             pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
                           data:
                             type: array
                             title: "Data"
-                            description: "This Secret's entries, one key/value per row."
+                            description: "Key/value entries."
                             minItems: 1
                             maxItems: 64
-                            # Keyed by key, so the same key cannot be given twice in one Secret.
+                            # Rejects duplicate keys.
                             x-kubernetes-list-type: map
                             x-kubernetes-list-map-keys:
                               - key
@@ -115,14 +116,14 @@ spec:
                                 key:
                                   type: string
                                   title: "Key"
-                                  description: "Entry key, e.g. password or api.key."
+                                  description: "e.g. password"
                                   minLength: 1
                                   maxLength: 253
                                   pattern: "^[-._a-zA-Z0-9]+$"
                                 value:
                                   type: string
                                   title: "Value"
-                                  description: "Entry value, written verbatim (do not base64-encode)."
+                                  description: "Plain text, not base64."
                                   maxLength: 32768
                               required:
                                 - key
@@ -139,52 +140,51 @@ spec:
                           type: boolean
                           default: false
                           title: "Expose Publicly"
-                          description: 'Publish this instance at <instance name>.<platform domain>. Listener, certificate and route are set up automatically, including finding the chart''s HTTP port. Reachable from the internet -- turn off the chart''s own ingress/route to avoid a second address.'
+                          description: "Publish at https://<instance>.<platform domain>. Disable the chart's own ingress."
                         port:
                           type: integer
                           title: "Port"
-                          description: "Service port to publish. Leave empty to detect the chart's HTTP port; set it when detection picks the wrong one or none. Must serve plain HTTP."
+                          description: "Plain-HTTP Service port. Empty: detected."
                           minimum: 1
                           maximum: 65535
                         service:
                           type: string
                           title: "Service"
-                          description: "Service to publish, by name. Leave empty to search the chart's Services; set it when several expose the chosen port."
+                          description: "Service name. Empty: detected via label app.kubernetes.io/instance=<instance>."
                           maxLength: 63
                           pattern: "^[a-z]([-a-z0-9]*[a-z0-9])?$"
                     values:
                       type: string
                       format: codearea
                       title: "Values"
-                      # TODO: point this at the real HTTPRoute documentation once it is published.
-                      description: "Helm value overrides, as YAML (e.g. \"service:\\n  type: ClusterIP\"). Merged over the chart's defaults. See [the HTTPRoute documentation](https://example.com/docs/httproute) for manual routing."
+                      description: "Helm values as YAML, merged over the chart defaults. Custom routing: see [HTTPRoute](https://gateway-api.sigs.k8s.io/api-types/httproute/)."
                       maxLength: 65536
                   required:
                     - chart
               required:
                 - parameters
             status:
-              description: Live state, read from the Helm release.
+              description: Live release state.
               type: object
               properties:
                 state:
                   type: string
                   title: "State"
-                  description: "Helm release state: deployed, failed, pending-install, pending-upgrade, pending-rollback, or uninstalling. See Message if not deployed."
+                  description: "Helm release state, e.g. deployed or failed."
                 version:
                   type: string
                   title: "Deployed Version"
-                  description: "Chart version last rolled out; trails the requested one during a rollout."
+                  description: "Chart version currently deployed."
                 revision:
                   type: integer
                   title: "Revision"
-                  description: "Helm release revision; goes up with every install, upgrade or rollback."
+                  description: "Helm release revision."
                 message:
                   type: string
                   title: "Message"
-                  description: "Why the release is failing. Empty when all is well."
+                  description: "What is wrong with the release or endpoint. Empty when healthy."
                 url:
                   type: string
                   title: "Public Endpoint"
-                  description: "Public address. Absent while not exposed, while there is no route yet, or while the hostname is taken by another instance."
+                  description: "Public URL, set once the endpoint serves traffic."
 
