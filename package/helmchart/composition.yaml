@@ -51,6 +51,10 @@ spec:
             {{ end }}
             {{ $hostname := printf "%s.%s" $host $zone }}
             {{ $endpointURL := printf "https://%s" $hostname }}
+            {{/* For apps that must know their own address (redirects, links, trusted domains). */}}
+            {{ if $gatewayEnabled }}
+            {{ $values = $values | replace "${PUBLIC_HOST}" $hostname | replace "${PUBLIC_URL}" $endpointURL }}
+            {{ end }}
             {{ $listenerSetName := printf "%s-listenerset" $xrName }}
             {{ $httpRouteName := printf "%s-httproute" $xrName }}
             {{ $tlsSecretName := printf "%s-tls" $xrName }}
@@ -85,30 +89,37 @@ spec:
             {{ $previousService := dig "name" "" $previousBackend }}
             {{ $previousPort := dig "port" 0 $previousBackend | int }}
 
-            {{/* Candidate Services, fetched by the ExtraResources requirement below
-                 (available one reconcile after they exist). */}}
+            {{/* Candidate Services: the named one, else those this release installed. Helm annotates
+                 everything it installs with the release name, so this needs no chart labels; the
+                 app.kubernetes.io/instance label also counts (Services created by an operator the chart runs).
+                 Fetched by the ExtraResources requirement below, available one reconcile after they exist. */}}
             {{ $servicesByName := dict }}
             {{ range $item := default (list) (getExtraResources . "chart-services") }}
             {{- $service := $item.resource }}
-            {{/* Guard for function-go-templating < v0.13.0, which ignores the namespace on label selectors. */}}
-            {{- if eq (dig "metadata" "namespace" "" $service) $namespace }}
+            {{- $ours := or $wantService (eq (dig "metadata" "annotations" "meta.helm.sh/release-name" "" $service) $releaseName) (eq (dig "metadata" "labels" "app.kubernetes.io/instance" "" $service) $releaseName) }}
+            {{/* ExternalName Services have no endpoints in the cluster to route to. */}}
+            {{- if and $ours (eq (dig "metadata" "namespace" "" $service) $namespace) (ne (dig "spec" "type" "" $service) "ExternalName") }}
             {{- $_ := set $servicesByName $service.metadata.name $service }}
             {{- end }}
             {{- end }}
-
-            {{/* Deterministic order; the Service named after the release first. */}}
             {{ $serviceNames := keys $servicesByName | sortAlpha }}
-            {{ if hasKey $servicesByName $releaseName }}{{ $serviceNames = prepend (without $serviceNames $releaseName) $releaseName }}{{ end }}
 
-            {{/* Port ranking (lowest wins, lower port breaks ties):
-                   1 appProtocol http, 2 name "http", 3 name "http*", 4 port 80, 5 port 8080,
-                   6 front-door word, 7 only TCP port; +50 for a "tcp" name or headless Service.
-                 Never discovered (an explicit Port still works): TLS, back-office, data-store ports.
-                 Words match by hyphen segment. */}}
+            {{/* Backend ranking, lowest wins; then the lower port, then the Service name.
+                   Port (1-7): 1 appProtocol http, 2 name "http", 3 name "http*", 4 port 80, 5 port 8080,
+                     6 front-door word, 7 the Service's only eligible port.
+                   + Service (0-30), from its name minus the release prefix: 0 front-door word,
+                     10 named after the release, 20 other, 30 back-office or data-store word.
+                   + 50 for a headless Service (last resort).
+                 Never discovered (an explicit Port still works): TLS, back-office, data-store and
+                 non-HTTP protocol ports, e.g. tcp-*, ssh, grpc. Words match by hyphen segment.
+                 Heuristic by nature: a chart can still defeat it, which is what Service and Port are for. */}}
             {{ $frontDoorWords := list "console" "web" "ui" "gui" "dashboard" "frontend" "portal" "query" "app" }}
+            {{ $frontDoorServiceWords := concat $frontDoorWords (list "server" "public") }}
             {{ $backOfficeWords := list "metrics" "telemetry" "otlp" "zipkin" "thrift" "trft" "binary" "grpc" "admin" "debug" "pprof" "health" "probe" "gossip" "peer" "replication" "internal" "sidecar" "management" "webhook" "prometheus" "servicemonitor" "exporter" "reloader" "memberlist" "discovery" }}
-            {{ $dataStoreWords := list "postgresql" "postgres" "mysql" "mariadb" "redis" "sentinel" "mongodb" "mongo" "amqp" "kafka" "memcached" "zookeeper" "cassandra" "cql" }}
-            {{ $dataStorePorts := list 1433 1521 2181 3306 5432 5672 6379 9042 9092 11211 26379 27017 }}
+            {{ $dataStoreWords := list "postgresql" "postgres" "mysql" "mariadb" "redis" "valkey" "sentinel" "mongodb" "mongo" "amqp" "kafka" "memcached" "zookeeper" "cassandra" "cql" "etcd" "elasticsearch" "opensearch" }}
+            {{ $protocolWords := list "tcp" "udp" "ssh" "sftp" "ftp" "smtp" "imap" "pop3" "ldap" "ldaps" "dns" "mqtt" "nats" "epmd" "dist" "statsd" "syslog" "rtmp" "sip" "h2c" }}
+            {{ $dataStorePorts := list 1433 1521 2181 2379 3306 5432 5672 6379 9042 9092 11211 26379 27017 }}
+            {{ $protocolPorts := list 22 25 53 389 636 1883 4222 4369 }}
             {{ $routeService := "" }}
             {{ $routePort := 0 }}
             {{ $bestRank := 99 }}
@@ -116,38 +127,51 @@ spec:
             {{ range $serviceName := $serviceNames }}
             {{- $service := get $servicesByName $serviceName }}
             {{- $headless := eq (dig "spec" "clusterIP" "" $service) "None" }}
-            {{- $tcpPorts := list }}
-            {{- range $port := dig "spec" "ports" (list) $service }}
-            {{- if eq (dig "protocol" "TCP" $port) "TCP" }}{{ $tcpPorts = append $tcpPorts $port }}{{ end }}
+            {{- $serviceSuffix := ternary "" (trimPrefix (printf "%s-" $releaseName) $serviceName) (eq $serviceName $releaseName) }}
+            {{- $serviceRank := ternary 10 20 (eq $serviceSuffix "") }}
+            {{- range $word := splitList "-" $serviceSuffix }}
+            {{- if has $word $frontDoorServiceWords }}{{ $serviceRank = 0 }}{{ end }}
             {{- end }}
-            {{- range $port := $tcpPorts }}
+            {{/* Data stores and back-office Services lose even with a front-door word (redis-server, admin-ui). */}}
+            {{- range $word := splitList "-" $serviceSuffix }}
+            {{- if or (has $word $backOfficeWords) (has $word $dataStoreWords) }}{{ $serviceRank = 30 }}{{ end }}
+            {{- end }}
+            {{/* Eligible ports: TCP and not TLS, back-office, data store or another protocol. */}}
+            {{- $eligiblePorts := list }}
+            {{- range $port := dig "spec" "ports" (list) $service }}
+            {{- if eq (dig "protocol" "TCP" $port) "TCP" }}
             {{- $portName := dig "name" "" $port | lower }}
             {{- $portNumber := dig "port" 0 $port | int }}
             {{- $appProtocol := dig "appProtocol" "" $port | lower }}
-            {{- $words := splitList "-" $portName }}
-            {{- $frontDoor := false }}
-            {{- $backOffice := false }}
-            {{- $dataStore := has $portNumber $dataStorePorts }}
-            {{- range $word := $words }}
-            {{- if has $word $frontDoorWords }}{{ $frontDoor = true }}{{ end }}
-            {{- if has $word $backOfficeWords }}{{ $backOffice = true }}{{ end }}
-            {{- if has $word $dataStoreWords }}{{ $dataStore = true }}{{ end }}
+            {{- $excluded := or (has $portNumber $dataStorePorts) (has $portNumber $protocolPorts) (has $appProtocol (list "kubernetes.io/h2c" "grpc")) }}
+            {{- range $word := splitList "-" $portName }}
+            {{- if or (has $word $backOfficeWords) (has $word $dataStoreWords) (has $word $protocolWords) }}{{ $excluded = true }}{{ end }}
             {{- end }}
             {{/* The gateway terminates TLS; it can't reach a TLS backend. ("https" also starts with "http".) */}}
-            {{- $tlsPort := or (eq $portName "https") (hasPrefix "https-" $portName) (has $appProtocol (list "https" "kubernetes.io/wss")) (eq $portNumber 443) }}
+            {{- if or (eq $portName "https") (hasPrefix "https-" $portName) (has $appProtocol (list "https" "kubernetes.io/wss")) (eq $portNumber 443) }}{{ $excluded = true }}{{ end }}
+            {{- if or (not $excluded) (eq $portNumber $wantPort) }}{{ $eligiblePorts = append $eligiblePorts $port }}{{ end }}
+            {{- end }}
+            {{- end }}
+            {{- range $port := $eligiblePorts }}
+            {{- $portName := dig "name" "" $port | lower }}
+            {{- $portNumber := dig "port" 0 $port | int }}
+            {{- $appProtocol := dig "appProtocol" "" $port | lower }}
+            {{- $frontDoor := false }}
+            {{- range $word := splitList "-" $portName }}{{ if has $word $frontDoorWords }}{{ $frontDoor = true }}{{ end }}{{ end }}
             {{- $rank := 99 }}
             {{- if $wantPort }}
             {{- if eq $portNumber $wantPort }}{{ $rank = 0 }}{{ end }}
-            {{- else if not (or $tlsPort $backOffice $dataStore) }}
-            {{- if has $appProtocol (list "http" "kubernetes.io/ws") }}{{ $rank = 1 }}
+            {{- else if has $appProtocol (list "http" "kubernetes.io/ws") }}{{ $rank = 1 }}
             {{- else if eq $portName "http" }}{{ $rank = 2 }}
             {{- else if hasPrefix "http" $portName }}{{ $rank = 3 }}
             {{- else if eq $portNumber 80 }}{{ $rank = 4 }}
             {{- else if eq $portNumber 8080 }}{{ $rank = 5 }}
             {{- else if $frontDoor }}{{ $rank = 6 }}
-            {{- else if eq (len $tcpPorts) 1 }}{{ $rank = 7 }}
+            {{- else if eq (len $eligiblePorts) 1 }}{{ $rank = 7 }}
             {{- end }}
-            {{- if and (ne $rank 99) (or $headless (has "tcp" $words)) }}{{ $rank = add $rank 50 }}{{ end }}
+            {{- if ne $rank 99 }}
+            {{- $rank = add $rank $serviceRank }}
+            {{- if $headless }}{{ $rank = add $rank 50 }}{{ end }}
             {{- end }}
             {{- if and (eq $serviceName $previousService) (eq $portNumber $previousPort) }}{{ $previousRank = $rank }}{{ end }}
             {{- if or (lt $rank $bestRank) (and (eq $rank $bestRank) (ne $rank 99) (lt $portNumber $routePort)) }}
@@ -159,10 +183,11 @@ spec:
             {{- end }}
             {{ $backendFound := ne $bestRank 99 }}
 
-            {{/* Keep the live backend while it qualifies (a last-resort one yields to a proper one).
+            {{/* Keep the live backend while it ties the best, so ties never flip it. A better one takes
+                 over: Helm creates Services one by one, so an early pick may have seen only some.
                  If nothing qualifies, hold the route instead of taking the endpoint down. */}}
             {{ $routeHeld := and $gatewayEnabled $previousService (not $backendFound) }}
-            {{ if or $routeHeld (and (ne $previousRank 99) (or (lt $previousRank 50) (ge $bestRank 50))) }}
+            {{ if or $routeHeld (and (ne $previousRank 99) (eq $previousRank $bestRank)) }}
             {{ $routeService = $previousService }}
             {{ $routePort = $previousPort }}
             {{ end }}
@@ -217,10 +242,21 @@ spec:
             {{- if $wantPort }}{{ $wanted = append $wanted (printf "port %d" $wantPort) }}{{ end }}
             {{- $problems = append $problems (printf "no backend matches %s" (join ", " $wanted)) }}
             {{- else if not $backendFound }}
-            {{- $problems = append $problems "no HTTP Service found; set Public Endpoint Port or Service" }}
+            {{/* Detection failed: name the candidates so the user can pick Service and Port. */}}
+            {{- $candidates := list }}
+            {{- range $name := $serviceNames }}
+            {{- $ports := list }}
+            {{- range $port := dig "spec" "ports" (list) (get $servicesByName $name) }}{{ $ports = append $ports (printf "%d" (dig "port" 0 $port | int)) }}{{ end }}
+            {{- $candidates = append $candidates (printf "%s:%s" $name (join "/" $ports)) }}
+            {{- end }}
+            {{- if $candidates }}
+            {{- $problems = append $problems (printf "could not detect which Service serves HTTP (release Services: %s); set Public Endpoint Service and Port" (join ", " $candidates)) }}
+            {{- else if $releaseState }}
+            {{- $problems = append $problems "the release has no Services to detect; set Public Endpoint Service and Port" }}
+            {{- end }}
             {{- end }}
             {{- if $routeHeld }}
-            {{- $problems = append $problems (printf "backend %s:%d gone; keeping the existing route" $routeService $routePort) }}
+            {{- $problems = append $problems (printf "keeping the existing route to %s:%d" $routeService $routePort) }}
             {{- end }}
             {{- end }}
 
@@ -266,6 +302,12 @@ spec:
               annotations:
                 crossplane.io/external-name: {{ $releaseName }}
                 {{ setResourceNameAnnotation "helm-release" }}
+                {{/* provider-helm only reacts to spec, label and annotation changes, else waits for its poll (10m).
+                     values-sha256: a values edit only changes the values Secret; this upgrades right away.
+                     revision: after an upgrade the provider keeps Ready=False until its next poll;
+                     echoing the new revision makes it re-observe and report Ready right away. */}}
+                catalog.cluster.local/values-sha256: {{ sha256sum $values | quote }}
+                catalog.cluster.local/revision: {{ $revision | quote }}
             spec:
               providerConfigRef:
                 kind: ClusterProviderConfig
@@ -331,7 +373,8 @@ spec:
 
             {{ if $gatewayEnabled }}
             ---
-            {{/* The named Service, else Services labelled with the release name; this namespace only. */}}
+            {{/* The named Service, else all Services in this namespace (filtered to this release above:
+                 a label selector can't match Helm's release annotation). */}}
             apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
             kind: ExtraResources
             requirements:
@@ -341,9 +384,6 @@ spec:
                 namespace: {{ $namespace | quote }}
             {{- if $wantService }}
                 matchName: {{ $wantService | quote }}
-            {{- else }}
-                matchLabels:
-                  app.kubernetes.io/instance: {{ $releaseName | quote }}
             {{- end }}
 
             ---
@@ -361,6 +401,9 @@ spec:
                 gotemplating.fn.crossplane.io/ready: {{ ternary "True" "False" $listenerSetProgrammed | quote }}
                 # cert-manager issues the certificate into the TLS Secret.
                 cert-manager.io/cluster-issuer: {{ $certificateIssuer | quote }}
+                # Born with the composed-resource annotation: Crossplane refuses to observe an unannotated
+                # resource it already references, which would wedge the instance if an adoption apply failed.
+                cert-manager.io/secret-template: {{ dict "annotations" (dict "crossplane.io/composition-resource-name" "tls-secret") | toJson | quote }}
             spec:
               parentRef:
                 group: gateway.networking.k8s.io
@@ -381,6 +424,50 @@ spec:
                       - group: ""
                         kind: Secret
                         name: {{ $tlsSecretName | quote }}
+
+            {{/* cert-manager creates the TLS Secret without an owner, so it would outlive the instance.
+                 Adopt it once it exists (a programmed listener proves that; afterwards it stays adopted) so
+                 it is deleted with the instance or endpoint. Metadata only: data stays cert-manager's. */}}
+            {{ if or $listenerSetProgrammed (dig "resources" "tls-secret" "resource" "" .observed) }}
+            ---
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              name: {{ $tlsSecretName }}
+              namespace: {{ $namespace }}
+              labels:
+                catalog.cluster.local/kind: {{ $kind }}
+                catalog.cluster.local/name: {{ $xrName }}
+              annotations:
+                {{ setResourceNameAnnotation "tls-secret" }}
+            {{/* Never created from here: a TLS Secret without keys is rejected, so a missing one waits for cert-manager. */}}
+            type: kubernetes.io/tls
+            ---
+            {{/* Keeps the Secret until the listener (and the Certificate cert-manager hangs off it) is gone,
+                 so cert-manager can't re-issue it into an orphan. */}}
+            apiVersion: protection.crossplane.io/v1beta1
+            kind: Usage
+            metadata:
+              name: {{ printf "%s-usage" $tlsSecretName }}
+              namespace: {{ $namespace }}
+              labels:
+                catalog.cluster.local/kind: {{ $kind }}
+                catalog.cluster.local/name: {{ $xrName }}
+              annotations:
+                {{ setResourceNameAnnotation "tls-secret-usage" }}
+            spec:
+              replayDeletion: true
+              of:
+                apiVersion: v1
+                kind: Secret
+                resourceRef:
+                  name: {{ $tlsSecretName }}
+              by:
+                apiVersion: gateway.networking.k8s.io/v1
+                kind: ListenerSet
+                resourceRef:
+                  name: {{ $listenerSetName }}
+            {{ end }}
 
             {{ if $composeRoute }}
             ---
@@ -421,15 +508,11 @@ spec:
                 {{ setResourceNameAnnotation "connection-secret" }}
             data:
               release: {{ $releaseName | b64enc }}
-              namespace: {{ $namespace | b64enc }}
               chart: {{ $chart.name | b64enc }}
               version: {{ $chart.version | b64enc }}
             {{ if $endpointLive }}
               host: {{ $hostname | b64enc }}
               url: {{ $endpointURL | b64enc }}
-            {{ end }}
-            {{ if $releaseState }}
-              state: {{ $releaseState | b64enc }}
             {{ end }}
 
             ---

@@ -18,13 +18,12 @@ spec:
           - key: UPSTREAM_PORT
             value: "8443"
     gateway:
+      # Service and port are detected (podinfo's "http" port, 9898).
       enabled: true
-      # podinfo doesn't label its Service with app.kubernetes.io/instance, so name it.
-      service: my-helmchart-podinfo
     values: |
       replicaCount: 1
       ui:
-        message: Deployed by the HelmChart catalog item
+        message: Deployed by the HelmChart catalog item at ${PUBLIC_URL}
       extraEnvs:
         - name: UPSTREAM_TOKEN
           valueFrom:

@@ -116,6 +116,8 @@ rules:
 
 Without it, HelmChart instances with **Expose Publicly** enabled fail to compose their listener and route.
 
+The listener's certificate comes from the ClusterIssuer named by `certificateIssuer` in the `environment` EnvironmentConfig (default `letsencrypt`, which yoloplane and zuluplane provide). On localplane `letsencrypt` is ACME staging and can't validate `*.127.0.0.1.nip.io`, so the EnvironmentConfig needs `certificateIssuer: localplane-ca`; crossplane-operator doesn't write that key yet.
+
 In order that the catalog actually shows your items, the Crossplane definition will need a specif label and some specific annotations (e.g. containing an encoded .svc catalog icon, description, etc.). Please refer to the existing items in the `package` folder for examples.
 
 ## How to add a new catalog item
