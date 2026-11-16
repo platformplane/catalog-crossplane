@@ -117,7 +117,7 @@ spec:
             {{- end }}
             {{- end }}
 
-            {{ $endpointLive := and $routeAccepted (not $listenerConflict) }}
+            {{ $endpointLive := and $listenerProgrammed $routeAccepted (not $listenerConflict) }}
             {{ $message := $problems | uniq | join "; " | trunc 1024 }}
 
             apiVersion: v1
@@ -316,7 +316,6 @@ spec:
               {{- if $endpointLive }}
               host: {{ $hostname | b64enc }}
               url: {{ $url | b64enc }}
-              adminUrl: {{ printf "%s/admin/master/console/" $url | b64enc }}
               {{- end }}
             ---
             apiVersion: {{ $xr.apiVersion }}
