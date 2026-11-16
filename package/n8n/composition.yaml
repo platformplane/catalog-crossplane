@@ -1,0 +1,659 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: n8n.catalog.cluster.local
+spec:
+  compositeTypeRef:
+    apiVersion: catalog.cluster.local/v2
+    kind: N8n
+  writeConnectionSecretsToNamespace: crossplane-system
+
+  mode: Pipeline
+  pipeline:
+    - step: get-environment-configs
+      functionRef:
+        name: crossplane-contrib-function-environment-configs
+      input:
+        apiVersion: environmentconfigs.fn.crossplane.io/v1beta1
+        kind: Input
+        spec:
+          environmentConfigs:
+            - type: Reference
+              ref:
+                name: environment
+
+    - step: n8n
+      functionRef:
+        name: crossplane-contrib-function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{ $xr := .observed.composite.resource }}
+            {{ $xrName := $xr.metadata.name }}
+            {{ $namespace := $xr.metadata.namespace }}
+            {{/* Every parameter has an XRD default, so only the optional SMTP secret needs a fallback. */}}
+            {{ $p := $xr.spec.parameters }}
+            {{ $smtpSecretName := dig "smtp" "secretName" "" $p }}
+
+            {{/* "main" is the n8n container, "runner" the sidecar that executes Code nodes. */}}
+            {{ $profile := index (dict
+              "small" (dict
+                "main" (dict "requests" (dict "cpu" "200m" "memory" "512Mi") "limits" (dict "cpu" "1" "memory" "1Gi"))
+                "runner" (dict "requests" (dict "cpu" "100m" "memory" "256Mi") "limits" (dict "cpu" "500m" "memory" "512Mi")))
+              "medium" (dict
+                "main" (dict "requests" (dict "cpu" "500m" "memory" "1Gi") "limits" (dict "cpu" "2" "memory" "2Gi"))
+                "runner" (dict "requests" (dict "cpu" "250m" "memory" "512Mi") "limits" (dict "cpu" "1" "memory" "1Gi")))
+              "large" (dict
+                "main" (dict "requests" (dict "cpu" "1" "memory" "2Gi") "limits" (dict "cpu" "4" "memory" "4Gi"))
+                "runner" (dict "requests" (dict "cpu" "500m" "memory" "1Gi") "limits" (dict "cpu" "2" "memory" "2Gi")))
+            ) $p.resourceProfile }}
+
+            {{ $host := regexReplaceAll "[^a-z0-9-]" ($xrName | lower) "" }}
+            {{ $zone := index $.context "apiextensions.crossplane.io/environment" "zone" }}
+            {{ $hostname := printf "%s.%s" $host $zone }}
+            {{ $url := printf "https://%s" $hostname }}
+
+            {{/* Every instance gets a listener on the shared platform gateway, which terminates TLS. */}}
+            {{ $environment := index $.context "apiextensions.crossplane.io/environment" }}
+            {{ $gatewayName := dig "gatewayName" "default-gateway" $environment }}
+            {{ $gatewayNamespace := dig "gatewayNamespace" "envoy" $environment }}
+            {{ $certificateIssuer := dig "certificateIssuer" "letsencrypt" $environment }}
+            {{ $listenerSetName := printf "%s-listenerset" $xrName }}
+            {{ $httpRouteName := printf "%s-httproute" $xrName }}
+
+            {{/* Generated secrets are read back from the previous render so they stay stable. */}}
+            {{ $n8nValues := dig "resources" "helm-release" "resource" "spec" "forProvider" "values" dict .observed }}
+            {{ $sandboxValues := dig "resources" "sandbox" "resource" "spec" "forProvider" "values" dict .observed }}
+            {{ $encryptionKey := dig "secretRefs" "env" "N8N_ENCRYPTION_KEY" (randAlphaNum 64) $n8nValues }}
+            {{ $runnersAuthToken := dig "taskRunners" "authToken" "value" (randAlphaNum 64) $n8nValues }}
+            {{ $sandboxApiKey := dig "auth" "generated" "apiKeys" (randAlphaNum 64) $sandboxValues }}
+            {{ $sandboxRegistrationToken := dig "auth" "generated" "runnerRegistrationToken" (randAlphaNum 64) $sandboxValues }}
+            {{ $sandboxRunnerApiKey := dig "auth" "generated" "runnerApiKey" (randAlphaNum 64) $sandboxValues }}
+
+            {{ $ownerSecretName := printf "%s-owner" $xrName }}
+            {{ $ownerSecret := dig "resources" "owner-secret" "resource" "spec" "forProvider" "manifest" "stringData" dict .observed }}
+            {{ $ownerEmail := dig "email" (printf "admin@%s" $hostname) $ownerSecret }}
+            {{ $ownerPassword := dig "password" (randAlphaNum 20) $ownerSecret }}
+            {{ $ownerPasswordHash := dig "passwordHash" "" $ownerSecret }}
+            {{ if not $ownerPasswordHash }}{{ $ownerPasswordHash = bcrypt $ownerPassword }}{{ end }}
+
+            {{ $sandbox := $p.enableSandbox }}
+            {{ $sandboxName := printf "%s-sandbox" $xrName }}
+            {{ $labels := dict "catalog.cluster.local/kind" $xr.kind "catalog.cluster.local/name" $xrName }}
+
+            {{/* Web search for the n8n Assistant and agents: a private SearXNG next to n8n. */}}
+            {{ $webSearch := $p.enableWebSearch }}
+            {{ $searxngName := printf "%s-searxng" $xrName }}
+            {{ $searxngLabels := merge (dict "app.kubernetes.io/name" "searxng" "app.kubernetes.io/instance" $xrName) $labels }}
+            {{/* n8n queries the JSON API, which SearXNG disables by default. */}}
+            {{/* The limiter is off because only this instance's n8n pod can reach the service. */}}
+            {{ $searxngSettings := toYaml (dict
+              "use_default_settings" true
+              "general" (dict "instance_name" "n8n web search")
+              "server" (dict "limiter" false "public_instance" false "image_proxy" false)
+              "search" (dict "formats" (list "html" "json"))
+            ) }}
+            {{ $searxngSecret := dig "resources" "searxng-secret" "resource" "spec" "forProvider" "manifest" "stringData" "secret" (randAlphaNum 64) .observed }}
+
+            {{ if $sandbox }}
+            {{/* Private CA for the sandbox service's mTLS between its API and runner. */}}
+            {{ range $ca := list
+              (dict "kind" "Issuer" "name" (printf "%s-selfsigned" $sandboxName) "spec" (dict "selfSigned" dict))
+              (dict "kind" "Certificate" "name" (printf "%s-ca" $sandboxName) "spec" (dict
+                "isCA" true
+                "commonName" (printf "%s-ca" $sandboxName)
+                "secretName" (printf "%s-ca" $sandboxName)
+                "duration" "87600h"
+                "privateKey" (dict "algorithm" "ECDSA" "size" 256)
+                "issuerRef" (dict "kind" "Issuer" "name" (printf "%s-selfsigned" $sandboxName))))
+              (dict "kind" "Issuer" "name" (printf "%s-ca" $sandboxName) "spec" (dict "ca" (dict "secretName" (printf "%s-ca" $sandboxName))))
+            }}
+            {{ $resourceName := printf "%s-%s" $ca.name ($ca.kind | lower) }}
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $resourceName }}
+              annotations:
+                {{ setResourceNameAnnotation (trimPrefix (printf "%s-" $xrName) $resourceName) }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: cert-manager.io/v1
+                  kind: {{ $ca.kind }}
+                  metadata:
+                    name: {{ $ca.name }}
+                    namespace: {{ $namespace }}
+                    labels: {{ $labels | toJson }}
+                  spec: {{ $ca.spec | toJson }}
+            ---
+            {{ end }}
+            {{ end }}
+
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $ownerSecretName }}
+              annotations:
+                {{ setResourceNameAnnotation "owner-secret" }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: Secret
+                  metadata:
+                    name: {{ $ownerSecretName }}
+                    namespace: {{ $namespace }}
+                    labels: {{ $labels | toJson }}
+                  stringData:
+                    email: {{ $ownerEmail | quote }}
+                    password: {{ $ownerPassword | quote }}
+                    passwordHash: {{ $ownerPasswordHash | quote }}
+            ---
+            apiVersion: helm.m.crossplane.io/v1beta1
+            kind: Release
+            metadata:
+              name: {{ $xrName }}
+              namespace: {{ $namespace }}
+              annotations:
+                crossplane.io/external-name: {{ $xrName }}
+                {{ setResourceNameAnnotation "helm-release" }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-helm
+              forProvider:
+                wait: true
+                chart:
+                  name: n8n
+                  repository: oci://ghcr.io/n8n-io/n8n-helm-chart
+                  version: 1.19.0
+                namespace: {{ $namespace }}
+                values:
+                  fullnameOverride: {{ $xrName }}
+                  image:
+                    tag: {{ $p.version | quote }}
+                  commonLabels: {{ $labels | toJson }}
+                  queueMode:
+                    enabled: false
+                  database:
+                    type: sqlite
+                    useExternal: false
+                  persistence:
+                    enabled: true
+                    size: {{ $p.size }}
+                  strategy:
+                    type: Recreate
+                  pdb:
+                    enabled: false
+                  resources:
+                    main: {{ $profile.main | toJson }}
+                  serviceAccount:
+                    name: {{ $xrName }}
+                    automountServiceAccountToken: false
+                  # Code nodes (JavaScript and Python) run in a task-runner sidecar.
+                  taskRunners:
+                    enabled: true
+                    authToken:
+                      value: {{ $runnersAuthToken | quote }}
+                    resources: {{ $profile.runner | toJson }}
+                    customConfig:
+                      enabled: true
+                      configMapName: {{ $xrName }}-task-runners
+                  secretRefs:
+                    env:
+                      N8N_ENCRYPTION_KEY: {{ $encryptionKey | quote }}
+                      N8N_HOST: {{ $hostname | quote }}
+                      N8N_PROTOCOL: "https"
+                      {{- if $sandbox }}
+                      # Kept in this release's Secret so the n8n pod does not wait on the sandbox release.
+                      N8N_SANDBOX_SERVICE_API_KEY: {{ $sandboxApiKey | quote }}
+                      {{- end }}
+                  config:
+                    timezone: {{ $p.timezone | quote }}
+                    extraEnv:
+                      - name: GENERIC_TIMEZONE
+                        value: {{ $p.timezone | quote }}
+                      - name: N8N_PROXY_HOPS
+                        value: "1"
+                      - name: N8N_INSTANCE_OWNER_MANAGED_BY_ENV
+                        value: "true"
+                      - name: N8N_INSTANCE_OWNER_EMAIL
+                        valueFrom:
+                          secretKeyRef:
+                            name: {{ $ownerSecretName | quote }}
+                            key: email
+                      - name: N8N_INSTANCE_OWNER_FIRST_NAME
+                        value: Platform
+                      - name: N8N_INSTANCE_OWNER_LAST_NAME
+                        value: Admin
+                      - name: N8N_INSTANCE_OWNER_PASSWORD_HASH
+                        valueFrom:
+                          secretKeyRef:
+                            name: {{ $ownerSecretName | quote }}
+                            key: passwordHash
+                      # n8n Assistant and agent knowledge bases run code in the sandbox service below.
+                      # The model provider and API key are entered in the n8n AI settings.
+                      - name: N8N_INSTANCE_AI_SANDBOX_ENABLED
+                        value: {{ $sandbox | quote }}
+                      - name: N8N_AGENTS_AI_SANDBOX_ENABLED
+                        value: {{ $sandbox | quote }}
+                      {{- if $webSearch }}
+                      # Web search for the n8n Assistant, served by the SearXNG below.
+                      - name: N8N_INSTANCE_AI_SEARXNG_URL
+                        value: {{ printf "http://%s:8080" $searxngName | quote }}
+                      {{- end }}
+                      {{- if $sandbox }}
+                      - name: N8N_INSTANCE_AI_SANDBOX_PROVIDER
+                        value: n8n-sandbox
+                      - name: N8N_SANDBOX_SERVICE_URL
+                        value: {{ printf "http://%s-api:8080" $sandboxName | quote }}
+                      - name: N8N_SANDBOX_SERVICE_API_KEY
+                        valueFrom:
+                          secretKeyRef:
+                            name: {{ $xrName | quote }}
+                            key: N8N_SANDBOX_SERVICE_API_KEY
+                      {{- end }}
+                      {{- if $smtpSecretName }}
+                      - name: N8N_EMAIL_MODE
+                        value: smtp
+                    extraEnvFrom:
+                      - secretRef:
+                          name: {{ $smtpSecretName | quote }}
+                      {{- end }}
+                  executions:
+                    data:
+                      pruning:
+                        maxAge: {{ mul $p.retention.days 24 }}
+                        maxCount: {{ $p.retention.maxExecutions | int }}
+                    concurrency:
+                      productionLimit: {{ $p.maxConcurrentExecutions | int }}
+                  # Exposed through the gateway listener and route below, not the chart's Ingress.
+                  ingress:
+                    enabled: false
+                  # The runners image's own launcher config (keep it in sync with the n8n version), with
+                  # wider module allowlists: JavaScript only allows crypto by default and Python no
+                  # standard-library module at all. Process, file-system and socket modules stay blocked.
+                  extraObjects:
+                    - apiVersion: v1
+                      kind: ConfigMap
+                      metadata:
+                        name: {{ $xrName }}-task-runners
+                      data:
+                        n8n-task-runners.json: |
+                          {"task-runners":[
+                            {"runner-type":"javascript","workdir":"/home/runner","command":"/usr/local/bin/node",
+                             "args":["--disallow-code-generation-from-strings","--disable-proto=delete","--no-experimental-webstorage","/opt/runners/task-runner-javascript/dist/start.js"],
+                             "health-check-server-port":"5681",
+                             "allowed-env":["PATH","GENERIC_TIMEZONE","NODE_OPTIONS","NODE_PATH","N8N_RUNNERS_AUTO_SHUTDOWN_TIMEOUT","N8N_RUNNERS_GRACEFUL_SHUTDOWN_TIMEOUT","N8N_RUNNERS_SHUTDOWN_FORCE_KILL_MARGIN","N8N_RUNNERS_TASK_TIMEOUT","N8N_RUNNERS_MAX_CONCURRENCY","N8N_SENTRY_DSN","N8N_VERSION","ENVIRONMENT","DEPLOYMENT_NAME","HOME"],
+                             "env-overrides":{
+                               "NODE_FUNCTION_ALLOW_BUILTIN":"assert,buffer,crypto,events,path,querystring,string_decoder,url,util,zlib",
+                               "NODE_FUNCTION_ALLOW_EXTERNAL":"moment",
+                               "N8N_RUNNERS_HEALTH_CHECK_SERVER_HOST":"0.0.0.0"}},
+                            {"runner-type":"python","workdir":"/home/runner","command":"/opt/runners/task-runner-python/.venv/bin/python",
+                             "args":["-I","-B","-X","disable_remote_debug","-m","src.main"],
+                             "health-check-server-port":"5682",
+                             "allowed-env":["PATH","N8N_RUNNERS_LAUNCHER_LOG_LEVEL","N8N_RUNNERS_AUTO_SHUTDOWN_TIMEOUT","N8N_RUNNERS_GRACEFUL_SHUTDOWN_TIMEOUT","N8N_RUNNERS_TASK_TIMEOUT","N8N_RUNNERS_MAX_CONCURRENCY","N8N_SENTRY_DSN","N8N_VERSION","ENVIRONMENT","DEPLOYMENT_NAME"],
+                             "env-overrides":{
+                               "N8N_RUNNERS_STDLIB_ALLOW":"base64,binascii,bisect,calendar,collections,copy,csv,dataclasses,datetime,decimal,difflib,enum,fractions,functools,gzip,hashlib,heapq,hmac,html,ipaddress,itertools,json,math,operator,pprint,random,re,secrets,statistics,string,textwrap,time,typing,unicodedata,urllib,uuid,xml,zlib,zoneinfo",
+                               "N8N_RUNNERS_EXTERNAL_ALLOW":""}}
+                          ]}
+            {{ if $sandbox }}
+            ---
+            apiVersion: helm.m.crossplane.io/v1beta1
+            kind: Release
+            metadata:
+              name: {{ $sandboxName }}
+              namespace: {{ $namespace }}
+              annotations:
+                crossplane.io/external-name: {{ $sandboxName }}
+                {{ setResourceNameAnnotation "sandbox" }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-helm
+              forProvider:
+                wait: true
+                chart:
+                  name: n8n-sandbox-service
+                  repository: oci://ghcr.io/n8n-io/n8n-sandbox-service
+                  version: 0.12.0
+                namespace: {{ $namespace }}
+                values:
+                  fullnameOverride: {{ $sandboxName }}
+                  commonLabels: {{ $labels | toJson }}
+                  auth:
+                    generated:
+                      apiKeys: {{ $sandboxApiKey | quote }}
+                      runnerRegistrationToken: {{ $sandboxRegistrationToken | quote }}
+                      runnerApiKey: {{ $sandboxRunnerApiKey | quote }}
+                      runnerApiKeys: {{ $sandboxRunnerApiKey | quote }}
+                  tls:
+                    mode: certManager
+                    certManager:
+                      issuerRef:
+                        name: {{ $sandboxName }}-ca
+                    certificates:
+                      apiRegistrationServer:
+                        secretName: {{ $sandboxName }}-api-registration-tls
+                      apiControlClient:
+                        secretName: {{ $sandboxName }}-api-control-client-tls
+                      runnerRegistrationClient:
+                        secretName: {{ $sandboxName }}-runner-registration-tls
+                      runnerControlServer:
+                        secretName: {{ $sandboxName }}-runner-control-tls
+                  # Only this instance's n8n pod may call the sandbox API.
+                  networkPolicy:
+                    enabled: true
+                    api:
+                      httpIngressFrom:
+                        - podSelector:
+                            matchLabels:
+                              app.kubernetes.io/name: n8n
+                              app.kubernetes.io/instance: {{ $xrName }}
+                  # Docker-in-Docker needs privileges; sysbox is not available on the platform nodes.
+                  runner:
+                    isolation: privileged
+                    acknowledgePrivileged: true
+                    config:
+                      capacityTotal: "4"
+                    dockerDataRoot:
+                      emptyDir:
+                        sizeLimit: 20Gi
+                    resources:
+                      requests:
+                        cpu: 250m
+                        memory: 512Mi
+                      limits:
+                        cpu: "2"
+                        memory: 3Gi
+            {{ end }}
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $listenerSetName }}
+              annotations:
+                {{ setResourceNameAnnotation "listener-set" }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: gateway.networking.k8s.io/v1
+                  kind: ListenerSet
+                  metadata:
+                    name: {{ $listenerSetName }}
+                    namespace: {{ $namespace }}
+                    labels: {{ $labels | toJson }}
+                    annotations:
+                      # cert-manager issues the certificate into the TLS Secret.
+                      cert-manager.io/cluster-issuer: {{ $certificateIssuer | quote }}
+                  spec:
+                    parentRef:
+                      group: gateway.networking.k8s.io
+                      kind: Gateway
+                      name: {{ $gatewayName | quote }}
+                      namespace: {{ $gatewayNamespace | quote }}
+                    listeners:
+                      - name: https
+                        hostname: {{ $hostname | quote }}
+                        port: 443
+                        protocol: HTTPS
+                        allowedRoutes:
+                          namespaces:
+                            from: Same
+                        tls:
+                          mode: Terminate
+                          certificateRefs:
+                            - group: ""
+                              kind: Secret
+                              name: {{ $xrName }}-tls
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $httpRouteName }}
+              annotations:
+                {{ setResourceNameAnnotation "http-route" }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: gateway.networking.k8s.io/v1
+                  kind: HTTPRoute
+                  metadata:
+                    name: {{ $httpRouteName }}
+                    namespace: {{ $namespace }}
+                    labels: {{ $labels | toJson }}
+                  spec:
+                    parentRefs:
+                      - group: gateway.networking.k8s.io
+                        kind: ListenerSet
+                        name: {{ $listenerSetName }}
+                    hostnames:
+                      - {{ $hostname | quote }}
+                    rules:
+                      # Production webhooks can wait for long-running workflows to finish.
+                      - timeouts:
+                          request: 3600s
+                        backendRefs:
+                          # The n8n chart's Service: <fullnameOverride>-main on port 5678.
+                          - group: ""
+                            kind: Service
+                            name: {{ $xrName }}-main
+                            port: 5678
+            {{ if $webSearch }}
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $searxngName }}-secret
+              annotations:
+                {{ setResourceNameAnnotation "searxng-secret" }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: Secret
+                  metadata:
+                    name: {{ $searxngName }}
+                    namespace: {{ $namespace }}
+                    labels: {{ $searxngLabels | toJson }}
+                  stringData:
+                    secret: {{ $searxngSecret | quote }}
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $searxngName }}-config
+              annotations:
+                {{ setResourceNameAnnotation "searxng-config" }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: ConfigMap
+                  metadata:
+                    name: {{ $searxngName }}
+                    namespace: {{ $namespace }}
+                    labels: {{ $searxngLabels | toJson }}
+                  data:
+                    settings.yml: {{ $searxngSettings | toJson }}
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $searxngName }}-deployment
+              annotations:
+                {{ setResourceNameAnnotation "searxng-deployment" }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: apps/v1
+                  kind: Deployment
+                  metadata:
+                    name: {{ $searxngName }}
+                    namespace: {{ $namespace }}
+                    labels: {{ $searxngLabels | toJson }}
+                  spec:
+                    replicas: 1
+                    selector:
+                      matchLabels:
+                        app.kubernetes.io/name: searxng
+                        app.kubernetes.io/instance: {{ $xrName }}
+                    template:
+                      metadata:
+                        labels: {{ $searxngLabels | toJson }}
+                        annotations:
+                          # Restart when the settings change; the file is only read at start-up.
+                          checksum/settings: {{ $searxngSettings | sha256sum | quote }}
+                      spec:
+                        automountServiceAccountToken: false
+                        containers:
+                          - name: searxng
+                            image: docker.io/searxng/searxng:2026.11.15-2d500cb6b
+                            ports:
+                              - name: http
+                                containerPort: 8080
+                            env:
+                              - name: SEARXNG_SECRET
+                                valueFrom:
+                                  secretKeyRef:
+                                    name: {{ $searxngName }}
+                                    key: secret
+                            volumeMounts:
+                              - name: settings
+                                mountPath: /etc/searxng/settings.yml
+                                subPath: settings.yml
+                                readOnly: true
+                            readinessProbe:
+                              httpGet:
+                                path: /healthz
+                                port: http
+                            livenessProbe:
+                              httpGet:
+                                path: /healthz
+                                port: http
+                              initialDelaySeconds: 30
+                            resources:
+                              requests:
+                                cpu: 50m
+                                memory: 192Mi
+                              limits:
+                                cpu: "1"
+                                memory: 512Mi
+                            securityContext:
+                              allowPrivilegeEscalation: false
+                              capabilities:
+                                drop:
+                                  - ALL
+                        volumes:
+                          - name: settings
+                            configMap:
+                              name: {{ $searxngName }}
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $searxngName }}-service
+              annotations:
+                {{ setResourceNameAnnotation "searxng-service" }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: Service
+                  metadata:
+                    name: {{ $searxngName }}
+                    namespace: {{ $namespace }}
+                    labels: {{ $searxngLabels | toJson }}
+                  spec:
+                    selector:
+                      app.kubernetes.io/name: searxng
+                      app.kubernetes.io/instance: {{ $xrName }}
+                    ports:
+                      - name: http
+                        port: 8080
+                        targetPort: http
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $searxngName }}-networkpolicy
+              annotations:
+                {{ setResourceNameAnnotation "searxng-networkpolicy" }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: networking.k8s.io/v1
+                  kind: NetworkPolicy
+                  metadata:
+                    name: {{ $searxngName }}
+                    namespace: {{ $namespace }}
+                    labels: {{ $searxngLabels | toJson }}
+                  spec:
+                    # Only this instance's n8n pod may query the search service.
+                    podSelector:
+                      matchLabels:
+                        app.kubernetes.io/name: searxng
+                        app.kubernetes.io/instance: {{ $xrName }}
+                    policyTypes:
+                      - Ingress
+                    ingress:
+                      - from:
+                          - podSelector:
+                              matchLabels:
+                                app.kubernetes.io/name: n8n
+                                app.kubernetes.io/instance: {{ $xrName }}
+                        ports:
+                          - port: http
+            {{ end }}
+            ---
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              name: {{ $xrName }}-connection
+              namespace: {{ $namespace }}
+              annotations:
+                {{ setResourceNameAnnotation "connection-secret" }}
+            data:
+              email: {{ $ownerEmail | b64enc }}
+              host: {{ $hostname | b64enc }}
+              password: {{ $ownerPassword | b64enc }}
+              url: {{ $url | b64enc }}
+            ---
+            apiVersion: catalog.cluster.local/v2
+            kind: N8n
+            status:
+              url: {{ $url | quote }}
+
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: crossplane-contrib-function-auto-ready
