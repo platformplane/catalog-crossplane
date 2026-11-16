@@ -16,5 +16,3 @@ spec:
     # smtp:
     #   # Must contain N8N_SMTP_HOST and N8N_SMTP_SENDER; credentials are optional.
     #   secretName: n8n-smtp
-    ingress:
-      public: true

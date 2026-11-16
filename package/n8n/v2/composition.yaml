@@ -56,6 +56,14 @@ spec:
             {{ $hostname := printf "%s.%s" $host $zone }}
             {{ $url := printf "https://%s" $hostname }}
 
+            {{/* Every instance gets a listener on the shared platform gateway, which terminates TLS. */}}
+            {{ $environment := index $.context "apiextensions.crossplane.io/environment" }}
+            {{ $gatewayName := dig "gatewayName" "default-gateway" $environment }}
+            {{ $gatewayNamespace := dig "gatewayNamespace" "envoy" $environment }}
+            {{ $certificateIssuer := dig "certificateIssuer" "letsencrypt" $environment }}
+            {{ $listenerSetName := printf "%s-listenerset" $xrName }}
+            {{ $httpRouteName := printf "%s-httproute" $xrName }}
+
             {{/* Generated secrets are read back from the previous render so they stay stable. */}}
             {{ $n8nValues := dig "resources" "helm-release" "resource" "spec" "forProvider" "values" dict .observed }}
             {{ $sandboxValues := dig "resources" "sandbox" "resource" "spec" "forProvider" "values" dict .observed }}
@@ -72,9 +80,25 @@ spec:
             {{ $ownerPasswordHash := dig "passwordHash" "" $ownerSecret }}
             {{ if not $ownerPasswordHash }}{{ $ownerPasswordHash = bcrypt $ownerPassword }}{{ end }}
 
+            {{ $sandbox := $p.enableSandbox }}
             {{ $sandboxName := printf "%s-sandbox" $xrName }}
             {{ $labels := dict "catalog.cluster.local/kind" $xr.kind "catalog.cluster.local/name" $xrName }}
 
+            {{/* Web search for the n8n Assistant and agents: a private SearXNG next to n8n. */}}
+            {{ $webSearch := $p.enableWebSearch }}
+            {{ $searxngName := printf "%s-searxng" $xrName }}
+            {{ $searxngLabels := merge (dict "app.kubernetes.io/name" "searxng" "app.kubernetes.io/instance" $xrName) $labels }}
+            {{/* n8n queries the JSON API, which SearXNG disables by default. */}}
+            {{/* The limiter is off because only this instance's n8n pod can reach the service. */}}
+            {{ $searxngSettings := toYaml (dict
+              "use_default_settings" true
+              "general" (dict "instance_name" "n8n web search")
+              "server" (dict "limiter" false "public_instance" false "image_proxy" false)
+              "search" (dict "formats" (list "html" "json"))
+            ) }}
+            {{ $searxngSecret := dig "resources" "searxng-secret" "resource" "spec" "forProvider" "manifest" "stringData" "secret" (randAlphaNum 64) .observed }}
+
+            {{ if $sandbox }}
             {{/* Private CA for the sandbox service's mTLS between its API and runner. */}}
             {{ range $ca := list
               (dict "kind" "Issuer" "name" (printf "%s-selfsigned" $sandboxName) "spec" (dict "selfSigned" dict))
@@ -108,6 +132,7 @@ spec:
                     labels: {{ $labels | toJson }}
                   spec: {{ $ca.spec | toJson }}
             ---
+            {{ end }}
             {{ end }}
 
             apiVersion: kubernetes.m.crossplane.io/v1alpha1
@@ -188,8 +213,10 @@ spec:
                       N8N_ENCRYPTION_KEY: {{ $encryptionKey | quote }}
                       N8N_HOST: {{ $hostname | quote }}
                       N8N_PROTOCOL: "https"
+                      {{- if $sandbox }}
                       # Kept in this release's Secret so the n8n pod does not wait on the sandbox release.
                       N8N_SANDBOX_SERVICE_API_KEY: {{ $sandboxApiKey | quote }}
+                      {{- end }}
                   config:
                     timezone: {{ $p.timezone | quote }}
                     extraEnv:
@@ -216,9 +243,15 @@ spec:
                       # n8n Assistant and agent knowledge bases run code in the sandbox service below.
                       # The model provider and API key are entered in the n8n AI settings.
                       - name: N8N_INSTANCE_AI_SANDBOX_ENABLED
-                        value: "true"
+                        value: {{ $sandbox | quote }}
                       - name: N8N_AGENTS_AI_SANDBOX_ENABLED
-                        value: "true"
+                        value: {{ $sandbox | quote }}
+                      {{- if $webSearch }}
+                      # Web search for the n8n Assistant, served by the SearXNG below.
+                      - name: N8N_INSTANCE_AI_SEARXNG_URL
+                        value: {{ printf "http://%s:8080" $searxngName | quote }}
+                      {{- end }}
+                      {{- if $sandbox }}
                       - name: N8N_INSTANCE_AI_SANDBOX_PROVIDER
                         value: n8n-sandbox
                       - name: N8N_SANDBOX_SERVICE_URL
@@ -228,6 +261,7 @@ spec:
                           secretKeyRef:
                             name: {{ $xrName | quote }}
                             key: N8N_SANDBOX_SERVICE_API_KEY
+                      {{- end }}
                       {{- if $smtpSecretName }}
                       - name: N8N_EMAIL_MODE
                         value: smtp
@@ -242,26 +276,9 @@ spec:
                         maxCount: {{ $p.retention.maxExecutions | int }}
                     concurrency:
                       productionLimit: {{ $p.maxConcurrentExecutions | int }}
+                  # Exposed through the gateway listener and route below, not the chart's Ingress.
                   ingress:
-                    enabled: true
-                    className: {{ ternary "nginx" "nginx-internal" $p.ingress.public }}
-                    annotations:
-                      kubernetes.io/tls-acme: "true"
-                      # Form-trigger uploads go up to n8n's 200 MiB default.
-                      nginx.ingress.kubernetes.io/proxy-body-size: 200m
-                      # n8n pings the editor's push connection every 60s, the nginx default timeout,
-                      # and production webhooks can wait for long-running workflows to finish.
-                      nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
-                      nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
-                    hosts:
-                      - host: {{ $hostname }}
-                        paths:
-                          - path: /
-                            pathType: Prefix
-                    tls:
-                      - secretName: {{ $xrName }}-tls
-                        hosts:
-                          - {{ $hostname }}
+                    enabled: false
                   # The runners image's own launcher config (keep it in sync with the n8n version), with
                   # wider module allowlists: JavaScript only allows crypto by default and Python no
                   # standard-library module at all. Process, file-system and socket modules stay blocked.
@@ -289,6 +306,7 @@ spec:
                                "N8N_RUNNERS_STDLIB_ALLOW":"base64,binascii,bisect,calendar,collections,copy,csv,dataclasses,datetime,decimal,difflib,enum,fractions,functools,gzip,hashlib,heapq,hmac,html,ipaddress,itertools,json,math,operator,pprint,random,re,secrets,statistics,string,textwrap,time,typing,unicodedata,urllib,uuid,xml,zlib,zoneinfo",
                                "N8N_RUNNERS_EXTERNAL_ALLOW":""}}
                           ]}
+            {{ if $sandbox }}
             ---
             apiVersion: helm.m.crossplane.io/v1beta1
             kind: Release
@@ -357,6 +375,266 @@ spec:
                       limits:
                         cpu: "2"
                         memory: 3Gi
+            {{ end }}
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $listenerSetName }}
+              annotations:
+                {{ setResourceNameAnnotation "listener-set" }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: gateway.networking.k8s.io/v1
+                  kind: ListenerSet
+                  metadata:
+                    name: {{ $listenerSetName }}
+                    namespace: {{ $namespace }}
+                    labels: {{ $labels | toJson }}
+                    annotations:
+                      # cert-manager issues the certificate into the TLS Secret.
+                      cert-manager.io/cluster-issuer: {{ $certificateIssuer | quote }}
+                  spec:
+                    parentRef:
+                      group: gateway.networking.k8s.io
+                      kind: Gateway
+                      name: {{ $gatewayName | quote }}
+                      namespace: {{ $gatewayNamespace | quote }}
+                    listeners:
+                      - name: https
+                        hostname: {{ $hostname | quote }}
+                        port: 443
+                        protocol: HTTPS
+                        allowedRoutes:
+                          namespaces:
+                            from: Same
+                        tls:
+                          mode: Terminate
+                          certificateRefs:
+                            - group: ""
+                              kind: Secret
+                              name: {{ $xrName }}-tls
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $httpRouteName }}
+              annotations:
+                {{ setResourceNameAnnotation "http-route" }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: gateway.networking.k8s.io/v1
+                  kind: HTTPRoute
+                  metadata:
+                    name: {{ $httpRouteName }}
+                    namespace: {{ $namespace }}
+                    labels: {{ $labels | toJson }}
+                  spec:
+                    parentRefs:
+                      - group: gateway.networking.k8s.io
+                        kind: ListenerSet
+                        name: {{ $listenerSetName }}
+                    hostnames:
+                      - {{ $hostname | quote }}
+                    rules:
+                      # Production webhooks can wait for long-running workflows to finish.
+                      - timeouts:
+                          request: 3600s
+                        backendRefs:
+                          # The n8n chart's Service: <fullnameOverride>-main on port 5678.
+                          - group: ""
+                            kind: Service
+                            name: {{ $xrName }}-main
+                            port: 5678
+            {{ if $webSearch }}
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $searxngName }}-secret
+              annotations:
+                {{ setResourceNameAnnotation "searxng-secret" }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: Secret
+                  metadata:
+                    name: {{ $searxngName }}
+                    namespace: {{ $namespace }}
+                    labels: {{ $searxngLabels | toJson }}
+                  stringData:
+                    secret: {{ $searxngSecret | quote }}
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $searxngName }}-config
+              annotations:
+                {{ setResourceNameAnnotation "searxng-config" }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: ConfigMap
+                  metadata:
+                    name: {{ $searxngName }}
+                    namespace: {{ $namespace }}
+                    labels: {{ $searxngLabels | toJson }}
+                  data:
+                    settings.yml: {{ $searxngSettings | toJson }}
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $searxngName }}-deployment
+              annotations:
+                {{ setResourceNameAnnotation "searxng-deployment" }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: apps/v1
+                  kind: Deployment
+                  metadata:
+                    name: {{ $searxngName }}
+                    namespace: {{ $namespace }}
+                    labels: {{ $searxngLabels | toJson }}
+                  spec:
+                    replicas: 1
+                    selector:
+                      matchLabels:
+                        app.kubernetes.io/name: searxng
+                        app.kubernetes.io/instance: {{ $xrName }}
+                    template:
+                      metadata:
+                        labels: {{ $searxngLabels | toJson }}
+                        annotations:
+                          # Restart when the settings change; the file is only read at start-up.
+                          checksum/settings: {{ $searxngSettings | sha256sum | quote }}
+                      spec:
+                        automountServiceAccountToken: false
+                        containers:
+                          - name: searxng
+                            image: docker.io/searxng/searxng:2026.11.15-2d500cb6b
+                            ports:
+                              - name: http
+                                containerPort: 8080
+                            env:
+                              - name: SEARXNG_SECRET
+                                valueFrom:
+                                  secretKeyRef:
+                                    name: {{ $searxngName }}
+                                    key: secret
+                            volumeMounts:
+                              - name: settings
+                                mountPath: /etc/searxng/settings.yml
+                                subPath: settings.yml
+                                readOnly: true
+                            readinessProbe:
+                              httpGet:
+                                path: /healthz
+                                port: http
+                            livenessProbe:
+                              httpGet:
+                                path: /healthz
+                                port: http
+                              initialDelaySeconds: 30
+                            resources:
+                              requests:
+                                cpu: 50m
+                                memory: 192Mi
+                              limits:
+                                cpu: "1"
+                                memory: 512Mi
+                            securityContext:
+                              allowPrivilegeEscalation: false
+                              capabilities:
+                                drop:
+                                  - ALL
+                        volumes:
+                          - name: settings
+                            configMap:
+                              name: {{ $searxngName }}
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $searxngName }}-service
+              annotations:
+                {{ setResourceNameAnnotation "searxng-service" }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: Service
+                  metadata:
+                    name: {{ $searxngName }}
+                    namespace: {{ $namespace }}
+                    labels: {{ $searxngLabels | toJson }}
+                  spec:
+                    selector:
+                      app.kubernetes.io/name: searxng
+                      app.kubernetes.io/instance: {{ $xrName }}
+                    ports:
+                      - name: http
+                        port: 8080
+                        targetPort: http
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $searxngName }}-networkpolicy
+              annotations:
+                {{ setResourceNameAnnotation "searxng-networkpolicy" }}
+            spec:
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: provider-kubernetes
+              forProvider:
+                manifest:
+                  apiVersion: networking.k8s.io/v1
+                  kind: NetworkPolicy
+                  metadata:
+                    name: {{ $searxngName }}
+                    namespace: {{ $namespace }}
+                    labels: {{ $searxngLabels | toJson }}
+                  spec:
+                    # Only this instance's n8n pod may query the search service.
+                    podSelector:
+                      matchLabels:
+                        app.kubernetes.io/name: searxng
+                        app.kubernetes.io/instance: {{ $xrName }}
+                    policyTypes:
+                      - Ingress
+                    ingress:
+                      - from:
+                          - podSelector:
+                              matchLabels:
+                                app.kubernetes.io/name: n8n
+                                app.kubernetes.io/instance: {{ $xrName }}
+                        ports:
+                          - port: http
+            {{ end }}
             ---
             apiVersion: v1
             kind: Secret

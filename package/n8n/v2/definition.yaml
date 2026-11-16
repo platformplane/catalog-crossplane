@@ -28,6 +28,12 @@ spec:
           description: N8n is the Schema for n8n instances
           type: object
           properties:
+            metadata:
+              type: object
+              properties:
+                name:
+                  type: string
+                  maxLength: 26
             spec:
               description: N8nSpec defines the desired state of an n8n instance
               type: object
@@ -97,14 +103,14 @@ spec:
                           description: >-
                             Name of the Kubernetes Secret in this namespace that contains the SMTP settings.
                             See [an example Secret](https://github.com/platformplane/catalog-crossplane/blob/main/examples/n8n-smtp-secret.yaml).
-                    ingress:
-                      type: object
-                      default: {}
-                      properties:
-                        public:
-                          type: boolean
-                          default: true
-                          description: Expose public endpoint (Be aware that your application will be publicly available on the internet.)
+                    enableWebSearch:
+                      type: boolean
+                      default: true
+                      description: Let the n8n Assistant and AI agents search the web. Runs a private SearXNG next to n8n; no API key needed.
+                    enableSandbox:
+                      type: boolean
+                      default: true
+                      description: Provide the code-execution sandbox used by the n8n Assistant and AI agents. It runs a privileged runner and needs about 3Gi of memory; turn it off if you only run workflows.
             status:
               type: object
               properties:
