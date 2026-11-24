@@ -11,7 +11,7 @@ spec:
       catalog.cluster.local/kind: Keycloak
     annotations:
       catalog.cluster.local/title: "Keycloak"
-      catalog.cluster.local/description: "Keycloak identity and access management: single sign-on with OpenID Connect and SAML, user federation and identity brokering. Realms, clients, users and email are configured in the Keycloak admin console."
+      catalog.cluster.local/description: "Keycloak identity and access management with single sign-on via OpenID Connect and SAML. Realms, clients and users are managed in the Keycloak admin console."
       catalog.cluster.local/icon: "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjcuMTE3IiBoZWlnaHQ9IjE1MC42NTgiIHZpZXdCb3g9IjAgMCA0NC4yMTYgMzkuODYxIj48cGF0aCBkPSJtODguNjEgMTM4LjQ1NiA1LjcxNi05Ljg2NSAyMy4wMTgtLjAwNCA1LjY4NiA5Ljk2NS4wMDcgMTkuOTMyLTUuNjkxIDkuOTU3LTIzLjAxMi4wMDgtNS43ODItOS45NjV6IiBzdHlsZT0iZGlzcGxheTppbmxpbmU7ZmlsbDojNGQ0ZDRkO2ZpbGwtb3BhY2l0eToxO3N0cm9rZS13aWR0aDouMjY0NTgzIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtODIuODE1IC0xMjguNTg4KSIvPjxwYXRoIGQ9Ik04OC41NTIgMTU4LjQ4MWgxMC4zNzVsLTUuNjk5LTEwLjA0MSA0LjYzNC05Ljk4Mi05LjI1Mi0uMDAyLTUuNzk1IDEwLjA2NSIgc3R5bGU9ImZpbGw6I2VkZWRlZDtmaWxsLW9wYWNpdHk6MTtmaWxsLXJ1bGU6bm9uemVybztzdHJva2U6bm9uZTtzdHJva2Utd2lkdGg6LjMzMDcyOSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTgyLjgxNSAtMTI4LjU4OCkiLz48cGF0aCBkPSJNMTAyLjA3MyAxNTguNDgxaDcuNTgybDYuNzA2LTkuNzczLTYuNTg5LTEwLjE1NmgtOC45MjFsLTUuMzczIDkuODE0eiIgc3R5bGU9ImZpbGw6I2UwZTBlMDtmaWxsLW9wYWNpdHk6MTtmaWxsLXJ1bGU6bm9uemVybztzdHJva2U6bm9uZTtzdHJva2Utd2lkdGg6LjMzMDcyOSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTgyLjgxNSAtMTI4LjU4OCkiLz48cGF0aCBkPSJtODIuODE1IDE0OC41MiA1LjczOCA5Ljk2NGgxMC4zNzRsLTUuNjM2LTkuOTN6IiBzdHlsZT0iZmlsbDojYWNhY2FjO2ZpbGwtb3BhY2l0eToxO2ZpbGwtcnVsZTpub256ZXJvO3N0cm9rZTpub25lO3N0cm9rZS13aWR0aDouMzMwNzI5IiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtODIuODE1IC0xMjguNTg4KSIvPjxwYXRoIGQ9Im05NS41ODkgMTQ4LjUyMiA2LjQ4NCA5Ljk2M2g3LjU4Mmw2LjYwMS05Ljk1OXoiIHN0eWxlPSJmaWxsOiM5ZTllOWU7ZmlsbC1vcGFjaXR5OjE7ZmlsbC1ydWxlOm5vbnplcm87c3Ryb2tlOm5vbmU7c3Ryb2tlLXdpZHRoOi4zMzA3MjkiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC04Mi44MTUgLTEyOC41ODgpIi8+PHBhdGggZD0ibTk4LjE1NyAxNDguNTI5LTEuOTU4LjU2OS0xLjg3Ny0uNTcyIDcuNjY3LTEzLjI4OCAxLjkxOCAzLjMxNiIgc3R5bGU9ImZpbGw6IzAwYjhlMztmaWxsLW9wYWNpdHk6MTtmaWxsLXJ1bGU6bm9uemVybztzdHJva2U6bm9uZTtzdHJva2Utd2lkdGg6LjMzMDcyOSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTgyLjgxNSAtMTI4LjU4OCkiLz48cGF0aCBkPSJtMTAzLjkgMTU4LjQ4Mi0xLjkwOSAzLjMzMi01LjA5My01LjQ4Ny0yLjU4LTcuNzk3di0uMDA0aDMuODM4IiBzdHlsZT0iZmlsbDojMzNjNmU5O2ZpbGwtb3BhY2l0eToxO2ZpbGwtcnVsZTpub256ZXJvO3N0cm9rZTpub25lO3N0cm9rZS13aWR0aDouMzMwNzI5IiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtODIuODE1IC0xMjguNTg4KSIvPjxwYXRoIGQ9Ik05NC4zMjIgMTQ4LjUyNmgtLjAwM3YuMDAzbC0xLjkxOCAzLjMyMi0xLjkyNS0zLjMwNyAxLjk1Mi0zLjM4NiA1LjcyOC05LjkyaDMuODM0IiBzdHlsZT0iZmlsbDojMDA4YWFhO2ZpbGwtb3BhY2l0eToxO2ZpbGwtcnVsZTpub256ZXJvO3N0cm9rZTpub25lO3N0cm9rZS13aWR0aDouMzMwNzI5IiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtODIuODE1IC0xMjguNTg4KSIvPjxwYXRoIGQ9Ik0xMTUuNDIgMTU4LjQ4MWgxMS42MTFsLS4wMDctMTkuOTNoLTExLjYwNXoiIHN0eWxlPSJmaWxsOiNkNGQ0ZDQ7ZmlsbC1vcGFjaXR5OjE7ZmlsbC1ydWxlOm5vbnplcm87c3Ryb2tlOm5vbmU7c3Ryb2tlLXdpZHRoOi4zMzA3MjkiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC04Mi44MTUgLTEyOC41ODgpIi8+PHBhdGggZD0iTTExNS40MiAxNDguNTU0djkuOTNoMTEuNTl2LTkuOTN6IiBzdHlsZT0iZmlsbDojOTE5MTkxO2ZpbGwtb3BhY2l0eToxO2ZpbGwtcnVsZTpub256ZXJvO3N0cm9rZTpub25lO3N0cm9rZS13aWR0aDouMzMwNzI5IiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtODIuODE1IC0xMjguNTg4KSIvPjxwYXRoIGQ9Ik0xMDEuOTkyIDE2MS44MTdoLTMuODM2bC01Ljc1NS05Ljk2NiAxLjkxOC0zLjMyMXoiIHN0eWxlPSJmaWxsOiMwMGI4ZTM7ZmlsbC1vcGFjaXR5OjE7ZmlsbC1ydWxlOm5vbnplcm87c3Ryb2tlOm5vbmU7c3Ryb2tlLXdpZHRoOi4zMzA3MjkiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC04Mi44MTUgLTEyOC41ODgpIi8+PHBhdGggZD0ibTExNy4zMzMgMTQ4LjUyNi03LjY2OSAxMy4yODljLS43MDUtMS4wMzYtMS45MTMtMy4zMzEtMS45MTMtMy4zMzFsNS43NTMtOS45NTl6IiBzdHlsZT0iZmlsbDojMDA4YWFhO2ZpbGwtb3BhY2l0eToxO2ZpbGwtcnVsZTpub256ZXJvO3N0cm9rZTpub25lO3N0cm9rZS13aWR0aDouMzMwNzI5IiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtODIuODE1IC0xMjguNTg4KSIvPjxwYXRoIGQ9Im0xMTMuNDk1IDE2MS44MTUtMy44MzEtLjAwMSA3LjY3LTEzLjI4OCAxLjkxNy0zLjMxNyAxLjkyMSAzLjM0bS0zLjgzOS0uMDIzaC0zLjgyOGwtNS43NTUtOS45NzMgMS45MDUtMy4zMTQgNC42NTggNS45MjJ6IiBzdHlsZT0iZmlsbDojMDBiOGUzO2ZpbGwtb3BhY2l0eToxO2ZpbGwtcnVsZTpub256ZXJvO3N0cm9rZTpub25lO3N0cm9rZS13aWR0aDouMzMwNzI5IiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtODIuODE1IC0xMjguNTg4KSIvPjxwYXRoIGQ9Ik0xMTkuMjUgMTQ1LjIwNXYuMDAzbC0xLjkxNyAzLjMxOC03LjY3Ny0xMy4yODYgMy44NDEuMDAyeiIgc3R5bGU9ImZpbGw6IzMzYzZlOTtmaWxsLW9wYWNpdHk6MTtmaWxsLXJ1bGU6bm9uemVybztzdHJva2U6bm9uZTtzdHJva2Utd2lkdGg6LjMzMDcyOSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTgyLjgxNSAtMTI4LjU4OCkiLz48L3N2Zz4="
       catalog.cluster.local/maintainer: ""
       catalog.cluster.local/url: "https://www.keycloak.org/"
@@ -36,7 +36,7 @@ spec:
           priority: 1
       schema:
         openAPIV3Schema:
-          description: Keycloak server with a small bundled PostgreSQL database, published at <instance name>.<platform domain>. Everything Keycloak can configure itself is left to its admin console.
+          description: Keycloak with a bundled PostgreSQL database.
           type: object
           properties:
             metadata:
@@ -56,36 +56,37 @@ spec:
                     version:
                       type: string
                       title: "Version"
-                      description: "Keycloak major version. Instances keep the patch release they were created with."
+                      description: "Keycloak major version."
                       default: "26"
                       enum:
                         - "26"
                     size:
                       type: string
                       title: "Storage Size"
-                      description: "Database volume size. Can be increased later, not decreased."
+                      description: "Database volume size. Cannot be changed after creation."
                       default: "1Gi"
                       pattern: ^(?<size>\d+(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?)$
+                      x-kubernetes-validations:
+                        - rule: self == oldSelf
+                          message: "size cannot be changed after creation"
                     resourceProfile:
                       type: string
                       title: "Resource Profile"
-                      description: "Keycloak server size: small 0.5-1 CPU, 1.5 GiB RAM; medium 1-2 CPU, 2 GiB RAM; large 2-4 CPU, 4 GiB RAM."
+                      description: "small: 0.5-1 CPU, 1.5 GiB RAM; medium: 1-2 CPU, 2 GiB RAM; large: 2-4 CPU, 4 GiB RAM."
                       default: "small"
                       enum:
                         - small
                         - medium
                         - large
-              required:
-                - parameters
             status:
-              description: Live state, read from the composed resources.
               type: object
               properties:
                 url:
                   type: string
                   title: "URL"
-                  description: "Public address. Absent until the listener and route are live, or while the hostname is taken by another instance."
+                  description: "Public address, set once the endpoint is live."
                 message:
                   type: string
                   title: "Message"
-                  description: "Why the instance is not working. Empty when all is well."
+                  description: "Why the instance is not working. Empty when healthy."
+

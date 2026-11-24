@@ -30,93 +30,66 @@ spec:
             {{ $kind := $xr.kind }}
             {{ $xrName := $xr.metadata.name }}
             {{ $namespace := $xr.metadata.namespace }}
-            {{ $params := $xr.spec.parameters | default dict }}
+            {{ $params := $xr.spec.parameters }}
+            {{ $observed := dig "resources" (dict) .observed }}
+
             {{ $environment := dict }}
             {{ with getExtraResources . "environment" }}{{ $environment = dig "resource" "data" (dict) (first .) }}{{ end }}
             {{ $zone := dig "zone" "" $environment }}
-            {{ if not $zone }}
-            {{ fail "no platform zone configured, so Keycloak cannot get its public address" }}
-            {{ end }}
+            {{ if not $zone }}{{ fail "no platform zone configured, so Keycloak cannot get its public address" }}{{ end }}
 
-            {{/* Major version -> Keycloak image and keycloakx chart. Patch and chart bumps go behind the
-                 existing key; running instances stay on their pinned CompositionRevision. */}}
             {{ $versions := dict
-              "26" (dict "image" "26.8.2" "chart" "7.4.0")
+              "26" (dict "image" "26.8.2-3" "chart" "7.4.0")
             }}
-            {{ $version := index $versions (dig "version" "26" $params) }}
-            {{ $size := dig "size" "1Gi" $params }}
+            {{ $version := index $versions $params.version }}
 
-            {{/* Requests = limits for memory: Keycloak sizes its heap at 70% of the limit and needs
-                 ~1.25 GiB at rest. */}}
+            {{/* Memory requests = limits: Keycloak sizes its heap at 70% of the limit and needs ~1.25 GiB at rest. */}}
             {{ $resourceProfiles := dict
               "small" (dict "requestCpu" "500m" "limitCpu" "1" "memory" "1536Mi")
               "medium" (dict "requestCpu" "1" "limitCpu" "2" "memory" "2Gi")
               "large" (dict "requestCpu" "2" "limitCpu" "4" "memory" "4Gi")
             }}
-            {{ $resources := index $resourceProfiles (dig "resourceProfile" "small" $params) }}
+            {{ $resources := index $resourceProfiles $params.resourceProfile }}
 
             {{/* Always public: OIDC and SAML redirects need an address browsers can reach. */}}
             {{ $host := regexReplaceAll "[^a-z0-9-]" ($xrName | lower) "" | trimAll "-" }}
             {{ $hostname := printf "%s.%s" $host $zone }}
             {{ $url := printf "https://%s" $hostname }}
-            {{ $gatewayName := dig "gatewayName" "default-gateway" $environment }}
-            {{ $gatewayNamespace := dig "gatewayNamespace" "envoy" $environment }}
-            {{ $certificateIssuer := dig "certificateIssuer" "letsencrypt" $environment }}
 
             {{ $dbName := printf "%s-db" $xrName }}
             {{ $credentialsSecretName := printf "%s-credentials" $xrName }}
             {{ $listenerSetName := printf "%s-listenerset" $xrName }}
 
             {{/* Generated once, then read back from the live Secret so they survive reconciles. */}}
-            {{ $credentials := dig "resources" "credentials" "resource" "data" dict .observed }}
+            {{ $credentials := dig "credentials" "resource" "data" (dict) $observed }}
             {{ $dbPassword := dig "db-password" (randAlphaNum 32 | b64enc) $credentials }}
             {{ $adminUsername := dig "admin-username" ("admin" | b64enc) $credentials }}
             {{ $adminPassword := dig "admin-password" (randAlphaNum 24 | b64enc) $credentials }}
 
-            {{/* Status message. XR status is server-side applied, so resolved problems clear themselves. */}}
+            {{/* Health: gather the conditions of every composed resource, remember which are True,
+                 and report failing ones with a message in status.message. XR status is server-side
+                 applied, so resolved problems clear themselves. */}}
+            {{ $checks := list
+              (dict "name" "keycloak" "conditions" (dig "keycloak" "resource" "status" "conditions" (list) $observed))
+              (dict "name" "database" "conditions" (dig "database" "resource" "status" "conditions" (list) $observed))
+            }}
+            {{ range dig "listener-set" "resource" "status" "listeners" (list) $observed }}{{ $checks = append $checks (dict "name" "listener" "conditions" .conditions) }}{{ end }}
+            {{ range dig "http-route" "resource" "status" "parents" (list) $observed }}{{ $checks = append $checks (dict "name" "route" "conditions" .conditions) }}{{ end }}
+
+            {{ $isTrue := dict }}
             {{ $problems := list }}
-            {{ range $release := list "keycloak" "database" }}
-            {{- $releaseStatus := dig "resources" $release "resource" "status" dict $.observed }}
-            {{- range $condition := dig "conditions" (list) $releaseStatus }}
-            {{- if and (ne (dig "status" "" $condition) "True") (dig "message" "" $condition) }}
-            {{- $problems = append $problems (printf "%s %s: %s" $release $condition.type $condition.message) }}
+            {{ range $check := $checks }}{{ range $c := $check.conditions }}
+            {{- if eq $c.status "True" }}{{ $_ := set $isTrue (printf "%s %s" $check.name $c.type) true }}
+            {{- else if and (has $c.type (list "Ready" "Synced" "Accepted" "Programmed" "ResolvedRefs")) (dig "message" "" $c) }}
+            {{- $problems = append $problems (printf "%s %s: %s" $check.name $c.type $c.message) }}
             {{- end }}
-            {{- end }}
-            {{- end }}
+            {{- end }}{{ end }}
 
-            {{/* Listener hostnames are unique across the shared gateway; a taken one is Conflicted. */}}
-            {{ $listenerProgrammed := false }}
-            {{ $listenerConflict := false }}
-            {{ $listenerSetStatus := dig "resources" "listener-set" "resource" "status" dict .observed }}
-            {{ range $condition := dig "conditions" (list) $listenerSetStatus }}
-            {{- if and (eq (dig "type" "" $condition) "Programmed") (eq (dig "status" "" $condition) "True") }}{{ $listenerProgrammed = true }}{{ end }}
-            {{- end }}
-            {{ range $listener := dig "listeners" (list) $listenerSetStatus }}
-            {{- range $condition := dig "conditions" (list) $listener }}
-            {{- if and (eq (dig "type" "" $condition) "Conflicted") (eq (dig "status" "" $condition) "True") }}
-            {{- $listenerConflict = true }}
-            {{- else if and (has (dig "type" "" $condition) (list "Accepted" "Programmed" "ResolvedRefs")) (ne (dig "status" "" $condition) "True") }}
-            {{- $problems = append $problems (printf "listener %s: %s" $condition.type (dig "message" "" $condition)) }}
-            {{- end }}
-            {{- end }}
-            {{- end }}
-            {{ if $listenerConflict }}
-            {{ $problems = append $problems (printf "hostname %s is taken by another instance; rename this one" $hostname) }}
-            {{ end }}
-
-            {{/* Accepted doesn't mean the backend resolves -- check that too. */}}
-            {{ $routeAccepted := false }}
-            {{ $routeStatus := dig "resources" "http-route" "resource" "status" dict .observed }}
-            {{ range $parent := dig "parents" (list) $routeStatus }}
-            {{- range $condition := dig "conditions" (list) $parent }}
-            {{- if and (eq (dig "type" "" $condition) "Accepted") (eq (dig "status" "" $condition) "True") }}
-            {{- $routeAccepted = true }}
-            {{- else if and (has (dig "type" "" $condition) (list "Accepted" "ResolvedRefs")) (ne (dig "status" "" $condition) "True") }}
-            {{- $problems = append $problems (printf "route %s: %s" $condition.type (dig "message" "" $condition)) }}
-            {{- end }}
-            {{- end }}
-            {{- end }}
-
+            {{/* Hostnames are unique across the shared gateway; a taken one is Conflicted. */}}
+            {{ $listenerConflict := hasKey $isTrue "listener Conflicted" }}
+            {{ if $listenerConflict }}{{ $problems = append $problems (printf "hostname %s is taken by another instance; rename this one" $hostname) }}{{ end }}
+            {{ $listenerProgrammed := hasKey $isTrue "listener Programmed" }}
+            {{ $routeAccepted := hasKey $isTrue "route Accepted" }}
             {{ $endpointLive := and $listenerProgrammed $routeAccepted (not $listenerConflict) }}
             {{ $message := $problems | uniq | join "; " | trunc 1024 }}
 
@@ -150,7 +123,7 @@ spec:
                 chart: # https://artifacthub.io/packages/helm/cloudpirates/postgres
                   name: postgres
                   repository: oci://registry-1.docker.io/cloudpirates
-                  version: 0.22.0
+                  version: 0.22.1
                 namespace: {{ $namespace }}
                 values:
                   fullnameOverride: {{ $dbName }}
@@ -164,7 +137,7 @@ spec:
                     secretKeys:
                       adminPasswordKey: db-password
                   persistence:
-                    size: {{ $size }}
+                    size: {{ $params.size }}
                   persistentVolumeClaimRetentionPolicy:
                     enabled: true
                     whenDeleted: Delete
@@ -258,13 +231,13 @@ spec:
                 {{ setResourceNameAnnotation "listener-set" }}
                 gotemplating.fn.crossplane.io/ready: {{ ternary "True" "False" $listenerProgrammed | quote }}
                 # cert-manager issues the listener's certificate into the TLS Secret.
-                cert-manager.io/cluster-issuer: {{ $certificateIssuer | quote }}
+                cert-manager.io/cluster-issuer: {{ dig "certificateIssuer" "letsencrypt" $environment | quote }}
             spec:
               parentRef:
                 group: gateway.networking.k8s.io
                 kind: Gateway
-                name: {{ $gatewayName | quote }}
-                namespace: {{ $gatewayNamespace | quote }}
+                name: {{ dig "gatewayName" "default-gateway" $environment | quote }}
+                namespace: {{ dig "gatewayNamespace" "envoy" $environment | quote }}
               listeners:
                 - name: https
                   hostname: {{ $hostname | quote }}
