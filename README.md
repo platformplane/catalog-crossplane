@@ -97,6 +97,25 @@ The encoded part is basically a docker config.json file:
 
 In order that the catalog actually shows your items, the Crossplane definition will need a specif label and some specific annotations (e.g. containing an encoded .svc catalog icon, description, etc.). Please refer to the existing items in the `package` folder for examples.
 
+### Crossplane RBAC for Gateway API
+
+The [Keycloak](./package/keycloak/) item composes a ListenerSet and HTTPRoute directly. Crossplane can only manage them after the platform grants access, because a configuration package can't ship RBAC:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: crossplane-catalog-gateway-api
+  labels:
+    rbac.crossplane.io/aggregate-to-crossplane: "true"
+rules:
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["listenersets", "httproutes"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+```
+
+Without it, Keycloak instances never get a public URL.
+
 ## How to add a new catalog item
 
 - create a new `package/<catalog-item>` subfolder

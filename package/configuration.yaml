@@ -14,8 +14,6 @@ spec:
       version: ">=v2.0.0"
     - provider: xpkg.upbound.io/upbound/provider-azure-network
       version: ">=v2.0.0"
-    - provider: xpkg.upbound.io/upbound/provider-azure-cognitiveservices
-      version: ">=v2.0.0"
     - function: xpkg.crossplane.io/crossplane-contrib/function-go-templating
       version: ">=v0.11.4"
     - function: xpkg.crossplane.io/crossplane-contrib/function-auto-ready
