@@ -60,13 +60,13 @@ data:
 
 Please note that removing an entry from this list will not remove the Crossplane definitions (along with the CRDs and CRs). In case you want to remove all resources of a specific package (inlcuding all instances!), you need to delete the configuration package from `configurations.pkg.crossplane.io`.
 
-If the packages are to be fetched from private registries, Crossplane needs package pull secrets (similar to ImagePullSecrets) to be able to pull the packages. These are provided by the platform (gitlab-operator). It creates the secret `default-registry` in the `crossplane-system` namespace similar to:
+If the packages are to be fetched from private registries, Crossplane needs package pull secrets (similar to ImagePullSecrets) to be able to pull the packages. These are provided by the platform (registry-operator). It creates the secret `default-registry` with the credentials of all registries of the cluster in the `crossplane-system` namespace similar to:
 
 ```bash
 kubectl create secret docker-registry default-registry --docker-server=privateregistry.example.com --docker-username=spacename --docker-password=... -n crossplane-system
 ```
 
-Furthermore, it adds the username and password again to the data section of this secret so that helm.crossplane.io/v1beta1 resources can reference it in their spec.forProvider.chart.pullSecretRef section.
+Furthermore, it adds the username and password of the default registry to the data section of this secret so that helm.crossplane.io/v1beta1 resources can reference it in their spec.forProvider.chart.pullSecretRef section.
 
 The secret will look like this in the cluster:
 
